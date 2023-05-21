@@ -155,7 +155,7 @@ python tools/export_model.py -c configs/picodet/picodet_s_320_coco_lcnet.yml \
               --output_dir=output_inference
 ```
 
-- 如无需导出后处理，请指定：`-o export.benchmark=True`（如果-o已出现过，此处删掉-o）或者手动修改[runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml) 中相应字段。
+- 如无需导出后处理，请指定：`-o export.post_process=False`（如果-o已出现过，此处删掉-o）或者手动修改[runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml) 中相应字段。
 - 如无需导出NMS，请指定：`-o export.nms=False`或者手动修改[runtime.yml](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/runtime.yml) 中相应字段。 许多导出至ONNX场景只支持单输入及固定shape输出，所以如果导出至ONNX，推荐不导出NMS。
 
 </details>

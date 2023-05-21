@@ -7,7 +7,7 @@ DETR:
   backbone: SwinTransformer
   transformer: DINOTransformer
   detr_head: DINOHead
-  post_process: DETRBBoxPostProcess
+  post_process: DETRPostProcess
 
 SwinTransformer:
   arch: 'swin_L_384' # ['swin_T_224', 'swin_S_224', 'swin_B_224', 'swin_L_224', 'swin_B_384', 'swin_L_384']
@@ -42,5 +42,5 @@ DINOHead:
       name: HungarianMatcher
       matcher_coeff: {class: 2, bbox: 5, giou: 2}
 
-DETRBBoxPostProcess:
+DETRPostProcess:
   num_top_queries: 300

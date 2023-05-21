@@ -82,6 +82,106 @@ TO_STATIC_SPEC = {
         'target2': paddle.static.InputSpec(
             name='target2', shape=[-1, 3, 86, -1, -1], dtype='float32'),
     }],
+    'tinypose_128x96': [{
+        'center': paddle.static.InputSpec(
+            name='center', shape=[-1, 2], dtype='float32'),
+        'scale': paddle.static.InputSpec(
+            name='scale', shape=[-1, 2], dtype='float32'),
+        'im_id': paddle.static.InputSpec(
+            name='im_id', shape=[-1, 1], dtype='float32'),
+        'image': paddle.static.InputSpec(
+            name='image', shape=[-1, 3, 128, 96], dtype='float32'),
+        'score': paddle.static.InputSpec(
+            name='score', shape=[-1], dtype='float32'),
+        'rotate': paddle.static.InputSpec(
+            name='rotate', shape=[-1], dtype='float32'),
+        'target': paddle.static.InputSpec(
+            name='target', shape=[-1, 17, 32, 24], dtype='float32'),
+        'target_weight': paddle.static.InputSpec(
+            name='target_weight', shape=[-1, 17, 1], dtype='float32'),
+    }],
+    'fcos_r50_fpn_1x_coco': [{
+        'im_id': paddle.static.InputSpec(
+            name='im_id', shape=[-1, 1], dtype='float32'),
+        'curr_iter': paddle.static.InputSpec(
+            name='curr_iter', shape=[-1], dtype='float32'),
+        'image': paddle.static.InputSpec(
+            name='image', shape=[-1, 3, -1, -1], dtype='float32'),
+        'im_shape': paddle.static.InputSpec(
+            name='im_shape', shape=[-1, 2], dtype='float32'),
+        'scale_factor': paddle.static.InputSpec(
+            name='scale_factor', shape=[-1, 2], dtype='float32'),
+        'reg_target0': paddle.static.InputSpec(
+            name='reg_target0', shape=[-1, 160, 160, 4], dtype='float32'),
+        'labels0': paddle.static.InputSpec(
+            name='labels0', shape=[-1, 160, 160, 1], dtype='int32'),
+        'centerness0': paddle.static.InputSpec(
+            name='centerness0', shape=[-1, 160, 160, 1], dtype='float32'),
+        'reg_target1': paddle.static.InputSpec(
+            name='reg_target1', shape=[-1, 80, 80, 4], dtype='float32'),
+        'labels1': paddle.static.InputSpec(
+            name='labels1', shape=[-1, 80, 80, 1], dtype='int32'),
+        'centerness1': paddle.static.InputSpec(
+            name='centerness1', shape=[-1, 80, 80, 1], dtype='float32'),
+        'reg_target2': paddle.static.InputSpec(
+            name='reg_target2', shape=[-1, 40, 40, 4], dtype='float32'),
+        'labels2': paddle.static.InputSpec(
+            name='labels2', shape=[-1, 40, 40, 1], dtype='int32'),
+        'centerness2': paddle.static.InputSpec(
+            name='centerness2', shape=[-1, 40, 40, 1], dtype='float32'),
+        'reg_target3': paddle.static.InputSpec(
+            name='reg_target3', shape=[-1, 20, 20, 4], dtype='float32'),
+        'labels3': paddle.static.InputSpec(
+            name='labels3', shape=[-1, 20, 20, 1], dtype='int32'),
+        'centerness3': paddle.static.InputSpec(
+            name='centerness3', shape=[-1, 20, 20, 1], dtype='float32'),
+        'reg_target4': paddle.static.InputSpec(
+            name='reg_target4', shape=[-1, 10, 10, 4], dtype='float32'),
+        'labels4': paddle.static.InputSpec(
+            name='labels4', shape=[-1, 10, 10, 1], dtype='int32'),
+        'centerness4': paddle.static.InputSpec(
+            name='centerness4', shape=[-1, 10, 10, 1], dtype='float32'),
+    }],
+    'picodet_s_320_coco_lcnet': [{
+        'im_id': paddle.static.InputSpec(
+            name='im_id', shape=[-1, 1], dtype='float32'),
+        'is_crowd': paddle.static.InputSpec(
+            name='is_crowd', shape=[-1, -1, 1], dtype='float32'),
+        'gt_class': paddle.static.InputSpec(
+            name='gt_class', shape=[-1, -1, 1], dtype='int32'),
+        'gt_bbox': paddle.static.InputSpec(
+            name='gt_bbox', shape=[-1, -1, 4], dtype='float32'),
+        'curr_iter': paddle.static.InputSpec(
+            name='curr_iter', shape=[-1], dtype='float32'),
+        'image': paddle.static.InputSpec(
+            name='image', shape=[-1, 3, -1, -1], dtype='float32'),
+        'im_shape': paddle.static.InputSpec(
+            name='im_shape', shape=[-1, 2], dtype='float32'),
+        'scale_factor': paddle.static.InputSpec(
+            name='scale_factor', shape=[-1, 2], dtype='float32'),
+        'pad_gt_mask': paddle.static.InputSpec(
+            name='pad_gt_mask', shape=[-1, -1, 1], dtype='float32'),
+    }],
+    'ppyoloe_crn_s_300e_coco': [{
+        'im_id': paddle.static.InputSpec(
+            name='im_id', shape=[-1, 1], dtype='float32'),
+        'is_crowd': paddle.static.InputSpec(
+            name='is_crowd', shape=[-1, -1, 1], dtype='float32'),
+        'gt_class': paddle.static.InputSpec(
+            name='gt_class', shape=[-1, -1, 1], dtype='int32'),
+        'gt_bbox': paddle.static.InputSpec(
+            name='gt_bbox', shape=[-1, -1, 4], dtype='float32'),
+        'curr_iter': paddle.static.InputSpec(
+            name='curr_iter', shape=[-1], dtype='float32'),
+        'image': paddle.static.InputSpec(
+            name='image', shape=[-1, 3, -1, -1], dtype='float32'),
+        'im_shape': paddle.static.InputSpec(
+            name='im_shape', shape=[-1, 2], dtype='float32'),
+        'scale_factor': paddle.static.InputSpec(
+            name='scale_factor', shape=[-1, 2], dtype='float32'),
+        'pad_gt_mask': paddle.static.InputSpec(
+            name='pad_gt_mask', shape=[-1, -1, 1], dtype='float32'),
+    }],
 }
 
 

@@ -1003,7 +1003,7 @@ class MaskMatrixNMS(object):
         keep = paddle.squeeze(keep, axis=[1])
         # Prevent empty and increase fake data
         keep = paddle.concat(
-            [keep, paddle.cast(paddle.shape(cate_scores)[0] - 1, 'int64')])
+            [keep, paddle.cast(paddle.shape(cate_scores)[0:1] - 1, 'int64')])
 
         seg_preds = paddle.gather(seg_preds, index=keep)
         cate_scores = paddle.gather(cate_scores, index=keep)
@@ -1136,6 +1136,7 @@ def _convert_attention_mask(attn_mask, dtype):
     return nn.layer.transformer._convert_attention_mask(attn_mask, dtype)
 
 
+@register
 class MultiHeadAttention(nn.Layer):
     """
     Attention mapps queries and a set of key-value pairs to outputs, and
@@ -1296,7 +1297,6 @@ class MultiHeadAttention(nn.Layer):
                 self.dropout,
                 training=self.training,
                 mode="upscale_in_train")
-
         out = paddle.matmul(weights, v)
 
         # combine heads

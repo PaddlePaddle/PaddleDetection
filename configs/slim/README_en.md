@@ -46,6 +46,7 @@ python tools/train.py -c configs/{MODEL.yml} --slim_config configs/slim/{SLIM_CO
 
 - `-c`: Specify the model configuration file.
 - `--slim_config`: Specify the compression policy profile.
+- If you want to use distillation, please refer to [Distillation Doc](distill/README.md) for specific distillation methods and more distillation of detection models.
 
 
 ### Evaluation
@@ -156,7 +157,7 @@ Description:
 | YOLOv3-MobileNetV1 | baseline             | 608        |    29.4    |     [link](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_coco.pdparams)     | [Configuration File ](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml) |                                                                         -                                                                         |
 | YOLOv3-MobileNetV1 | Distillation         | 608        | 31.0(+1.6) | [link](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams) | [Configuration File ](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml) | [slimConfiguration File ](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml) |
 
-- Please refer to the specific distillation method[Distillation Policy Document](distill/README.md)
+- For the specific distillation method and more distillation detection models, please refer to [distill](distill/README.md).
 
 ### Distillation Pruning Combined Strategy
 

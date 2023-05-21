@@ -62,6 +62,7 @@ At the same time, PaddleDetection provides a self-developed real-time keypoint d
 COCO Dataset
 | Model              | Input Size | AP(coco val) |                           Model Download                           | Config File                                                    |
 | :---------------- | -------- | :----------: | :----------------------------------------------------------: | ----------------------------------------------------------- |
+| PETR_Res50       |One-Stage| 512      |     65.5     | [petr_res50.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/petr_resnet50_16x2_coco.pdparams) | [config](./petr/petr_resnet50_16x2_coco.yml)       |
 | HigherHRNet-w32       | 512      |     67.1     | [higherhrnet_hrnet_w32_512.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512.yml)       |
 | HigherHRNet-w32       | 640      |     68.3     | [higherhrnet_hrnet_w32_640.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_640.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_640.yml)       |
 | HigherHRNet-w32+SWAHR | 512      |     68.9     | [higherhrnet_hrnet_w32_512_swahr.pdparams](https://paddledet.bj.bcebos.com/models/keypoint/higherhrnet_hrnet_w32_512_swahr.pdparams) | [config](./higherhrnet/higherhrnet_hrnet_w32_512_swahr.yml) |
@@ -74,8 +75,11 @@ COCO Dataset
 | LiteHRNet-18                   | 384x288  |     69.7     | [lite_hrnet_18_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_18_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_18_384x288_coco.yml)     |
 | LiteHRNet-30                   | 256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
 | LiteHRNet-30                   | 384x288  |     72.5     | [lite_hrnet_30_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_384x288_coco.yml)     |
+| Vitpose_base_simple                   | 256x192  |     77.7     | [vitpose_base_simple_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/vitpose_base_simple_256x192_coco.pdparams) | [config](./vit_pose/vitpose_base_simple_coco_256x192.yml)     |
+| Vitpose_base                   | 256x192  |     78.2     | [vitpose_base_coco_256x192.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/vitpose_base_coco_256x192.pdparams) | [config](./vit_pose/vitpose_base_coco_256x192.yml)     |
 
-Note：The AP results of Top-Down models are based on bounding boxes in GroundTruth.
+Note：1.The AP results of Top-Down models are based on bounding boxes in GroundTruth.
+      2.Vitpose training uses [MAE](https://bj.bcebos.com/v1/paddledet/models/keypoint/mae_pretrain_vit_base.pdparams) as the pre-training model
 
 MPII Dataset
 | Model  | Input Size | PCKh(Mean) | PCKh(Mean@0.1) |                           Model Download                           | Config File                                     |
@@ -264,5 +268,13 @@ We provide benchmarks in different runtime environments for your reference when 
   author={Yu, Changqian and Xiao, Bin and Gao, Changxin and Yuan, Lu and Zhang, Lei and Sang, Nong and Wang, Jingdong},
   booktitle={CVPR},
   year={2021}
+}
+
+@inproceedings{
+  xu2022vitpose,
+  title={ViTPose: Simple Vision Transformer Baselines for Human Pose Estimation},
+  author={Yufei Xu and Jing Zhang and Qiming Zhang and Dacheng Tao},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2022},
 }
 ```

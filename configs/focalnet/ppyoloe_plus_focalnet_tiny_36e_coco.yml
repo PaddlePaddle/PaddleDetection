@@ -1,0 +1,61 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../ppyoloe/_base_/ppyoloe_plus_crn.yml',
+  '../ppyoloe/_base_/ppyoloe_plus_reader.yml',
+]
+depth_mult: 0.33 # s version
+width_mult: 0.50
+
+log_iter: 100
+snapshot_epoch: 4
+weights: output/ppyoloe_plus_focalnet_tiny_36e_coco/model_final
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/focalnet_tiny_lrf_pretrained.pdparams
+
+
+architecture: PPYOLOE
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+ema_black_list: ['proj_conv.weight']
+custom_black_list: ['reduce_mean']
+
+PPYOLOE:
+  backbone: FocalNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+FocalNet:
+  arch: 'focalnet_T_224_1k_lrf'
+  out_indices: [1, 2, 3]
+
+PPYOLOEHead:
+  static_assigner_epoch: 12
+  nms:
+    nms_top_k: 1000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7
+
+
+TrainReader:
+  batch_size: 8
+
+
+epoch: 36
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [36]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
+
+OptimizerBuilder:
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0005

@@ -31,123 +31,16 @@ from ppdet.core.workspace import register
 from ..layers import MultiHeadAttention
 from .position_encoding import PositionEmbedding
 from ..heads.detr_head import MLP
-from .deformable_transformer import MSDeformableAttention
+from .deformable_transformer import (MSDeformableAttention,
+                                     DeformableTransformerEncoderLayer,
+                                     DeformableTransformerEncoder)
 from ..initializer import (linear_init_, constant_, xavier_uniform_, normal_,
                            bias_init_with_prob)
 from .utils import (_get_clones, get_valid_ratio,
                     get_contrastive_denoising_training_group,
-                    get_sine_pos_embed)
+                    get_sine_pos_embed, inverse_sigmoid)
 
 __all__ = ['DINOTransformer']
-
-
-class DINOTransformerEncoderLayer(nn.Layer):
-    def __init__(self,
-                 d_model=256,
-                 n_head=8,
-                 dim_feedforward=1024,
-                 dropout=0.,
-                 activation="relu",
-                 n_levels=4,
-                 n_points=4,
-                 weight_attr=None,
-                 bias_attr=None):
-        super(DINOTransformerEncoderLayer, self).__init__()
-        # self attention
-        self.self_attn = MSDeformableAttention(d_model, n_head, n_levels,
-                                               n_points, 1.0)
-        self.dropout1 = nn.Dropout(dropout)
-        self.norm1 = nn.LayerNorm(
-            d_model,
-            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
-        # ffn
-        self.linear1 = nn.Linear(d_model, dim_feedforward, weight_attr,
-                                 bias_attr)
-        self.activation = getattr(F, activation)
-        self.dropout2 = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(dim_feedforward, d_model, weight_attr,
-                                 bias_attr)
-        self.dropout3 = nn.Dropout(dropout)
-        self.norm2 = nn.LayerNorm(
-            d_model,
-            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
-        self._reset_parameters()
-
-    def _reset_parameters(self):
-        linear_init_(self.linear1)
-        linear_init_(self.linear2)
-        xavier_uniform_(self.linear1.weight)
-        xavier_uniform_(self.linear2.weight)
-
-    def with_pos_embed(self, tensor, pos):
-        return tensor if pos is None else tensor + pos
-
-    def forward_ffn(self, src):
-        src2 = self.linear2(self.dropout2(self.activation(self.linear1(src))))
-        src = src + self.dropout3(src2)
-        src = self.norm2(src)
-        return src
-
-    def forward(self,
-                src,
-                reference_points,
-                spatial_shapes,
-                level_start_index,
-                src_mask=None,
-                query_pos_embed=None):
-        # self attention
-        src2 = self.self_attn(
-            self.with_pos_embed(src, query_pos_embed), reference_points, src,
-            spatial_shapes, level_start_index, src_mask)
-        src = src + self.dropout1(src2)
-        src = self.norm1(src)
-        # ffn
-        src = self.forward_ffn(src)
-
-        return src
-
-
-class DINOTransformerEncoder(nn.Layer):
-    def __init__(self, encoder_layer, num_layers):
-        super(DINOTransformerEncoder, self).__init__()
-        self.layers = _get_clones(encoder_layer, num_layers)
-        self.num_layers = num_layers
-
-    @staticmethod
-    def get_reference_points(spatial_shapes, valid_ratios, offset=0.5):
-        valid_ratios = valid_ratios.unsqueeze(1)
-        reference_points = []
-        for i, (H, W) in enumerate(spatial_shapes):
-            ref_y, ref_x = paddle.meshgrid(
-                paddle.arange(end=H) + offset, paddle.arange(end=W) + offset)
-            ref_y = ref_y.flatten().unsqueeze(0) / (valid_ratios[:, :, i, 1] *
-                                                    H)
-            ref_x = ref_x.flatten().unsqueeze(0) / (valid_ratios[:, :, i, 0] *
-                                                    W)
-            reference_points.append(paddle.stack((ref_x, ref_y), axis=-1))
-        reference_points = paddle.concat(reference_points, 1).unsqueeze(2)
-        reference_points = reference_points * valid_ratios
-        return reference_points
-
-    def forward(self,
-                feat,
-                spatial_shapes,
-                level_start_index,
-                feat_mask=None,
-                query_pos_embed=None,
-                valid_ratios=None):
-        if valid_ratios is None:
-            valid_ratios = paddle.ones(
-                [feat.shape[0], spatial_shapes.shape[0], 2])
-        reference_points = self.get_reference_points(spatial_shapes,
-                                                     valid_ratios)
-        for layer in self.layers:
-            feat = layer(feat, reference_points, spatial_shapes,
-                         level_start_index, feat_mask, query_pos_embed)
-
-        return feat
 
 
 class DINOTransformerDecoderLayer(nn.Layer):
@@ -159,6 +52,7 @@ class DINOTransformerDecoderLayer(nn.Layer):
                  activation="relu",
                  n_levels=4,
                  n_points=4,
+                 lr_mult=1.0,
                  weight_attr=None,
                  bias_attr=None):
         super(DINOTransformerDecoderLayer, self).__init__()
@@ -167,31 +61,23 @@ class DINOTransformerDecoderLayer(nn.Layer):
         self.self_attn = MultiHeadAttention(d_model, n_head, dropout=dropout)
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(
-            d_model,
-            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+            d_model, weight_attr=weight_attr, bias_attr=bias_attr)
 
         # cross attention
         self.cross_attn = MSDeformableAttention(d_model, n_head, n_levels,
-                                                n_points, 1.0)
+                                                n_points, lr_mult)
         self.dropout2 = nn.Dropout(dropout)
         self.norm2 = nn.LayerNorm(
-            d_model,
-            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+            d_model, weight_attr=weight_attr, bias_attr=bias_attr)
 
         # ffn
-        self.linear1 = nn.Linear(d_model, dim_feedforward, weight_attr,
-                                 bias_attr)
+        self.linear1 = nn.Linear(d_model, dim_feedforward)
         self.activation = getattr(F, activation)
         self.dropout3 = nn.Dropout(dropout)
-        self.linear2 = nn.Linear(dim_feedforward, d_model, weight_attr,
-                                 bias_attr)
+        self.linear2 = nn.Linear(dim_feedforward, d_model)
         self.dropout4 = nn.Dropout(dropout)
         self.norm3 = nn.LayerNorm(
-            d_model,
-            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+            d_model, weight_attr=weight_attr, bias_attr=bias_attr)
         self._reset_parameters()
 
     def _reset_parameters(self):
@@ -218,7 +104,10 @@ class DINOTransformerDecoderLayer(nn.Layer):
         # self attention
         q = k = self.with_pos_embed(tgt, query_pos_embed)
         if attn_mask is not None:
-            attn_mask = attn_mask.astype('bool')
+            attn_mask = paddle.where(
+                attn_mask.astype('bool'),
+                paddle.zeros(attn_mask.shape, tgt.dtype),
+                paddle.full(attn_mask.shape, float("-inf"), tgt.dtype))
         tgt2 = self.self_attn(q, k, value=tgt, attn_mask=attn_mask)
         tgt = tgt + self.dropout1(tgt2)
         tgt = self.norm1(tgt)
@@ -243,16 +132,14 @@ class DINOTransformerDecoder(nn.Layer):
                  hidden_dim,
                  decoder_layer,
                  num_layers,
-                 return_intermediate=True):
+                 weight_attr=None,
+                 bias_attr=None):
         super(DINOTransformerDecoder, self).__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
-        self.return_intermediate = return_intermediate
         self.norm = nn.LayerNorm(
-            hidden_dim,
-            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-            bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+            hidden_dim, weight_attr=weight_attr, bias_attr=bias_attr)
 
     def forward(self,
                 tgt,
@@ -271,9 +158,10 @@ class DINOTransformerDecoder(nn.Layer):
 
         output = tgt
         intermediate = []
-        inter_ref_bboxes_unact = []
+        inter_bboxes = []
+        ref_points = F.sigmoid(ref_points_unact)
         for i, layer in enumerate(self.layers):
-            reference_points_input = F.sigmoid(ref_points_unact).unsqueeze(
+            reference_points_input = ref_points.detach().unsqueeze(
                 2) * valid_ratios.tile([1, 1, 2]).unsqueeze(1)
             query_pos_embed = get_sine_pos_embed(
                 reference_points_input[..., 0, :], self.hidden_dim // 2)
@@ -283,19 +171,13 @@ class DINOTransformerDecoder(nn.Layer):
                            memory_spatial_shapes, memory_level_start_index,
                            attn_mask, memory_mask, query_pos_embed)
 
-            inter_ref_bbox_unact = bbox_head[i](output) + ref_points_unact
+            ref_points = F.sigmoid(bbox_head[i](output) + inverse_sigmoid(
+                ref_points.detach()))
 
-            if self.return_intermediate:
-                intermediate.append(self.norm(output))
-                inter_ref_bboxes_unact.append(inter_ref_bbox_unact)
+            intermediate.append(self.norm(output))
+            inter_bboxes.append(ref_points)
 
-            ref_points_unact = inter_ref_bbox_unact.detach()
-
-        if self.return_intermediate:
-            return paddle.stack(intermediate), paddle.stack(
-                inter_ref_bboxes_unact)
-
-        return output, ref_points_unact
+        return paddle.stack(intermediate), paddle.stack(inter_bboxes)
 
 
 @register
@@ -307,8 +189,7 @@ class DINOTransformer(nn.Layer):
                  hidden_dim=256,
                  num_queries=900,
                  position_embed_type='sine',
-                 return_intermediate_dec=True,
-                 backbone_feat_channels=[512, 1024, 2048],
+                 in_feats_channel=[512, 1024, 2048],
                  num_levels=4,
                  num_encoder_points=4,
                  num_decoder_points=4,
@@ -318,6 +199,7 @@ class DINOTransformer(nn.Layer):
                  dim_feedforward=1024,
                  dropout=0.,
                  activation="relu",
+                 lr_mult=1.0,
                  pe_temperature=10000,
                  pe_offset=-0.5,
                  num_denoising=100,
@@ -328,7 +210,7 @@ class DINOTransformer(nn.Layer):
         super(DINOTransformer, self).__init__()
         assert position_embed_type in ['sine', 'learned'], \
             f'ValueError: position_embed_type not supported {position_embed_type}!'
-        assert len(backbone_feat_channels) <= num_levels
+        assert len(in_feats_channel) <= num_levels
 
         self.hidden_dim = hidden_dim
         self.nhead = nhead
@@ -338,20 +220,23 @@ class DINOTransformer(nn.Layer):
         self.eps = eps
         self.num_decoder_layers = num_decoder_layers
 
+        weight_attr = ParamAttr(regularizer=L2Decay(0.0))
+        bias_attr = ParamAttr(regularizer=L2Decay(0.0))
         # backbone feature projection
-        self._build_input_proj_layer(backbone_feat_channels)
+        self._build_input_proj_layer(in_feats_channel, weight_attr, bias_attr)
 
         # Transformer module
-        encoder_layer = DINOTransformerEncoderLayer(
+        encoder_layer = DeformableTransformerEncoderLayer(
             hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
-            num_encoder_points)
-        self.encoder = DINOTransformerEncoder(encoder_layer, num_encoder_layers)
+            num_encoder_points, lr_mult, weight_attr, bias_attr)
+        self.encoder = DeformableTransformerEncoder(encoder_layer,
+                                                    num_encoder_layers)
         decoder_layer = DINOTransformerDecoderLayer(
             hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
-            num_decoder_points)
+            num_decoder_points, lr_mult, weight_attr, bias_attr)
         self.decoder = DINOTransformerDecoder(hidden_dim, decoder_layer,
-                                              num_decoder_layers,
-                                              return_intermediate_dec)
+                                              num_decoder_layers, weight_attr,
+                                              bias_attr)
 
         # denoising part
         self.denoising_class_embed = nn.Embedding(
@@ -383,9 +268,7 @@ class DINOTransformer(nn.Layer):
         self.enc_output = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             nn.LayerNorm(
-                hidden_dim,
-                weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-                bias_attr=ParamAttr(regularizer=L2Decay(0.0))))
+                hidden_dim, weight_attr=weight_attr, bias_attr=bias_attr))
         self.enc_score_head = nn.Linear(hidden_dim, num_classes)
         self.enc_bbox_head = MLP(hidden_dim, hidden_dim, 4, num_layers=3)
         # decoder head
@@ -426,22 +309,25 @@ class DINOTransformer(nn.Layer):
 
     @classmethod
     def from_config(cls, cfg, input_shape):
-        return {'backbone_feat_channels': [i.channels for i in input_shape], }
+        return {'in_feats_channel': [i.channels for i in input_shape], }
 
-    def _build_input_proj_layer(self, backbone_feat_channels):
+    def _build_input_proj_layer(self,
+                                in_feats_channel,
+                                weight_attr=None,
+                                bias_attr=None):
         self.input_proj = nn.LayerList()
-        for in_channels in backbone_feat_channels:
+        for in_channels in in_feats_channel:
             self.input_proj.append(
                 nn.Sequential(
                     ('conv', nn.Conv2D(
-                        in_channels, self.hidden_dim, kernel_size=1)),
-                    ('norm', nn.GroupNorm(
-                        32,
-                        self.hidden_dim,
-                        weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-                        bias_attr=ParamAttr(regularizer=L2Decay(0.0))))))
-        in_channels = backbone_feat_channels[-1]
-        for _ in range(self.num_levels - len(backbone_feat_channels)):
+                        in_channels, self.hidden_dim, kernel_size=1)), (
+                            'norm', nn.GroupNorm(
+                                32,
+                                self.hidden_dim,
+                                weight_attr=weight_attr,
+                                bias_attr=bias_attr))))
+        in_channels = in_feats_channel[-1]
+        for _ in range(self.num_levels - len(in_feats_channel)):
             self.input_proj.append(
                 nn.Sequential(
                     ('conv', nn.Conv2D(
@@ -452,8 +338,8 @@ class DINOTransformer(nn.Layer):
                         padding=1)), ('norm', nn.GroupNorm(
                             32,
                             self.hidden_dim,
-                            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-                            bias_attr=ParamAttr(regularizer=L2Decay(0.0))))))
+                            weight_attr=weight_attr,
+                            bias_attr=bias_attr))))
             in_channels = self.hidden_dim
 
     def _get_encoder_input(self, feats, pad_mask=None):
@@ -540,7 +426,7 @@ class DINOTransformer(nn.Layer):
             denoising_bbox_unact)
 
         # decoder
-        inter_feats, inter_ref_bboxes_unact = self.decoder(
+        inter_feats, inter_bboxes = self.decoder(
             target, init_ref_points_unact, memory, spatial_shapes,
             level_start_index, self.dec_bbox_head, self.query_pos_head,
             valid_ratios, attn_mask, mask_flatten)
@@ -555,8 +441,7 @@ class DINOTransformer(nn.Layer):
             else:
                 out_bboxes.append(
                     F.sigmoid(self.dec_bbox_head[i](inter_feats[i]) +
-                              inter_ref_bboxes_unact[i - 1]))
-
+                              inverse_sigmoid(inter_bboxes[i - 1])))
         out_bboxes = paddle.stack(out_bboxes)
         out_logits = paddle.stack(out_logits)
 
@@ -579,11 +464,8 @@ class DINOTransformer(nn.Layer):
                 valid_H, valid_W = h, w
 
             grid_y, grid_x = paddle.meshgrid(
-                paddle.arange(
-                    end=h, dtype=memory.dtype),
-                paddle.arange(
-                    end=w, dtype=memory.dtype))
-            grid_xy = paddle.stack([grid_x, grid_y], -1)
+                paddle.arange(end=h), paddle.arange(end=w))
+            grid_xy = paddle.stack([grid_x, grid_y], -1).astype(memory.dtype)
 
             valid_WH = paddle.stack([valid_W, valid_H], -1).reshape(
                 [-1, 1, 1, 2]).astype(grid_xy.dtype)
@@ -623,7 +505,7 @@ class DINOTransformer(nn.Layer):
         _, topk_ind = paddle.topk(
             enc_outputs_class.max(-1), self.num_queries, axis=1)
         # extract region proposal boxes
-        batch_ind = paddle.arange(end=bs, dtype=topk_ind.dtype)
+        batch_ind = paddle.arange(end=bs).astype(topk_ind.dtype)
         batch_ind = batch_ind.unsqueeze(-1).tile([1, self.num_queries])
         topk_ind = paddle.stack([batch_ind, topk_ind], axis=-1)
         reference_points_unact = paddle.gather_nd(enc_outputs_coord_unact,

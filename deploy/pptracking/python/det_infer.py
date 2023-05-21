@@ -70,7 +70,7 @@ class Detector(object):
     Args:
         pred_config (object): config of model, defined by `Config(model_dir)`
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU/NPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
@@ -400,7 +400,7 @@ def load_predictor(model_dir,
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
-        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU/NPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16/trt_int8)
         use_dynamic_shape (bool): use dynamic shape or not
         trt_min_shape (int): min shape for dynamic shape in trt
@@ -432,8 +432,13 @@ def load_predictor(model_dir,
         # optimize graph and fuse op
         config.switch_ir_optim(True)
     elif device == 'XPU':
-        config.enable_lite_engine()
+        if config.lite_engine_enabled():
+            config.enable_lite_engine()
         config.enable_xpu(10 * 1024 * 1024)
+    elif device == 'NPU':
+        if config.lite_engine_enabled():
+            config.enable_lite_engine()
+        config.enable_custom_device('npu')
     else:
         config.disable_gpu()
         config.set_cpu_math_library_num_threads(cpu_threads)

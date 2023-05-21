@@ -534,7 +534,8 @@ class PipePredictor(object):
         else:
             self.predict_image(input)
         self.pipe_timer.info()
-        self.mot_predictor.det_times.tracking_info(average=True)
+        if hasattr(self, 'mot_predictor'):
+            self.mot_predictor.det_times.tracking_info(average=True)
 
     def predict_image(self, input):
         # det
@@ -804,9 +805,9 @@ class PipePredictor(object):
                         self.pipe_timer.total_time.end()
                     if self.cfg['visual']:
                         _, _, fps = self.pipe_timer.get_total_time()
-                        im = self.visualize_video(frame_rgb, mot_res, frame_id,
-                                                  fps, entrance, records,
-                                                  center_traj)  # visualize
+                        im = self.visualize_video(
+                            frame_rgb, mot_res, self.collector, frame_id, fps,
+                            entrance, records, center_traj)  # visualize
                         if len(self.pushurl) > 0:
                             pushstream.pipe.stdin.write(im.tobytes())
                         else:
@@ -1314,7 +1315,7 @@ if __name__ == '__main__':
     parser = argsparser()
     FLAGS = parser.parse_args()
     FLAGS.device = FLAGS.device.upper()
-    assert FLAGS.device in ['CPU', 'GPU', 'XPU'
-                            ], "device should be CPU, GPU or XPU"
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU'
+                            ], "device should be CPU, GPU, XPU or NPU"
 
     main()

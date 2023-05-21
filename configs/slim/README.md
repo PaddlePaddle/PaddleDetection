@@ -48,6 +48,7 @@ python tools/train.py -c configs/{MODEL.yml} --slim_config configs/slim/{SLIM_CO
 
 - `-c`: 指定模型配置文件。
 - `--slim_config`: 指定压缩策略配置文件。
+- 如果选择使用蒸馏，具体蒸馏方法和更多检测模型的蒸馏，请参考[蒸馏策略文档](distill/README.md)
 
 
 ### 评估
@@ -169,7 +170,7 @@ python3.7 tools/post_quant.py -c configs/ppyolo/ppyolo_mbv3_large_coco.yml --sli
 | YOLOv3-MobileNetV1 | baseline     | 608      |    29.4     | [下载链接](https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_270e_coco.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml) |                              -                               |
 | YOLOv3-MobileNetV1 | 蒸馏 | 608      | 31.0(+1.6) | [下载链接](https://paddledet.bj.bcebos.com/models/slim/yolov3_mobilenet_v1_coco_distill.pdparams) | [配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/yolov3/yolov3_mobilenet_v1_270e_coco.yml) | [slim配置文件](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/configs/slim/distill/yolov3_mobilenet_v1_coco_distill.yml) |
 
-- 具体蒸馏方法请参考[蒸馏策略文档](distill/README.md)
+- 具体蒸馏方法和更多检测模型的蒸馏，请参考[蒸馏策略文档](distill/README.md)
 
 ### 蒸馏剪裁联合策略
 

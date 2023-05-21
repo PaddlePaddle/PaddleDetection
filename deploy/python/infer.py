@@ -46,8 +46,6 @@ SUPPORT_MODELS = {
     'PPLCNet', 'DETR', 'CenterTrack'
 }
 
-TUNED_TRT_DYNAMIC_MODELS = {'DETR'}
-
 
 def bench_log(detector, img_list, model_info, batch_size=1, name=None):
     mems = {
@@ -181,7 +179,7 @@ class Detector(object):
         filter_res = {'boxes': boxes, 'boxes_num': filter_num}
         return filter_res
 
-    def predict(self, repeats=1):
+    def predict(self, repeats=1, run_benchmark=False):
         '''
         Args:
             repeats (int): repeats number for prediction
@@ -193,6 +191,15 @@ class Detector(object):
         '''
         # model prediction
         np_boxes_num, np_boxes, np_masks = np.array([0]), None, None
+
+        if run_benchmark:
+            for i in range(repeats):
+                self.predictor.run()
+                paddle.device.cuda.synchronize()
+            result = dict(
+                boxes=np_boxes, masks=np_masks, boxes_num=np_boxes_num)
+            return result
+
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -272,9 +279,9 @@ class Detector(object):
                 self.det_times.preprocess_time_s.end()
 
                 # model prediction
-                result = self.predict(repeats=50)  # warmup
+                result = self.predict(repeats=50, run_benchmark=True)  # warmup
                 self.det_times.inference_time_s.start()
-                result = self.predict(repeats=repeats)
+                result = self.predict(repeats=repeats, run_benchmark=True)
                 self.det_times.inference_time_s.end(repeats=repeats)
 
                 # postprocess
@@ -370,9 +377,9 @@ class Detector(object):
                 self.det_times.preprocess_time_s.end()
 
                 # model prediction
-                result = self.predict(repeats=50)  # warmup
+                result = self.predict(repeats=50, run_benchmark=True)  # warmup
                 self.det_times.inference_time_s.start()
-                result = self.predict(repeats=repeats)
+                result = self.predict(repeats=repeats, run_benchmark=True)
                 self.det_times.inference_time_s.end(repeats=repeats)
 
                 # postprocess
@@ -436,7 +443,7 @@ class Detector(object):
         if not os.path.exists(self.output_dir):
             os.makedirs(self.output_dir)
         out_path = os.path.join(self.output_dir, video_out_name)
-        fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
         writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
         index = 1
         while (1):
@@ -568,7 +575,7 @@ class DetectorSOLOv2(Detector):
             output_dir=output_dir,
             threshold=threshold, )
 
-    def predict(self, repeats=1):
+    def predict(self, repeats=1, run_benchmark=False):
         '''
         Args:
             repeats (int): repeat number for prediction
@@ -577,7 +584,20 @@ class DetectorSOLOv2(Detector):
                             'cate_label': label of segm, shape:[N]
                             'cate_score': confidence score of segm, shape:[N]
         '''
-        np_label, np_score, np_segms = None, None, None
+        np_segms, np_label, np_score, np_boxes_num = None, None, None, np.array(
+            [0])
+
+        if run_benchmark:
+            for i in range(repeats):
+                self.predictor.run()
+                paddle.device.cuda.synchronize()
+            result = dict(
+                segm=np_segms,
+                label=np_label,
+                score=np_score,
+                boxes_num=np_boxes_num)
+            return result
+
         for i in range(repeats):
             self.predictor.run()
             output_names = self.predictor.get_output_names()
@@ -659,7 +679,7 @@ class DetectorPicoDet(Detector):
         result = dict(boxes=np_boxes, boxes_num=np_boxes_num)
         return result
 
-    def predict(self, repeats=1):
+    def predict(self, repeats=1, run_benchmark=False):
         '''
         Args:
             repeats (int): repeat number for prediction
@@ -668,6 +688,14 @@ class DetectorPicoDet(Detector):
                             matix element:[class, score, x_min, y_min, x_max, y_max]
         '''
         np_score_list, np_boxes_list = [], []
+
+        if run_benchmark:
+            for i in range(repeats):
+                self.predictor.run()
+                paddle.device.cuda.synchronize()
+            result = dict(boxes=np_score_list, boxes_num=np_boxes_list)
+            return result
+
         for i in range(repeats):
             self.predictor.run()
             np_score_list.clear()
@@ -793,8 +821,7 @@ def load_predictor(model_dir,
                    cpu_threads=1,
                    enable_mkldnn=False,
                    enable_mkldnn_bfloat16=False,
-                   delete_shuffle_pass=False,
-                   tuned_trt_shape_file="shape_range_info.pbtxt"):
+                   delete_shuffle_pass=False):
     """set AnalysisConfig, generate AnalysisPredictor
     Args:
         model_dir (str): root path of __model__ and __params__
@@ -838,7 +865,7 @@ def load_predictor(model_dir,
     elif device == 'NPU':
         if config.lite_engine_enabled():
             config.enable_lite_engine()
-        config.enable_npu()
+        config.enable_custom_device('npu')
     else:
         config.disable_gpu()
         config.set_cpu_math_library_num_threads(cpu_threads)
@@ -861,8 +888,6 @@ def load_predictor(model_dir,
         'trt_fp16': Config.Precision.Half
     }
     if run_mode in precision_map.keys():
-        if arch in TUNED_TRT_DYNAMIC_MODELS:
-            config.collect_shape_range_info(tuned_trt_shape_file)
         config.enable_tensorrt_engine(
             workspace_size=(1 << 25) * batch_size,
             max_batch_size=batch_size,
@@ -870,9 +895,13 @@ def load_predictor(model_dir,
             precision_mode=precision_map[run_mode],
             use_static=False,
             use_calib_mode=trt_calib_mode)
-        if arch in TUNED_TRT_DYNAMIC_MODELS:
-            config.enable_tuned_tensorrt_dynamic_shape(tuned_trt_shape_file,
-                                                       True)
+        if FLAGS.collect_trt_shape_info:
+            config.collect_shape_range_info(FLAGS.tuned_trt_shape_file)
+        elif os.path.exists(FLAGS.tuned_trt_shape_file):
+            print(f'Use dynamic shape file: '
+                  f'{FLAGS.tuned_trt_shape_file} for TRT...')
+            config.enable_tuned_tensorrt_dynamic_shape(
+                FLAGS.tuned_trt_shape_file, True)
 
         if use_dynamic_shape:
             min_input_shape = {

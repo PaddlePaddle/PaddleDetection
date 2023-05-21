@@ -32,7 +32,7 @@ import paddle
 from ppdet.core.workspace import load_config, merge_config
 
 from ppdet.engine import Trainer, TrainerCot, init_parallel_env, set_random_seed, init_fleet_env
-from ppdet.engine.trainer_ssod import Trainer_DenseTeacher
+from ppdet.engine.trainer_ssod import Trainer_DenseTeacher, Trainer_ARSL
 
 from ppdet.slim import build_slim_model
 
@@ -132,9 +132,11 @@ def run(FLAGS, cfg):
     if ssod_method is not None:
         if ssod_method == 'DenseTeacher':
             trainer = Trainer_DenseTeacher(cfg, mode='train')
+        elif ssod_method == 'ARSL':
+            trainer = Trainer_ARSL(cfg, mode='train')
         else:
             raise ValueError(
-                "Semi-Supervised Object Detection only support DenseTeacher now."
+                "Semi-Supervised Object Detection only support DenseTeacher and ARSL now."
             )
     elif cfg.get('use_cot', False):
         trainer = TrainerCot(cfg, mode='train')

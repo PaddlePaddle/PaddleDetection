@@ -449,7 +449,7 @@ class SOLOv2Head(nn.Layer):
             seg_masks, cate_labels, cate_scores = self.get_seg_single(
                 cate_pred_list, seg_pred_list, kernel_pred_list, featmap_size,
                 im_shape[idx], scale_factor[idx][0])
-            bbox_num = paddle.shape(cate_labels)[0]
+            bbox_num = paddle.shape(cate_labels)[0:1]
         return seg_masks, cate_labels, cate_scores, bbox_num
 
     def get_seg_single(self, cate_preds, seg_preds, kernel_preds, featmap_size,
@@ -458,8 +458,8 @@ class SOLOv2Head(nn.Layer):
         The code of this function is based on:
             https://github.com/WXinlong/SOLO/blob/master/mmdet/models/anchor_heads/solov2_head.py#L385
         """
-        h = paddle.cast(im_shape[0], 'int32')[0]
-        w = paddle.cast(im_shape[1], 'int32')[0]
+        h = paddle.cast(im_shape[0], 'int32')
+        w = paddle.cast(im_shape[1], 'int32')
         upsampled_size_out = [featmap_size[0] * 4, featmap_size[1] * 4]
 
         y = paddle.zeros(shape=paddle.shape(cate_preds), dtype='float32')
@@ -467,7 +467,7 @@ class SOLOv2Head(nn.Layer):
         inds = paddle.nonzero(inds)
         cate_preds = paddle.reshape(cate_preds, shape=[-1])
         # Prevent empty and increase fake data
-        ind_a = paddle.cast(paddle.shape(kernel_preds)[0], 'int64')
+        ind_a = paddle.cast(paddle.shape(kernel_preds)[0:1], 'int64')
         ind_b = paddle.zeros(shape=[1], dtype='int64')
         inds_end = paddle.unsqueeze(paddle.concat([ind_a, ind_b]), 0)
         inds = paddle.concat([inds, inds_end])
@@ -513,9 +513,9 @@ class SOLOv2Head(nn.Layer):
         keep = paddle.squeeze(keep, axis=[1])
         # Prevent empty and increase fake data
         keep_other = paddle.concat(
-            [keep, paddle.cast(paddle.shape(sum_masks)[0] - 1, 'int64')])
+            [keep, paddle.cast(paddle.shape(sum_masks)[0:1] - 1, 'int64')])
         keep_scores = paddle.concat(
-            [keep, paddle.cast(paddle.shape(sum_masks)[0], 'int64')])
+            [keep, paddle.cast(paddle.shape(sum_masks)[0:1], 'int64')])
         cate_scores_end = paddle.zeros(shape=[1], dtype='float32')
         cate_scores = paddle.concat([cate_scores, cate_scores_end])
 

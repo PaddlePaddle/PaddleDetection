@@ -406,11 +406,11 @@ class Trainer(object):
                     "metrics shoule be instances of subclass of Metric"
         self._metrics.extend(metrics)
 
-    def load_weights(self, weights):
+    def load_weights(self, weights, ARSL_eval=False):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        load_pretrain_weight(self.model, weights)
+        load_pretrain_weight(self.model, weights, ARSL_eval)
         logger.debug("Load weights {} to start training".format(weights))
 
     def load_weights_sde(self, det_weights, reid_weights):
@@ -441,10 +441,8 @@ class Trainer(object):
         model = self.model
         if self.cfg.get('to_static', False):
             model = apply_to_static(self.cfg, model)
-        sync_bn = (
-            getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
-            (self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu) and
-            self._nranks > 1)
+        sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
+                   (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
@@ -499,6 +497,9 @@ class Trainer(object):
                 profiler.add_profiler_step(profiler_options)
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
+                if self.cfg.get('to_static',
+                                False) and 'image_file' in data.keys():
+                    data.pop('image_file')
 
                 if self.use_amp:
                     if isinstance(
@@ -994,8 +995,10 @@ class Trainer(object):
         for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward
-            outs = self.model(data)
-
+            if hasattr(self.model, 'modelTeacher'):
+                outs = self.model.modelTeacher(data)
+            else:
+                outs = self.model(data)
             for _m in metrics:
                 _m.update(data, outs)
 

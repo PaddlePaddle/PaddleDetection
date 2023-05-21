@@ -86,7 +86,10 @@ class TaskDecomposition(nn.Layer):
         normal_(self.la_conv2.weight, std=0.001)
 
     def forward(self, feat, avg_feat):
-        b, _, h, w = get_static_shape(feat)
+        feat_shape = get_static_shape(feat)
+        b = feat_shape[0:1]
+        h = feat_shape[2:3]
+        w = feat_shape[3:4]
         weight = F.relu(self.la_conv1(avg_feat))
         weight = F.sigmoid(self.la_conv2(weight)).unsqueeze(-1)
         feat = paddle.reshape(
@@ -204,7 +207,10 @@ class TOODHead(nn.Layer):
             constant_(self.reg_offset_conv2.bias)
 
     def _reg_grid_sample(self, feat, offset, anchor_points):
-        b, _, h, w = get_static_shape(feat)
+        feat_shape = get_static_shape(feat)
+        b = feat_shape[0:1]
+        h = feat_shape[2:3]
+        w = feat_shape[3:4]
         feat = paddle.reshape(feat, [-1, 1, h, w])
         offset = paddle.reshape(offset, [-1, 2, h, w]).transpose([0, 2, 3, 1])
         grid_shape = paddle.concat([w, h]).astype('float32')
@@ -293,7 +299,7 @@ class TOODHead(nn.Layer):
         pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
-            assigned_labels, assigned_bboxes, assigned_scores, _ = self.static_assigner(
+            assigned_labels, assigned_bboxes, assigned_scores = self.static_assigner(
                 anchors,
                 num_anchors_list,
                 gt_labels,
@@ -302,7 +308,7 @@ class TOODHead(nn.Layer):
                 bg_index=self.num_classes)
             alpha_l = 0.25
         else:
-            assigned_labels, assigned_bboxes, assigned_scores, _ = self.assigner(
+            assigned_labels, assigned_bboxes, assigned_scores = self.assigner(
                 pred_scores.detach(),
                 pred_bboxes.detach() * stride_tensor,
                 bbox_center(anchors),
