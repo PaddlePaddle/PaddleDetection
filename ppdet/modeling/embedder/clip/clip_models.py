@@ -31,7 +31,7 @@ from ppdet.modeling.layers import MultiHeadAttention
 from ppdet.modeling.initializer import zeros_, normal_
 from ppdet.core.workspace import register
 
-from .models import ModifiedResNet, ViT
+from .models import ModifiedResNet, ClipViT
 from .layers import Transformer, LayerNorm, QuickGELU, AttentionPool2D
 from .tokenizer import tokenize
 
@@ -67,7 +67,7 @@ class CLIP(nn.Layer):
             )
         else:
             vision_heads = vision_width // 64
-            self.visual = ViT(
+            self.visual = ClipViT(
                 input_resolution=image_resolution,
                 patch_size=vision_patch_size,
                 width=vision_width,

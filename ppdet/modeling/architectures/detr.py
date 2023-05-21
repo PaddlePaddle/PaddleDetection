@@ -302,10 +302,7 @@ class OVDETR(DETR):
             preds_list.append(preds)
         bboxes = paddle.concat(bboxes_list, -2).unsqueeze(0)
         logits = paddle.concat(logits_list, -2)
-        # print('outputs_class', bboxes)
-        # print('outputs_bbox', logits)
 
-        # preds = paddle.concat(preds_list, -2)
         if self.exclude_post_process:
             # bboxes, logits, masks = preds
             return bboxes, logits
@@ -315,6 +312,22 @@ class OVDETR(DETR):
             # print(bbox)
             # exit()
             return bbox, bbox_num
+
+    def get_loss(self):
+        losses = self._forward()
+        losses.update({
+            'loss':
+            paddle.add_n([v for k, v in losses.items() if 'log' not in k])
+        })
+        return losses
+
+    def get_pred(self):
+        bbox_pred, bbox_num = self._forward()
+        output = {
+            "bbox": bbox_pred,
+            "bbox_num": bbox_num,
+        }
+        return output
 
 
 def masked_fill(tensor, mask, value):

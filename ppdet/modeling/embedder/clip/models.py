@@ -32,7 +32,7 @@ from ppdet.core.workspace import register
 
 from .layers import *
 
-__all__ = ['ModifiedResNet', 'ViT']
+__all__ = ['ModifiedResNet', 'ClipViT']
 
 
 @register
@@ -105,7 +105,7 @@ class ModifiedResNet(nn.Layer):
 
 
 @register
-class ViT(nn.Layer):
+class ClipViT(nn.Layer):
     def __init__(self,
                  input_resolution,
                  patch_size,

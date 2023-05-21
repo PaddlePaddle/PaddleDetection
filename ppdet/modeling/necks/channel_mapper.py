@@ -122,7 +122,7 @@ class ChannelMapper(nn.Layer):
                 if hasattr(p, 'bias') and p.bias is not None:
                     constant_(p.bais)
 
-
+@register
 class DETRChannelMapper(nn.Layer):
     __shared__ = ['hidden_dim']
     def __init__(self,
@@ -132,7 +132,7 @@ class DETRChannelMapper(nn.Layer):
                  weight_attr=None,
                  bias_attr=None,
                  ):
-        super(ChannelMapper, self).__init__()
+        super(DETRChannelMapper, self).__init__()
         assert len(backbone_num_channels) <= num_feature_levels
         self.num_feature_levels = num_feature_levels
         self.input_proj = nn.LayerList()

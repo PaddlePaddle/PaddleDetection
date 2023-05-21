@@ -572,6 +572,7 @@ class DETRPostProcess(object):
         return bbox_pred, bbox_num, mask_pred
 
 
+
 @register
 class SparsePostProcess(object):
     __shared__ = ['num_classes', 'assign_on_cpu']
