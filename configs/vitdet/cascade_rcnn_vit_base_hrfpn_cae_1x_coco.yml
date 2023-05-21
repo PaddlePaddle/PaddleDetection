@@ -101,7 +101,6 @@ CascadeHead:
   add_gt_as_proposals: [True, True, True]
 
 
-
 BBoxAssigner:
   batch_size_per_im: 512
   bg_thresh: 0.5

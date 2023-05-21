@@ -170,7 +170,7 @@ At this point, this model can be used in PP-Human.
 In the model of action recognition based on detection with human id, the task is defined to detect target objects in images of corresponding person. When the target object is detected, the behavior type of the character in a certain period of time. The type of the corresponding classification is regarded as the action of the current period. Therefore, on the basis of completing the training and deployment of the custom model, it is also necessary to convert the detection model results to the final action recognition results as output, and the displayed result of the visualization should be modified.
 
 #### Convert to Action Recognition Result
-Please modify the [postprocessing function](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/pphuman/action_infer.py#L338).
+Please modify the [postprocessing function](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pphuman/action_infer.py#L338).
 
 The core code are:
 ```python
@@ -196,4 +196,4 @@ else:
 ```
 
 #### Modify Visual Output
-At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.
+At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.

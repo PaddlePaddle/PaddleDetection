@@ -18,12 +18,12 @@ STGCN是一个基于骨骼点坐标序列进行预测的模型。在PaddleVideo�
 | N | 不定 | 数据集序列个数 |
 | C | 2 | 关键点坐标维度，即(x, y) |
 | T | 50 | 动作序列的时序维度（即持续帧数）|
-| V | 17 | 每个人物关键点的个数，这里我们使用了`COCO`数据集的定义，具体可见[这里](../../../tutorials/PrepareKeypointDataSet_cn.md#COCO%E6%95%B0%E6%8D%AE%E9%9B%86) |
+| V | 17 | 每个人物关键点的个数，这里我们使用了`COCO`数据集的定义，具体可见[这里](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/docs/tutorials/PrepareKeypointDataSet_cn.md#COCO%E6%95%B0%E6%8D%AE%E9%9B%86) |
 | M | 1 | 人物个数，这里我们每个动作序列只针对单人预测 |
 
 ### 获取序列的骨骼点坐标
 对于一个待标注的序列（这里序列指一个动作片段，可以是视频或有顺序的图片集合）。可以通过模型预测或人工标注的方式获取骨骼点（也称为关键点）坐标。
-- 模型预测：可以直接选用[PaddleDetection KeyPoint模型系列](../../../..//configs/keypoint) 模型库中的模型，并根据`3、训练与测试 - 部署预测 - 检测+keypoint top-down模型联合部署`中的步骤获取目标序列的17个关键点坐标。
+- 模型预测：可以直接选用[PaddleDetection KeyPoint模型系列](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/configs/keypoint) 模型库中的模型，并根据`3、训练与测试 - 部署预测 - 检测+keypoint top-down模型联合部署`中的步骤获取目标序列的17个关键点坐标。
 - 人工标注：若对关键点的数量或是定义有其他需求，也可以直接人工标注各个关键点的坐标位置，注意对于被遮挡或较难标注的点，仍需要标注一个大致坐标，否则后续网络学习过程会受到影响。
 
 
@@ -46,7 +46,7 @@ python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inferenc
 # if your data is video
 python deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inference/mot_ppyoloe_l_36e_pipeline/ --keypoint_model_dir=output_inference/dark_hrnet_w32_256x192 --video_file={your video file path} --device=GPU --save_res=True
 ```
-这样我们会得到一个`det_keypoint_unite_image_results.json`的检测结果文件。内容的具体含义请见[这里](../../../../deploy/python/det_keypoint_unite_infer.py#L108)。
+这样我们会得到一个`det_keypoint_unite_image_results.json`的检测结果文件。内容的具体含义请见[这里](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/det_keypoint_unite_infer.py#L108)。
 
 
 ### 统一序列的时序长度
@@ -202,4 +202,4 @@ INFERENCE:
 基于人体骨骼点的行为识别方案中，模型输出的分类结果即代表了该人物在一定时间段内行为类型。对应分类的类型最终即视为当前阶段的行为。因此在完成自定义模型的训练及部署的基础上，使用模型输出作为最终结果，修改可视化的显示结果即可。
 
 #### 修改可视化输出
-目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](../../../../deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。
+目前基于ID的行为识别，是根据行为识别的结果及预定义的类别名称进行展示的。详细逻辑请见[此处](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043)。如果自定义的行为需要修改为其他的展示名称，请对应修改此处，以正确输出对应结果。

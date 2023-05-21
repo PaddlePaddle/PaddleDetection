@@ -37,7 +37,7 @@ PP-Tracking supports GUI predict and deployment. Please refer to this [doc](http
 PP-Tracking supports two paradigms: single camera tracking (MOT) and multi-camera tracking (MTMCT).
 - Single camera tracking supports **FairMOT** and **DeepSORT** two MOT models, multi-camera tracking only support **DeepSORT**.
 - The applications of  single camera tracking include pedestrian tracking, vehicle tracking, multi-class tracking, small object tracking and traffic statistics. The models are mainly optimized based on FairMOT to achieve the effect of real-time tracking. At the same time, PP-Tracking provides pre-training models based on different application scenarios.
-- In DeepSORT (including DeepSORT used in multi-camera tracking), the selected detectors are PaddeDetection's self-release/2.5ed high-performance detector [PP-YOLOv2](../../configs/ppyolo/) and lightweight detector [PP-PicoDet](../../configs/picodet/), and the selected ReID model is PaddleClas's self-release/2.5ed ultra lightweight backbone [PP-LCNet](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/docs/zh_CN/models/PP-LCNet.md)
+- In DeepSORT (including DeepSORT used in multi-camera tracking), the selected detectors are PaddeDetection's self-developed high-performance detector [PP-YOLOv2](../../configs/ppyolo/) and lightweight detector [PP-PicoDet](../../configs/picodet/), and the selected ReID model is PaddleClas's self-developed ultra lightweight backbone [PP-LCNet](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.3/docs/zh_CN/models/PP-LCNet.md)
 
 PP-Tracking provids multi-scenario pre-training models and the exported models for deployment:
 

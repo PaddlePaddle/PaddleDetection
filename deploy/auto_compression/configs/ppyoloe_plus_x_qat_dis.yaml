@@ -13,7 +13,6 @@ Distillation:
 
 QuantAware:
   use_pact: true
-  onnx_format: True
   activation_quantize_type: 'moving_average_abs_max'
   quantize_op_types:
   - conv2d

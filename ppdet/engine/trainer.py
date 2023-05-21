@@ -38,7 +38,7 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval, Zeroshot_COCOMetric
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
 from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
@@ -240,7 +240,7 @@ class Trainer(object):
             self._metrics = []
             return
         classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
-        if self.cfg.metric == 'COCO' or self.cfg.metric == "SNIPERCOCO" or self.cfg.metric == 'ZeroshotCOCO':
+        if self.cfg.metric == 'COCO' or self.cfg.metric == "SNIPERCOCO":
             # TODO: bias should be unified
             bias = 1 if self.cfg.get('bias', False) else 0
             output_eval = self.cfg['output_eval'] \
@@ -278,18 +278,6 @@ class Trainer(object):
             elif self.cfg.metric == "SNIPERCOCO":  # sniper
                 self._metrics = [
                     SNIPERCOCOMetric(
-                        anno_file=anno_file,
-                        dataset=dataset,
-                        clsid2catid=clsid2catid,
-                        classwise=classwise,
-                        output_eval=output_eval,
-                        bias=bias,
-                        IouType=IouType,
-                        save_prediction_only=save_prediction_only)
-                ]
-            elif self.cfg.metric == "ZeroshotCOCO":  # sniper
-                self._metrics = [
-                    Zeroshot_COCOMetric(
                         anno_file=anno_file,
                         dataset=dataset,
                         clsid2catid=clsid2catid,

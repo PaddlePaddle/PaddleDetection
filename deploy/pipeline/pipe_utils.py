@@ -126,26 +126,6 @@ class PipeTimer(Times):
         dic['img_num'] = self.img_num
         return dic
 
-class PushStream(object):
-    def __init__(self, pushurl = "rtsp://127.0.0.1:8554/"):
-        self.command = ""
-        # 自行设置
-        self.pushurl = pushurl
-
-    def initcmd(self, fps, width, height):
-        self.command = ['ffmpeg',
-                '-y',
-                '-f', 'rawvideo',
-                '-vcodec','rawvideo',
-                '-pix_fmt', 'bgr24',
-                '-s', "{}x{}".format(width, height),
-                '-r', str(fps),
-                '-i', '-',
-                '-pix_fmt', 'yuv420p',
-                '-f', 'rtsp', 
-                self.pushurl]
-        self.pipe = sp.Popen(self.command, stdin=sp.PIPE)
-
 
 class PushStream(object):
     def __init__(self, pushurl="rtsp://127.0.0.1:8554/"):

@@ -62,7 +62,7 @@ export PADDLE_DIR=/paddle/paddle_inference
 
 如果当前环境满足CUDNN版本的要求，可以跳过此步骤。
 
-以CUDNN8.1 安装安装为例，安装步骤如下，首先下载CUDNN，从[Nvidia官网](https://release/2.5er.nvidia.com/rdp/cudnn-archive)下载CUDNN8.1版本，下载符合当前系统版本的三个deb文件，分别是：
+以CUDNN8.1 安装安装为例，安装步骤如下，首先下载CUDNN，从[Nvidia官网](https://developer.nvidia.com/rdp/cudnn-archive)下载CUDNN8.1版本，下载符合当前系统版本的三个deb文件，分别是：
 - cuDNN Runtime Library ，如：libcudnn8_8.1.0.77-1+cuda10.2_amd64.deb
 - cuDNN Developer Library ，如：libcudnn8-dev_8.1.0.77-1+cuda10.2_amd64.deb
 - cuDNN Code Samples，如：libcudnn8-samples_8.1.0.77-1+cuda10.2_amd64.deb
@@ -91,7 +91,7 @@ sudo apt-get install libfreeimage
 
 ### 3.2 安装TensorRT
 
-首先，从[Nvidia官网TensorRT板块](https://release/2.5er.nvidia.com/tensorrt-getting-started)下载TensorRT，这里选择7.1.3.4版本的TensorRT，注意选择适合自己系统版本和CUDA版本的TensorRT，另外建议下载TAR package的安装包。
+首先，从[Nvidia官网TensorRT板块](https://developer.nvidia.com/tensorrt-getting-started)下载TensorRT，这里选择7.1.3.4版本的TensorRT，注意选择适合自己系统版本和CUDA版本的TensorRT，另外建议下载TAR package的安装包。
 
 以Ubuntu16.04+CUDA10.2为例，下载并解压后可以参考[官方文档](https://docs.nvidia.com/deeplearning/tensorrt/archives/tensorrt-713/install-guide/index.html#installing-tar)的安装步骤，按照如下步骤安装:
 ```

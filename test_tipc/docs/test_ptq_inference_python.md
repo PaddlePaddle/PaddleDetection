@@ -41,4 +41,4 @@ Run failed with command - yolov3_darknet53_270e_coco - python3.7 tools/post_quan
 
 ## 3. 更多教程
 
-本文档为功能测试用，更详细的离线量化功能使用教程请参考：[Paddle 离线量化官网教程](https://github.com/PaddlePaddle/PaddleSlim/blob/release/2.5/docs/zh_cn/api_cn/static/quant/quantization_api.rst#quant_post_static)
+本文档为功能测试用，更详细的离线量化功能使用教程请参考：[Paddle 离线量化官网教程](https://github.com/PaddlePaddle/PaddleSlim/blob/develop/docs/zh_cn/api_cn/static/quant/quantization_api.rst#quant_post_static)

@@ -182,7 +182,7 @@ At this point, this model can be used in PP-Human.
 ### Custom Action Output
 In the model of action recognition based on classification with human id, the task is defined as a picture-level classification task of corresponding person. The type of the corresponding classification is finally regarded as the action type of the current stage. Therefore, on the basis of completing the training and deployment of the custom model, it is also necessary to convert the classification model results to the final action recognition results as output, and the displayed result of the visualization should be modified.
 
-Please modify the [postprocessing function](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/pphuman/action_infer.py#L509).
+Please modify the [postprocessing function](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pphuman/action_infer.py#L509).
 
 The core code are:
 ```python
@@ -221,4 +221,4 @@ else:
 ```
 
 #### Modify Visual Output
-At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.
+At present, ID-based action recognition is displayed based on the results of action recognition and predefined category names. For the detail, please refer to [here](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/deploy/pipeline/pipeline.py#L1024-L1043). If the custom action needs to be modified to another display name, please modify it accordingly to output the corresponding result.

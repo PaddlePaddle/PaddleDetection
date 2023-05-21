@@ -81,7 +81,7 @@ SKELETON_ACTION: # 基于骨骼点的行为识别模型配置
 0: 摔倒，
 1: 其他
 ```
-- 摔倒行为识别模型使用了[ST-GCN](https://arxiv.org/abs/1801.07455)，并基于[PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/release/2.5/docs/zh-CN/model_zoo/recognition/stgcn.md)套件完成模型训练。
+- 摔倒行为识别模型使用了[ST-GCN](https://arxiv.org/abs/1801.07455)，并基于[PaddleVideo](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/stgcn.md)套件完成模型训练。
 
 ## 基于图像分类的行为识别
 
@@ -132,12 +132,12 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 ### 方案说明
 1. 使用目标检测与多目标跟踪获取视频输入中的行人检测框及跟踪ID序号，模型方案为PP-YOLOE，详细文档参考[PP-YOLOE](../../../../configs/ppyoloe/README_cn.md)，跟踪方案为OC-SORT，详细文档参考[OC-SORT](../../../../configs/mot/ocsort)。
 2. 通过行人检测框的坐标在输入视频的对应帧中截取每个行人。
-3. 通过在帧级别的行人图像通过图像分类的方式实现。当图片所属类别为对应行为时，即认为在一定时间段内该人物处于该行为状态中。该任务使用[PP-HGNet](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/docs/zh_CN/models/PP-HGNet.md)实现，当前版本模型支持打电话行为的识别，预测得到的`class id`对应关系为：
+3. 通过在帧级别的行人图像通过图像分类的方式实现。当图片所属类别为对应行为时，即认为在一定时间段内该人物处于该行为状态中。该任务使用[PP-HGNet](https://github.com/PaddlePaddle/PaddleClas/blob/develop/docs/zh_CN/models/PP-HGNet.md)实现，当前版本模型支持打电话行为的识别，预测得到的`class id`对应关系为：
 ```
 0: 打电话，
 1: 其他
 ```
-- 基于分类的行为识别基于[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/blob/release/2.5/docs/zh_CN/models/PP-HGNet.md#3.3)完成模型训练。
+- 基于分类的行为识别基于[PaddleClas](https://github.com/PaddlePaddle/PaddleClas/blob/develop/docs/zh_CN/models/PP-HGNet.md#3.3)完成模型训练。
 
 
 ## 基于检测的行为识别
@@ -258,7 +258,7 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 ### 方案说明
 
-目前打架识别模型使用的是[PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/release/2.5/docs/zh-CN/model_zoo/recognition/pp-tsm.md)，并在PP-TSM视频分类模型训练流程的基础上修改适配，完成模型训练。对于输入的视频或者视频流，进行等间隔抽帧，当视频帧累计到指定数目时，输入到视频分类模型中判断是否存在打架行为。
+目前打架识别模型使用的是[PP-TSM](https://github.com/PaddlePaddle/PaddleVideo/blob/develop/docs/zh-CN/model_zoo/recognition/pp-tsm.md)，并在PP-TSM视频分类模型训练流程的基础上修改适配，完成模型训练。对于输入的视频或者视频流，进行等间隔抽帧，当视频帧累计到指定数目时，输入到视频分类模型中判断是否存在打架行为。
 
 
 ## 参考文献

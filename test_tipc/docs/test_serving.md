@@ -88,4 +88,4 @@ Run failed with command - xxxxx
 
 ## 3. 更多教程
 
-本文档为功能测试用，更详细的Serving预测使用教程请参考：[PaddleDetection 服务化部署](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.5/deploy/serving)
+本文档为功能测试用，更详细的Serving预测使用教程请参考：[PaddleDetection 服务化部署](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/deploy/serving)

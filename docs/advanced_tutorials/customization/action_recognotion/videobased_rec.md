@@ -138,7 +138,7 @@ python tools/export_model.py -c pptsm_fight_frames_dense.yaml \
 
 新增行为后，需要对现有的可视化代码进行修改，目前代码支持打架二分类可视化，新增类别后需要根据识别结果自适应可视化推理结果。
 
-具体修改PaddleDetection中deploy/pipeline/pipeline.py路径下PipePredictor类中visualize_video成员函数。当结果中存在'video_action'数据时，会对行为进行可视化。目前的逻辑是如果推理的类别为1，则为打架行为，进行可视化；否则不进行显示，即"video_action_score"为None。用户新增行为后，可根据类别index和对应的行为设置"video_action_text"字段，目前index=1对应"Fight"。相关代码块如下：
+具体修改PaddleDetection中develop/deploy/pipeline/pipeline.py路径下PipePredictor类中visualize_video成员函数。当结果中存在'video_action'数据时，会对行为进行可视化。目前的逻辑是如果推理的类别为1，则为打架行为，进行可视化；否则不进行显示，即"video_action_score"为None。用户新增行为后，可根据类别index和对应的行为设置"video_action_text"字段，目前index=1对应"Fight"。相关代码块如下：
 
 ```
 video_action_res = result.get('video_action')

@@ -483,10 +483,6 @@ class GridMask(BaseOperator):
 @register_op
 class RandomDistort(BaseOperator):
     """Random color distortion.
-    Note:
-        The 'probability' in [lower, upper, probability] is the probability of not using this transformation,
-        not the probability of using this transformation. And this only applies in this operator(RandomDistort),
-        'probability' in other BaseOperator means the probability of using that transformation.
     Args:
         hue (list): hue settings. in [lower, upper, probability] format.
         saturation (list): saturation settings. in [lower, upper, probability] format.

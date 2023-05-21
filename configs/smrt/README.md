@@ -190,7 +190,7 @@ python tools/export_model.py -c configs/smrt/ppyoloe/ppyoloe_crn_m_300e_battery_
 
 为了更方便大家部署，我们也提供了完备的可视化部署Demo，欢迎尝试使用
 
-* [Windows Demo下载地址](https://github.com/PaddlePaddle/PaddleX/tree/release/2.5/deploy/cpp/docs/csharp_deploy)
+* [Windows Demo下载地址](https://github.com/PaddlePaddle/PaddleX/tree/develop/deploy/cpp/docs/csharp_deploy)
 
 <div align="center">
   <img src="https://user-images.githubusercontent.com/48433081/169064583-c931f4c0-dfd6-4bfa-85f1-be68eb351e4a.png"  width = "800" />  

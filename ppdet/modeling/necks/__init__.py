@@ -23,7 +23,6 @@ from . import es_pan
 from . import lc_pan
 from . import custom_pan
 from . import dilated_encoder
-from . import channel_mapper
 
 from .fpn import *
 from .yolo_fpn import *

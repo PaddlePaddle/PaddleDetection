@@ -184,9 +184,9 @@ python3 -m paddle.distributed.launch tools/train.py -c configs/picodet/applicati
 ### 实现部署预测
 1. 通过以下命令将训练得到的模型导出：
 ```bash
-python3 tools/export_model.py -c configs/picodet/legacy_model/application/pedestrian_detection/picodet_s_192_pedestrian.yml --output_dir=output_inference -o weights=output/picodet_s_192_pedestrian/model_final
+python3 tools/export_model.py -c configs/picodet/application/pedestrian_detection/picodet_s_192_pedestrian.yml --output_dir=outut_inference -o weights=output/picodet_s_192_pedestrian/model_final
 
-python3 tools/export_model.py -c configs/keypoint/tiny_pose/tinypose_128x96.yml --output_dir=output_inference -o weights=output/tinypose_128x96/model_final
+python3 tools/export_model.py -c configs/keypoint/tiny_pose/tinypose_128x96.yml --output_dir=outut_inference -o weights=output/tinypose_128x96/model_final
 ```
 导出后的模型如：
 ```
