@@ -5,7 +5,7 @@ log_iter: 50
 snapshot_epoch: 2
 weights: output/rtdetr_r50vd_6x_coco/model_final
 
-
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
 TrainDataset:
   !COCODataSet
     image_dir: train2017

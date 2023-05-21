@@ -75,8 +75,8 @@ TestReader:
   drop_last: false
 
 
-pretrain_student_weights: sup010_mAP424.pdparams
-pretrain_teacher_weights: sup010_mAP424.pdparams
+pretrain_student_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+pretrain_teacher_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
 
 hidden_dim: 256
 use_focal_loss: True
