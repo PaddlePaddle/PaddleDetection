@@ -139,14 +139,14 @@ class OVDETR(DETR):
                  two_stage=True,
                  bpe_path='/home/a401-2/PycharmProjects/PaddleDetection/ppdet/modeling/embedder/clip/bpe_simple_vocab_16e6.txt.gz',
                  clip_feat_path='/home/a401-2/PycharmProjects/PaddleDetection/ppdet/modeling/transformers/clip_feat_coco_pickle_label.pkl',
-                 post_process='DETRBBoxPostProcess',
+                 post_process='OVDETRBBoxPostProcess',
                  exclude_post_process=False):
         super(OVDETR, self).__init__(
-                backbone,
-                transformer,
-                detr_head,
-                post_process,
-                exclude_post_process)
+                backbone=backbone,
+                transformer=transformer,
+                detr_head=detr_head,
+                post_process=post_process,
+                exclude_post_process=exclude_post_process)
         if neck is not None:
             self.neck = neck
 

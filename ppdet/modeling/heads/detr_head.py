@@ -25,7 +25,7 @@ from ..initializer import linear_init_, constant_, xavier_uniform_, bias_init_wi
 from ..transformers.utils import inverse_sigmoid
 
 import copy
-__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead'， 'OVDeformableDETRHead']
+__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead', 'OVDeformableDETRHead']
 
 
 class MLP(nn.Layer):

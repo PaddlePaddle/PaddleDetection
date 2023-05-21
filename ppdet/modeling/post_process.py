@@ -26,7 +26,8 @@ except Exception:
 
 __all__ = [
     'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
-    'CenterNetPostProcess', 'DETRPostProcess', 'SparsePostProcess'
+    'CenterNetPostProcess', 'DETRPostProcess', 'SparsePostProcess',
+    'OVDETRBBoxPostProcess'
 ]
 
 
@@ -571,6 +572,60 @@ class DETRPostProcess(object):
         bbox_pred = bbox_pred.reshape([-1, 6])
         return bbox_pred, bbox_num, mask_pred
 
+
+@register
+class OVDETRBBoxPostProcess(nn.Layer):
+    """This module converts the model's output into the format expected by the coco api"""
+
+    def __init__(self, num_queries=300):
+        super().__init__()
+        self.num_queries = num_queries
+
+    @paddle.no_grad()
+    def forward(self, bboxes, out_logits, select_id, im_shape, scale_factor):
+        # out_logits, out_bbox = outputs["pred_logits"], outputs["pred_boxes"]
+        # select_id = outputs["select_id"]
+        if type(select_id) == int:
+            select_id = [select_id]
+
+        # assert len(out_logits) == len(target_sizes)
+        # assert target_sizes.shape[1] == 2
+
+        # prob = out_logits.sigmoid()
+        # scores, topk_indexes = torch.topk(prob.view(out_logits.shape[0], -1), 300, dim=1)
+        prob = F.sigmoid(out_logits)
+        topk_values, topk_indexes = paddle.topk(prob.reshape((out_logits.shape[0], -1)), 100, axis=1)
+        scores = topk_values
+
+        topk_boxes = topk_indexes // out_logits.shape[2]
+
+        labels = paddle.zeros_like(prob).flatten(1)
+        # print('init_labels', labels)
+        num_queries = self.num_queries
+        for ind, c in enumerate(select_id):
+            labels[:, ind * num_queries : (ind + 1) * num_queries] = c
+
+        labels = paddle.take_along_axis(labels, topk_boxes, 1)
+
+        bbox_pred = bbox_cxcywh_to_xyxy(bboxes)
+
+        bbox_pred = paddle.take_along_axis(bbox_pred, paddle.tile(topk_boxes.unsqueeze(-1), (1, 1, 4)), 1)
+        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
+        img_h, img_w = paddle.split(origin_shape, 2, axis=-1)
+        origin_shape = paddle.concat(
+            [img_w, img_h, img_w, img_h], axis=-1).reshape([-1, 1, 4])
+        bbox_pred *= origin_shape
+
+        bbox_pred = paddle.concat(
+            [
+                labels.unsqueeze(-1).astype('float32'), scores.unsqueeze(-1),
+                bbox_pred
+            ],
+            axis=-1)
+        bbox_num = paddle.to_tensor(
+            bbox_pred.shape[1], dtype='int32').tile([bbox_pred.shape[0]])
+        bbox_pred = bbox_pred.reshape([-1, 6])
+        return bbox_pred, bbox_num
 
 
 @register
