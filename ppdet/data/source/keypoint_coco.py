@@ -716,7 +716,7 @@ class KeypointTopDownCocoWholeBodyHandDataset(KeypointTopDownBaseDataset):
         gt_db = []
         num_joints = self.ann_info['num_joints']
         coco = COCO(self.get_anno())
-        img_ids = coco.getImgIds()
+        img_ids = list(coco.imgs.keys())
         for img_id in img_ids:
             im_ann = coco.loadImgs(img_id)[0]
             image_file = os.path.join(self.img_prefix, im_ann['file_name'])
