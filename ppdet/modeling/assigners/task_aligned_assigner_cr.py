@@ -179,4 +179,4 @@ class TaskAlignedAssigner_CR(nn.Layer):
         alignment_metrics = alignment_metrics.max(-2).unsqueeze(-1)
         assigned_scores = assigned_scores * alignment_metrics
 
-        return assigned_labels, assigned_bboxes, assigned_scores, mask_positive
+        return assigned_labels, assigned_bboxes, assigned_scores
