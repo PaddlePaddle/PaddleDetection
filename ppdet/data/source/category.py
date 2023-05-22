@@ -114,8 +114,10 @@ def get_categories(metric_type, anno_file=None, arch=None):
     elif metric_type.lower() == 'widerface':
         return _widerface_category()
 
-    elif metric_type.lower() == 'keypointtopdowncocoeval' or metric_type.lower(
-    ) == 'keypointtopdownmpiieval':
+    elif metric_type.lower() in [
+            'keypointtopdowncocoeval', 'keypointtopdownmpiieval',
+            'keypointtopdowncocowholebadyhandeval'
+    ]:
         return (None, {'id': 'keypoint'})
 
     elif metric_type.lower() == 'pose3deval':

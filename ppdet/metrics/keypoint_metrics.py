@@ -19,12 +19,15 @@ import numpy as np
 import paddle
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
-from ..modeling.keypoint_utils import oks_nms
+from ..modeling.keypoint_utils import oks_nms, keypoint_pck_accuracy, keypoint_auc, keypoint_epe
 from scipy.io import loadmat, savemat
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['KeyPointTopDownCOCOEval', 'KeyPointTopDownMPIIEval']
+__all__ = [
+    'KeyPointTopDownCOCOEval', 'KeyPointTopDownCOCOWholeBadyHandEval',
+    'KeyPointTopDownMPIIEval'
+]
 
 
 class KeyPointTopDownCOCOEval(object):
@@ -224,6 +227,164 @@ class KeyPointTopDownCOCOEval(object):
 
     def get_results(self):
         return self.eval_results
+
+
+class KeyPointTopDownCOCOWholeBadyHandEval(object):
+    def __init__(self,
+                 anno_file,
+                 num_samples,
+                 num_joints,
+                 output_eval,
+                 save_prediction_only=False):
+        super(KeyPointTopDownCOCOWholeBadyHandEval, self).__init__()
+        self.coco = COCO(anno_file)
+        self.num_samples = num_samples
+        self.num_joints = num_joints
+        self.output_eval = output_eval
+        self.res_file = os.path.join(output_eval, "keypoints_results.json")
+        self.save_prediction_only = save_prediction_only
+        self.parse_dataset()
+        self.reset()
+
+    def parse_dataset(self):
+        gt_db = []
+        num_joints = self.num_joints
+        coco = self.coco
+        img_ids = coco.getImgIds()
+        for img_id in img_ids:
+            ann_ids = coco.getAnnIds(imgIds=img_id, iscrowd=False)
+            objs = coco.loadAnns(ann_ids)
+
+            for obj in objs:
+                for type in ['left', 'right']:
+                    if (obj[f'{type}hand_valid'] and
+                            max(obj[f'{type}hand_kpts']) > 0):
+
+                        joints = np.zeros((num_joints, 3), dtype=np.float32)
+                        joints_vis = np.zeros((num_joints, 3), dtype=np.float32)
+
+                        keypoints = np.array(obj[f'{type}hand_kpts'])
+                        keypoints = keypoints.reshape(-1, 3)
+                        joints[:, :2] = keypoints[:, :2]
+                        joints_vis[:, :2] = np.minimum(1, keypoints[:, 2:3])
+
+                        gt_db.append({
+                            'bbox': obj[f'{type}hand_box'],
+                            'gt_joints': joints,
+                            'joints_vis': joints_vis,
+                        })
+        self.db = gt_db
+
+    def reset(self):
+        self.results = {
+            'preds': np.zeros(
+                (self.num_samples, self.num_joints, 3), dtype=np.float32),
+        }
+        self.eval_results = {}
+        self.idx = 0
+
+    def update(self, inputs, outputs):
+        kpts, _ = outputs['keypoint'][0]
+        num_images = inputs['image'].shape[0]
+        self.results['preds'][self.idx:self.idx + num_images, :, 0:
+                              3] = kpts[:, :, 0:3]
+        self.idx += num_images
+
+    def accumulate(self):
+        self.get_final_results(self.results['preds'])
+        if self.save_prediction_only:
+            logger.info(f'The keypoint result is saved to {self.res_file} '
+                        'and do not evaluate the mAP.')
+            return
+
+        self.eval_results = self.evaluate(self.res_file, ('PCK', 'AUC', 'EPE'))
+
+    def get_final_results(self, preds):
+        kpts = []
+        for idx, kpt in enumerate(preds):
+            kpts.append({'keypoints': kpt.tolist()})
+
+        self._write_keypoint_results(kpts)
+
+    def _write_keypoint_results(self, keypoints):
+        if not os.path.exists(self.output_eval):
+            os.makedirs(self.output_eval)
+        with open(self.res_file, 'w') as f:
+            json.dump(keypoints, f, sort_keys=True, indent=4)
+            logger.info(f'The keypoint result is saved to {self.res_file}.')
+        try:
+            json.load(open(self.res_file))
+        except Exception:
+            content = []
+            with open(self.res_file, 'r') as f:
+                for line in f:
+                    content.append(line)
+            content[-1] = ']'
+            with open(self.res_file, 'w') as f:
+                for c in content:
+                    f.write(c)
+
+    def log(self):
+        if self.save_prediction_only:
+            return
+        for item, value in self.eval_results.items():
+            print("{} : {}".format(item, value))
+
+    def get_results(self):
+        return self.eval_results
+
+    def evaluate(self, res_file, metrics, pck_thr=0.2, auc_nor=30):
+        """Keypoint evaluation.
+
+        Args:
+            res_file (str): Json file stored prediction results.
+            metrics (str | list[str]): Metric to be performed.
+                Options: 'PCK', 'AUC', 'EPE'.
+            pck_thr (float): PCK threshold, default as 0.2.
+            auc_nor (float): AUC normalization factor, default as 30 pixel.
+
+        Returns:
+            List: Evaluation results for evaluation metric.
+        """
+        info_str = []
+
+        with open(res_file, 'r') as fin:
+            preds = json.load(fin)
+        assert len(preds) == len(self.db)
+
+        outputs = []
+        gts = []
+        masks = []
+        threshold_bbox = []
+
+        for pred, item in zip(preds, self.db):
+            outputs.append(np.array(pred['keypoints'])[:, :-1])
+            gts.append(np.array(item['gt_joints'])[:, :-1])
+            masks.append((np.array(item['joints_vis'])[:, 0]) > 0)
+            if 'PCK' in metrics:
+                bbox = np.array(item['bbox'])
+                bbox_thr = np.max(bbox[2:])
+                threshold_bbox.append(np.array([bbox_thr, bbox_thr]))
+
+        outputs = np.array(outputs)
+        gts = np.array(gts)
+        masks = np.array(masks)
+        threshold_bbox = np.array(threshold_bbox)
+
+        if 'PCK' in metrics:
+            _, pck, _ = keypoint_pck_accuracy(outputs, gts, masks, pck_thr,
+                                              threshold_bbox)
+            info_str.append(('PCK', pck))
+
+        if 'AUC' in metrics:
+            info_str.append(('AUC', keypoint_auc(outputs, gts, masks, auc_nor)))
+
+        if 'EPE' in metrics:
+            info_str.append(('EPE', keypoint_epe(outputs, gts, masks)))
+
+        name_value = OrderedDict(info_str)
+
+        return name_value
 
 
 class KeyPointTopDownMPIIEval(object):
