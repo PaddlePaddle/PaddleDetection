@@ -28,7 +28,7 @@ culane/driver_xx_xxframe    # data folders x6
 culane/laneseg_label_w16    # lane segmentation labels
 culane/list                 # data lists
 ```
-注意确保`driver_23_30frame_part1.tar.gz`和`driver_23_30frame_part2.tar.gz`都在`driver_23_30frame`目录下。
+注意确保`driver_23_30frame_part1.tar.gz`和`driver_23_30frame_part2.tar.gz`解压后的文件都在`driver_23_30frame`目录下。
 
 ### 训练
 - GPU单卡训练
