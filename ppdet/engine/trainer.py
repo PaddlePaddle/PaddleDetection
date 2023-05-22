@@ -38,8 +38,8 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
-from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
+from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric,CULaneMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -343,6 +343,19 @@ class Trainer(object):
             save_prediction_only = self.cfg.get('save_prediction_only', False)
             self._metrics = [
                 KeyPointTopDownCOCOEval(
+                    anno_file,
+                    len(eval_dataset),
+                    self.cfg.num_joints,
+                    self.cfg.save_dir,
+                    save_prediction_only=save_prediction_only)
+            ]
+        elif self.cfg.metric == 'KeyPointTopDownCOCOWholeBadyHandEval':
+            eval_dataset = self.cfg['EvalDataset']
+            eval_dataset.check_or_download_dataset()
+            anno_file = eval_dataset.get_anno()
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+            self._metrics = [
+                KeyPointTopDownCOCOWholeBadyHandEval(
                     anno_file,
                     len(eval_dataset),
                     self.cfg.num_joints,
