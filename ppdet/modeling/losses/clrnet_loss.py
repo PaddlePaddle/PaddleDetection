@@ -2,7 +2,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
-from ppdet.modeling.culane_layers import accuracy
+from ppdet.modeling.clrnet_utils import accuracy
 from ppdet.modeling.assigners.clrnet_assigner import assign
 from ppdet.modeling.losses.clrnet_line_iou_loss import liou_loss
 

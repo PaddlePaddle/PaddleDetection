@@ -8,7 +8,7 @@ from ppdet.core.workspace import register
 from ppdet.modeling.initializer import normal_
 from ppdet.modeling.lane_utils import Lane
 from ppdet.modeling.losses import line_iou
-from ppdet.modeling.culane_layers import ROIGather, LinearModule, SegDecoder
+from ppdet.modeling.clrnet_utils import ROIGather, LinearModule, SegDecoder
 
 
 
