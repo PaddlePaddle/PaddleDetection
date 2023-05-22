@@ -15,9 +15,9 @@
 
 ### CLRNet在CUlane上结果
 
-| 骨架网络       | mF1 | F1@50   |    F1@75    | 下载链接 | 配置文件 |
-| :--------------| :------- |  :----: | :------: | :----: |:-----: |
-| ResNet-18         | 54.98 |  79.46  |    62.10   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/clr_r18_culane.pdparams) | [配置文件](./clr_resnet18_culane.yml) |
+| 骨架网络       | mF1 | F1@50   |    F1@75    | 下载链接 | 配置文件 |训练日志|
+| :--------------| :------- |  :----: | :------: | :----: |:-----: |:-----: |
+| ResNet-18         | 54.98 |  79.46  |    62.10   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/clr_r18_culane.pdparams) | [配置文件](./clr_resnet18_culane.yml) |[训练日志](https://bj.bcebos.com/v1/paddledet/logs/train_clrnet_r18_15_culane.log)|
 
 ### 数据集下载
 下载[CULane数据集](https://xingangpan.github.io/projects/CULane.html)并解压到`dataset/culane`目录。
