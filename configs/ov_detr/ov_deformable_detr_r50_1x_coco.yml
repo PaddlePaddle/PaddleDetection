@@ -1,0 +1,9 @@
+_BASE_: [
+  '../datasets/zeroshot_coco_detection.yml',
+  '../runtime.yml',
+  '_base_/ov_deformable_optimizer_1x.yml',
+  '_base_/ov_deformable_detr_r50.yml',
+  '_base_/ov_deformable_detr_reader.yml',
+]
+weights: output/ov_deformable_detr_r50_1x_coco/model_final
+find_unused_parameters: True
