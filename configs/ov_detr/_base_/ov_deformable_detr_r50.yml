@@ -9,7 +9,7 @@ OVDETR:
   neck: DETRChannelMapper
   transformer: OVDeformableTransformer
   detr_head: OVDeformableDETRHead
-  max_len: 6
+  max_len: 15
   prob: 0.5
   two_stage: True
   with_box_refine: True
