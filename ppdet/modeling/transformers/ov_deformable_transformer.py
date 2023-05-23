@@ -32,10 +32,114 @@ from .position_encoding import PositionEmbedding
 from .utils import _get_clones, get_valid_ratio
 from ..initializer import linear_init_, constant_, xavier_uniform_, normal_
 
-from .deformable_transformer import MSDeformableAttention, DeformableTransformerEncoderLayer, DeformableTransformerEncoder
+from .deformable_transformer import MSDeformableAttention
 
 
 __all__ = ['OVDeformableTransformer']
+
+
+class DeformableTransformerEncoderLayer(nn.Layer):
+    def __init__(self,
+                 d_model=256,
+                 n_head=8,
+                 dim_feedforward=1024,
+                 dropout=0.1,
+                 activation="relu",
+                 n_levels=4,
+                 n_points=4,
+                 weight_attr=None,
+                 bias_attr=None):
+        super(DeformableTransformerEncoderLayer, self).__init__()
+        # self attention
+        self.self_attn = MSDeformableAttention(d_model, n_head, n_levels,
+                                               n_points)
+        self.dropout1 = nn.Dropout(dropout)
+        self.norm1 = nn.LayerNorm(d_model)
+        # ffn
+        self.linear1 = nn.Linear(d_model, dim_feedforward, weight_attr,
+                                 bias_attr)
+        self.activation = getattr(F, activation)
+        self.dropout2 = nn.Dropout(dropout)
+        self.linear2 = nn.Linear(dim_feedforward, d_model, weight_attr,
+                                 bias_attr)
+        self.dropout3 = nn.Dropout(dropout)
+        self.norm2 = nn.LayerNorm(d_model)
+        self._reset_parameters()
+
+    def _reset_parameters(self):
+        linear_init_(self.linear1)
+        linear_init_(self.linear2)
+        xavier_uniform_(self.linear1.weight)
+        xavier_uniform_(self.linear2.weight)
+
+    def with_pos_embed(self, tensor, pos):
+        return tensor if pos is None else tensor + pos
+
+    def forward_ffn(self, src):
+        src2 = self.linear2(self.dropout2(self.activation(self.linear1(src))))
+        src = src + self.dropout3(src2)
+        src = self.norm2(src)
+        return src
+
+    def forward(self,
+                src,
+                reference_points,
+                spatial_shapes,
+                level_start_index,
+                src_mask=None,
+                pos_embed=None):
+        # self attention
+        src2 = self.self_attn(
+            self.with_pos_embed(src, pos_embed), reference_points, src,
+            spatial_shapes, level_start_index, src_mask)
+        src = src + self.dropout1(src2)
+        src = self.norm1(src)
+        # ffn
+        src = self.forward_ffn(src)
+
+        return src
+
+
+class OVDeformableTransformerEncoder(nn.Layer):
+    def __init__(self, encoder_layer, num_layers):
+        super(OVDeformableTransformerEncoder, self).__init__()
+        self.layers = _get_clones(encoder_layer, num_layers)
+        self.num_layers = num_layers
+
+    @staticmethod
+    def get_reference_points(spatial_shapes, valid_ratios, offset=0.5):
+        valid_ratios = valid_ratios.unsqueeze(1)
+        reference_points = []
+        for i, (H, W) in enumerate(spatial_shapes):
+            ref_y, ref_x = paddle.meshgrid(
+                paddle.arange(end=H) + offset, paddle.arange(end=W) + offset)
+            ref_y = ref_y.flatten().unsqueeze(0) / (valid_ratios[:, :, i, 1] *
+                                                    H)
+            ref_x = ref_x.flatten().unsqueeze(0) / (valid_ratios[:, :, i, 0] *
+                                                    W)
+            reference_points.append(paddle.stack((ref_x, ref_y), axis=-1))
+        reference_points = paddle.concat(reference_points, 1).unsqueeze(2)
+        reference_points = reference_points * valid_ratios
+        return reference_points
+
+    def forward(self,
+                src,
+                spatial_shapes,
+                level_start_index,
+                src_mask=None,
+                pos_embed=None,
+                valid_ratios=None):
+        output = src
+        if valid_ratios is None:
+            valid_ratios = paddle.ones(
+                [src.shape[0], spatial_shapes.shape[0], 2])
+        reference_points = self.get_reference_points(spatial_shapes,
+                                                     valid_ratios)
+        for layer in self.layers:
+            output = layer(output, reference_points, spatial_shapes,
+                           level_start_index, src_mask, pos_embed)
+
+        return output
 
 
 # 对齐
@@ -213,7 +317,7 @@ class OVDeformableTransformer(nn.Layer):
         encoder_layer = DeformableTransformerEncoderLayer(
             hidden_dim, nhead, dim_feedforward, dropout, activation,
             num_feature_levels, num_encoder_points, weight_attr, bias_attr)
-        self.encoder = DeformableTransformerEncoder(encoder_layer,
+        self.encoder = OVDeformableTransformerEncoder(encoder_layer,
                                                       num_encoder_layers)
 
         decoder_layer = DeformableTransformerDecoderLayer(
@@ -272,33 +376,32 @@ class OVDeformableTransformer(nn.Layer):
         return pos
 
     def gen_encoder_output_proposals(self, memory, memory_padding_mask, spatial_shapes):
-        with paddle.no_grad():
-            N_, S_, C_ = memory.shape
-            proposals = []
-            _cur = 0
-            memory_padding_mask = memory_padding_mask.astype('bool')
-            for lvl, (H_, W_) in enumerate(spatial_shapes):
-                mask_flatten_ = memory_padding_mask[:, _cur:(_cur + H_ * W_)].reshape((N_, H_, W_, 1))
-                valid_H = paddle.sum(mask_flatten_[:, :, 0, 0], 1)
-                valid_W = paddle.sum(mask_flatten_[:, 0, :, 0], 1)
+        N_, S_, C_ = memory.shape
+        proposals = []
+        _cur = 0
+        memory_padding_mask = memory_padding_mask.astype('bool')
+        for lvl, (H_, W_) in enumerate(spatial_shapes):
+            mask_flatten_ = memory_padding_mask[:, _cur:(_cur + H_ * W_)].reshape((N_, H_, W_, 1))
+            valid_H = paddle.sum(mask_flatten_[:, :, 0, 0], 1)
+            valid_W = paddle.sum(mask_flatten_[:, 0, :, 0], 1)
 
-                grid_y, grid_x = paddle.meshgrid(paddle.linspace(0, H_ - 1, H_, 'float32'),
-                                                 paddle.linspace(0, W_ - 1, W_, 'float32'))
-                grid = paddle.concat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
+            grid_y, grid_x = paddle.meshgrid(paddle.linspace(0, H_ - 1, H_, 'float32'),
+                                             paddle.linspace(0, W_ - 1, W_, 'float32'))
+            grid = paddle.concat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
 
-                scale = paddle.concat([valid_W.unsqueeze(-1), valid_H.unsqueeze(-1)], 1).reshape((N_, 1, 1, 2))
-                grid = (paddle.expand(grid.unsqueeze(0), [N_, -1, -1, -1]) + 0.5) / scale
+            scale = paddle.concat([valid_W.unsqueeze(-1), valid_H.unsqueeze(-1)], 1).reshape((N_, 1, 1, 2))
+            grid = (paddle.expand(grid.unsqueeze(0), [N_, -1, -1, -1]) + 0.5) / scale
 
-                wh = paddle.ones_like(grid) * 0.05 * (2.0 ** lvl)
-                proposal = paddle.concat((grid, wh), -1).reshape((N_, -1, 4))
-                proposals.append(proposal)
-                _cur += (H_ * W_)
+            wh = paddle.ones_like(grid) * 0.05 * (2.0 ** lvl)
+            proposal = paddle.concat((grid, wh), -1).reshape((N_, -1, 4))
+            proposals.append(proposal)
+            _cur += (H_ * W_)
 
-            output_proposals = paddle.concat(proposals, 1)
-            output_proposals_valid = ((output_proposals > 0.01) & (output_proposals < 0.99)).all(-1, keepdim=True)
-            output_proposals = paddle.log(output_proposals / (1 - output_proposals))
-            output_proposals = masked_fill(output_proposals, ~memory_padding_mask.unsqueeze(-1), float('inf'))
-            output_proposals = masked_fill(output_proposals, ~output_proposals_valid, float('inf'))
+        output_proposals = paddle.concat(proposals, 1)
+        output_proposals_valid = ((output_proposals > 0.01) & (output_proposals < 0.99)).all(-1, keepdim=True)
+        output_proposals = paddle.log(output_proposals / (1 - output_proposals))
+        output_proposals = masked_fill(output_proposals, ~memory_padding_mask.unsqueeze(-1), float('inf'))
+        output_proposals = masked_fill(output_proposals, ~output_proposals_valid, float('inf'))
 
         output_memory = memory
         output_memory = masked_fill(output_memory, ~memory_padding_mask.unsqueeze(-1), float(0))

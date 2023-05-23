@@ -259,7 +259,7 @@ class OVDETR(DETR):
         # DETR Head
         loss = self.detr_head(head_inputs_dict, body_feats, self.inputs)
 
-        paddle.device.cuda.empty_cache()
+        # paddle.device.cuda.empty_cache()
 
         return loss
 
