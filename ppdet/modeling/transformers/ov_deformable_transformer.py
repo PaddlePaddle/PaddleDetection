@@ -47,12 +47,13 @@ class DeformableTransformerEncoderLayer(nn.Layer):
                  activation="relu",
                  n_levels=4,
                  n_points=4,
+                 lr_mult=0.1,
                  weight_attr=None,
                  bias_attr=None):
         super(DeformableTransformerEncoderLayer, self).__init__()
         # self attention
         self.self_attn = MSDeformableAttention(d_model, n_head, n_levels,
-                                               n_points)
+                                               n_points, lr_mult)
         self.dropout1 = nn.Dropout(dropout)
         self.norm1 = nn.LayerNorm(d_model)
         # ffn
@@ -152,6 +153,7 @@ class DeformableTransformerDecoderLayer(nn.Layer):
                  activation="relu",
                  n_levels=4,
                  n_points=4,
+                 lr_mult=0.1,
                  weight_attr=None,
                  bias_attr=None):
         super(DeformableTransformerDecoderLayer, self).__init__()
@@ -163,7 +165,7 @@ class DeformableTransformerDecoderLayer(nn.Layer):
 
         # cross attention
         self.cross_attn = MSDeformableAttention(d_model, n_head, n_levels,
-                                                n_points)
+                                                n_points, lr_mult)
         self.dropout2 = nn.Dropout(dropout)
         self.norm2 = nn.LayerNorm(d_model)
 
@@ -316,13 +318,13 @@ class OVDeformableTransformer(nn.Layer):
 
         encoder_layer = DeformableTransformerEncoderLayer(
             hidden_dim, nhead, dim_feedforward, dropout, activation,
-            num_feature_levels, num_encoder_points, weight_attr, bias_attr)
+            num_feature_levels, num_encoder_points, lr_mult, weight_attr, bias_attr)
         self.encoder = OVDeformableTransformerEncoder(encoder_layer,
                                                       num_encoder_layers)
 
         decoder_layer = DeformableTransformerDecoderLayer(
             hidden_dim, nhead, dim_feedforward, dropout, activation,
-            num_feature_levels, num_decoder_points, weight_attr, bias_attr)
+            num_feature_levels, num_decoder_points, lr_mult, weight_attr, bias_attr)
         self.decoder = OVDeformableTransformerDecoder(
             decoder_layer, num_decoder_layers,
             return_intermediate=return_intermediate_dec)
@@ -467,7 +469,7 @@ class OVDeformableTransformer(nn.Layer):
                 memory, mask_flatten, spatial_shapes)
 
             # hack implementation for two-stage Deformable DETR
-            enc_outputs_class = self.decoder.score_head(output_memory)
+            enc_outputs_class = self.decoder.score_head[-1](output_memory)
             enc_outputs_coord_unact = self.decoder.bbox_head[-1](output_memory) + output_proposals
             topk = self.two_stage_num_proposals
             topk_proposals = paddle.topk(enc_outputs_class[..., 0], topk, axis=1)[1]

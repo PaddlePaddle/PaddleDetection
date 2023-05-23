@@ -97,25 +97,10 @@ def clip_vit_b_32():
 
 
 model_dict = {
-    'RN50': [clip_rn50, r'https://bj.bcebos.com/v1/ai-studio-online/6ffc89246e974a809e6e4b40fdb58063a112a0153e674dae8ed5b6dfe5d46d86?responseContentDisposition=attachment%3B%20filename%3DRN50.pdparams', 'RN50.pdparams'],
-    'RN50x4': [clip_rn50x4, r'https://bj.bcebos.com/v1/ai-studio-online/9f874e0174da48ffbd7c17e77b1fb278632620a9995e476ba873e334caec9037?responseContentDisposition=attachment%3B%20filename%3DRN50x4.pdparams', 'RN50x4.pdparams'],
-    'RN101': [clip_rn101, r'https://bj.bcebos.com/v1/ai-studio-online/484592d98c584785bc8f6f9f7badbf4a9fb7a96f6102470697ed974e8eeee2a9?responseContentDisposition=attachment%3B%20filename%3DRN101.pdparams', 'RN101.pdparams'],
-    'ViT_B_32': [clip_vit_b_32, r'https://bj.bcebos.com/v1/ai-studio-online/eb5e4dbf1ec142caa003a27cefd510ef46a8a6c3932a4d60bfecb3f3ab746c02?responseContentDisposition=attachment%3B%20filename%3DViT-B-32.pdparams', 'ViT-B-32.pdparams']
+    'RN50': [clip_rn50, r'https://bj.bcebos.com/v1/paddledet/models/clip/RN50_clip.pdparams', 'RN50_clip.pdparams'],
+    'RN50x4': [clip_rn50x4, r'https://bj.bcebos.com/v1/paddledet/models/clip/RN50x4_clip.pdparams', 'RN50x4_clip.pdparams'],
+    'RN101': [clip_rn101, r'https://bj.bcebos.com/v1/paddledet/models/clip/RN101_clip.pdparams', 'RN101_clip.pdparams'],
+    'ViT_B_32': [clip_vit_b_32, r'https://bj.bcebos.com/v1/paddledet/models/clip/ViT-B-32_clip.pdparams', 'ViT-B-32_clip.pdparams']
 }
 
 
-def load_model(model_name, pretrained=False):
-    model_fn, url, file_name = model_dict[model_name]
-    model, transforms = model_fn()
-
-    if pretrained:
-        model_path = os.path.join('pretrained_models', file_name)
-        if not os.path.isfile(model_path):
-            if not os.path.exists('pretrained_models'):
-                os.mkdir('pretrained_models')
-            wget.download(url, out=model_path)
-        params = paddle.load(model_path)
-        res = match_state_dict(model.state_dict(), params)
-        model.set_state_dict(params)
-    model.eval()
-    return model, transforms

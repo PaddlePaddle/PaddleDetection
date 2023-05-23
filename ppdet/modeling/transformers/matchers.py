@@ -384,6 +384,8 @@ class OVHungarianMatcher(OVHungarianMatcher_ori):
                     if len(a) > 0:
                         mask = a == label
                         sizes.append(len(paddle.masked_select(a, mask)))
+                    else:
+                        sizes.append(0)
 
                 indices = [
                     linear_sum_assignment(c.split(sizes, -1)[i].numpy())

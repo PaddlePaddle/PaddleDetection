@@ -133,8 +133,7 @@ class ClipViT(nn.Layer):
         self.transformer = Transformer(width, layers, heads,
                                        stochastic_droplayer_rate)
         self.ln_post = LayerNorm(width)
-        # if output_dim is not None:
-        #     self.proj = nn.Linear(width, self.output_dim, bias_attr=False)
+
         proj = self.create_parameter(
             shape=(width,),
             default_initializer=Assign(

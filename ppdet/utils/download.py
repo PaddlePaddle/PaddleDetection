@@ -101,7 +101,18 @@ DATASETS = {
         '8a3a353c2c54a2284ad7d2780b65f6a6', ), ], ['annotations', 'images']),
     'coco_ce': ([(
         'https://paddledet.bj.bcebos.com/data/coco_ce.tar',
-        'eadd1b79bc2f069f2744b1dd4e0c0329', ), ], [])
+        'eadd1b79bc2f069f2744b1dd4e0c0329', ), ], []),
+    'zeroshot_coco': ([
+        (
+            'https://bj.bcebos.com/v1/paddledet/data/coco/ov_detr_zero-shot.zip',
+            '71556c457e05c5b60f03a1e6fd865d67',),
+        (
+            'http://images.cocodataset.org/zips/train2017.zip',
+            'cced6f7f71b7629ddf16f17bbcfab6b2', ),
+        (
+            'http://images.cocodataset.org/zips/val2017.zip',
+            '442b8da7639aecaf257c1dceb8ba8c80', ),
+    ], ["annotations", "train2017", "val2017"])
 }
 
 DOWNLOAD_DATASETS_LIST = DATASETS.keys()

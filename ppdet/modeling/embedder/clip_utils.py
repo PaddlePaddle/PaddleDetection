@@ -1,15 +1,11 @@
 # Modified from [ViLD](https://github.com/tensorflow/tpu/tree/master/models/official/detection/projects/vild)
 
 import os
-import numpy as np
-
-import paddle
-import paddle.nn as nn
-
-from ppdet.modeling.initializer import zeros_, normal_
-from ppdet.core.workspace import register
+import pickle
 
 from .clip import *
+from ppdet.utils.download import get_weights_path
+
 
 COCO_CATEGORIES = {
     1: "person",
@@ -187,8 +183,26 @@ multiple_templates = [
 ]
 
 
-def load_clip_to_cpu(visual_backbone):
-    model, _ = load_model(visual_backbone, pretrained=True)
+def load_model(model_name, clip_path, pretrained=False):
+    model_fn, url, file_name = model_dict[model_name]
+    model, transforms = model_fn()
+    model_path = os.path.join(clip_path, file_name)
+    if pretrained:
+        if not os.path.isfile(model_path):
+            path = get_weights_path(url)
+            model_path = path
+            # if not os.path.exists('pretrained_models'):
+            #     os.mkdir('pretrained_models')
+            # wget.download(url, out=model_path)
+        params = paddle.load(model_path)
+        res = match_state_dict(model.state_dict(), params)
+        model.set_state_dict(params)
+    model.eval()
+    return model, transforms
+
+
+def load_clip_to_cpu(visual_backbone, clip_path):
+    model, _ = load_model(visual_backbone, clip_path, pretrained=True)
     return model
 
 
@@ -208,26 +222,22 @@ class TextEncoder(nn.Layer):
         x = x + self.positional_embedding.astype('float32')
         x = self.transformer(x)
         x = self.ln_final(x).astype('float32')
-        # x.shape = [batch_size, n_ctx, transformer.width]
+
         # take features from the eot embedding (eot_token is the highest number in each sequence)
-        # print(paddle.arange(x.shape[0]))
-        # print(text.argmax(axis=-1))
         batch_idx = paddle.arange(x.shape[0])
         seq_idx = text.argmax(axis=-1)
         gather_idx = paddle.stack([batch_idx, seq_idx], axis=1)
         x = paddle.gather_nd(x, gather_idx)
-        # x = self.text_projection(x)
         x = x @ self.text_projection
-        # x = x[paddle.arange(x.shape[0]).numpy(), text.argmax(axis=-1).numpy()] @ self.text_projection.numpy()
-        # x = paddle.to_tensor(x)
+
 
         return x
 
-def build_text_embedding_coco(bpe_path):
+def build_text_embedding_coco(bpe_path, clip_path):
     categories = COCO_CATEGORIES
     run_on_gpu = True
 
-    clip_model = load_clip_to_cpu("ViT_B_32")
+    clip_model = load_clip_to_cpu("ViT_B_32", clip_path)
     text_model = TextEncoder(clip_model)
 
     for name, param in text_model.named_parameters():
@@ -260,4 +270,19 @@ def build_text_embedding_coco(bpe_path):
     all_ids = [i - 1 for i in all_ids]
 
     return paddle.to_tensor(zeroshot_weights[all_ids])
+
+
+def read_clip_feat(clip_feat_path):
+    url = 'https://bj.bcebos.com/v1/paddledet/data/coco/clip_feat_coco_pickle_label.pkl'
+    if not os.path.isfile(clip_feat_path):
+        path = os.path.expanduser("~/.cache/paddle/weights")
+        # path = get_weights_path(url)
+        clip_feat_path = os.path.join(path, url.split('/')[-1])
+        if not os.path.exists(clip_feat_path):
+            wget.download(url, clip_feat_path)
+
+    with open(clip_feat_path, 'rb') as f:
+        clip_feat = pickle.load(f)
+        return clip_feat
+
 
