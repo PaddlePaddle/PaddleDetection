@@ -1,8 +1,7 @@
 简体中文 | [English](README_en.md)
 
 # RTDETR-SSOD(基于RTDETR的配套半监督目标检测方法)
-
-#复现模型指标注意事项: 模型中指标是采用在监督数据训练饱和后加载监督数据所训练的模型进行半监督训练
+# 复现模型指标注意事项: 模型中指标是采用在监督数据训练饱和后加载监督数据所训练的模型进行半监督训练
   - 例如 使用 baseline/rtdetr_r50vd_6x_coco_sup005.yml使用5%coco数据训练全监督模型，得到rtdetr_r50vd_6x_coco_sup005.pdparams,在rt_detr_ssod005_coco_no_warmup.yml中设置
       - pretrain_student_weights: rtdetr_r50vd_6x_coco_sup005.pdparams
       - pretrain_teacher_weights: rtdetr_r50vd_6x_coco_sup005.pdparams
@@ -82,13 +81,29 @@ paddle2onnx --model_dir output_inference/drt_detr_ssod010_coco_no_warmup/ --mode
 ```
 
 
-## 引用
+# RTDETR-SSOD 下游任务
 
-```
- @article{denseteacher2022,
-  title={Dense Teacher: Dense Pseudo-Labels for Semi-supervised Object Detection},
-  author={Hongyu Zhou, Zheng Ge, Songtao Liu, Weixin Mao, Zeming Li, Haiyan Yu, Jian Sun},
-  journal={arXiv preprint arXiv:2207.02541},
-  year={2022}
-}
-```
+我们验证了RTDETR-SSOD模型强大的泛化能力，在低光、工业、交通等不同场景下游任务检测效果稳定提升!
+
+voc数据集采用[voc](https://github.com/thsant/wgisd)，是一个广泛使用的计算机视觉数据集，用于目标检测、图像分割和场景理解等任务。该数据集包含20个类别的图像,处理后的COCO格式，包含图片标注训练集5011张，图片无标注训练集11540张，测试集2510张，20个类别；
+
+低光数据集使用[ExDark](https://github.com/cs-chan/Exclusively-Dark-Image-Dataset/tree/master/Dataset)，该数据集是一个专门在低光照环境下拍摄出针对低光目标检测的数据集，包括从极低光环境到暮光环境等10种不同光照条件下的图片，处理后的COCO格式，包含图片训练集5891张，测试集1472张，12个类别;
+
+工业数据集使用[PKU-Market-PCB](https://robotics.pkusz.edu.cn/resources/dataset/)，该数据集用于印刷电路板（PCB）的瑕疵检测，提供了6种常见的PCB缺陷;
+
+商超数据集[SKU110k](https://github.com/eg4000/SKU110K_CVPR19)是商品超市场景下的密集目标检测数据集，包含11,762张图片和超过170个实例。其中包括8,233张用于训练的图像、588张用于验证的图像和2,941张用于测试的图像;
+
+自动驾驶数据集使用[sslad](https://soda-2d.github.io/index.html);
+
+交通数据集使用[visdrone](http://aiskyeye.com/home/);
+
+## 下游数据集实验结果：
+
+| 数据集   |                                                           | 业务方向   | 划分           | labeled数据量 | 全监督mAP | 半监督mAP    |
+|----------|-----------------------------------------------------------|------------|----------------|---------------|-----------|--------------|
+| voc      | http://host.robots.ox.ac.uk/pascal/VOC/                   | 通用       | voc07, 12；1:2 | 5000          | 63.1      | 65.8（+2.7） |
+| visdrone | http://aiskyeye.com/home/                                 | 无人机交通 | 1:9            | 647           | 19.4      | 20.6 (+1.2)  |
+| pcb      | https://robotics.pkusz.edu.cn/resources/dataset/          | 工业缺陷   | 1:9            | 55            | 22.9      | 26.8 (+3.9)  |
+| sku110k  | https://github.com/eg4000/SKU110K_CVPR19                  | 商品       | 1:9            | 821           | 38.9      | 52.4 (+13.5) |
+| sslad    | https://soda-2d.github.io/index.html                      | 自动驾驶   | 1:32           | 4967          | 42.1      | 43.3 (+1.2)  |
+| exdark   | https://github.com/cs-chan/Exclusively-Dark-Image-Dataset | 低光照     | 1:9            | 589           | 39.6      | 44.1 (+4.5)  |
