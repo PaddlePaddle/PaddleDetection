@@ -1,13 +1,6 @@
 # Modified from [ViLD](https://github.com/tensorflow/tpu/tree/master/models/official/detection/projects/vild)
 
 import os
-import numpy as np
-
-import paddle
-import paddle.nn as nn
-
-from ppdet.modeling.initializer import zeros_, normal_
-from ppdet.core.workspace import register
 
 from .clip import *
 
@@ -208,18 +201,14 @@ class TextEncoder(nn.Layer):
         x = x + self.positional_embedding.astype('float32')
         x = self.transformer(x)
         x = self.ln_final(x).astype('float32')
-        # x.shape = [batch_size, n_ctx, transformer.width]
+
         # take features from the eot embedding (eot_token is the highest number in each sequence)
-        # print(paddle.arange(x.shape[0]))
-        # print(text.argmax(axis=-1))
         batch_idx = paddle.arange(x.shape[0])
         seq_idx = text.argmax(axis=-1)
         gather_idx = paddle.stack([batch_idx, seq_idx], axis=1)
         x = paddle.gather_nd(x, gather_idx)
-        # x = self.text_projection(x)
         x = x @ self.text_projection
-        # x = x[paddle.arange(x.shape[0]).numpy(), text.argmax(axis=-1).numpy()] @ self.text_projection.numpy()
-        # x = paddle.to_tensor(x)
+
 
         return x
 

@@ -21,6 +21,7 @@ from __future__ import print_function
 import gzip
 import html
 import os
+import wget
 import functools
 from functools import lru_cache
 
@@ -34,8 +35,9 @@ __all__ = ['SimpleTokenizer', 'tokenize']
 
 @lru_cache()
 def default_bpe():
-    parent_path = '/home/aistudio/work/PaddleDetection/ppdet/modeling/embedder/clip'
-    return os.path.join(parent_path, "bpe_simple_vocab_16e6.txt.gz")
+    parent_path = 'ppdet/modeling/embedder/clip'
+    model_path = os.path.join(parent_path, "bpe_simple_vocab_16e6.txt.gz")
+    return model_path
 
 
 @lru_cache()
@@ -202,4 +204,8 @@ def tokenize(texts, context_length=77, bpe_path=default_bpe()):
 
 @functools.lru_cache(maxsize=1)
 def build_tokenizer(bpe_path=default_bpe()):
+
+    url = 'https://bj.bcebos.com/v1/paddledet/models/clip/bpe_simple_vocab_16e6.txt.gz'
+    if not os.path.isfile(bpe_path):
+        wget.download(url, out=bpe_path)
     return SimpleTokenizer(bpe_path)

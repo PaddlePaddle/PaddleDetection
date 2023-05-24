@@ -137,8 +137,8 @@ class OVDETR(DETR):
                  prob=0.5,
                  with_box_refine=True,
                  two_stage=True,
-                 bpe_path='/home/a401-2/PycharmProjects/PaddleDetection/ppdet/modeling/embedder/clip/bpe_simple_vocab_16e6.txt.gz',
-                 clip_feat_path='/home/a401-2/PycharmProjects/PaddleDetection/ppdet/modeling/transformers/clip_feat_coco_pickle_label.pkl',
+                 bpe_path='ppdet/modeling/embedder/clip/bpe_simple_vocab_16e6.txt.gz',
+                 clip_feat_path='ppdet/modeling/transformers/clip_feat_coco_pickle_label.pkl',
                  post_process='OVDETRBBoxPostProcess',
                  exclude_post_process=False):
         super(OVDETR, self).__init__(
