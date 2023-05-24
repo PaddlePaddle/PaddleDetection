@@ -1,8 +1,10 @@
 # Modified from [ViLD](https://github.com/tensorflow/tpu/tree/master/models/official/detection/projects/vild)
 
 import os
+import pickle
 
 from .clip import *
+
 
 COCO_CATEGORIES = {
     1: "person",
@@ -250,3 +252,12 @@ def build_text_embedding_coco(bpe_path):
 
     return paddle.to_tensor(zeroshot_weights[all_ids])
 
+
+def read_clip_feat(clip_feat_path):
+    url = 'https://bj.bcebos.com/v1/paddledet/data/coco/clip_feat_coco_pickle_label.pkl'
+    if not os.path.isfile(clip_feat_path):
+        wget.download(url, clip_feat_path)
+
+    with open(clip_feat_path, 'rb') as f:
+        clip_feat = pickle.load(f)
+        return clip_feat

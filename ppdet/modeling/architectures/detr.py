@@ -23,9 +23,7 @@ from .meta_arch import BaseArch
 from ppdet.core.workspace import register, create
 from ..initializer import linear_init_, constant_, xavier_uniform_, normal_
 
-from ..embedder.clip_utils import build_text_embedding_coco
-
-import pickle
+from ..embedder.clip_utils import build_text_embedding_coco, read_clip_feat
 
 __all__ = ['DETR', 'OVDETR']
 
@@ -161,8 +159,9 @@ class OVDETR(DETR):
         self.max_len = max_len
         self.max_pad_len = self.max_len - 3
 
-        with open(clip_feat_path, 'rb') as f:
-            self.clip_feat = pickle.load(f)
+        # with open(clip_feat_path, 'rb') as f:
+        #     self.clip_feat = pickle.load(f)
+        self.clip_feat = read_clip_feat(clip_feat_path)
         self.prob = prob
         self.two_stage = two_stage
         if with_box_refine:

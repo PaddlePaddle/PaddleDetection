@@ -25,7 +25,7 @@ from .dataset import DetDataset
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet', 'ZeroshotCOCODataSet']
+__all__ = ['COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet']
 
 
 @register
@@ -587,247 +587,31 @@ class SemiCOCODataSet(COCODataSet):
         return self.transform(roidb)
 
 
-class ZeroshotCOCODataSet(COCODataSet):
-    """Zeroshot COCODataSet used for OV-DETR"""
-    SEEN_CLASSES = (
-        "toilet",
-        "bicycle",
-        "apple",
-        "train",
-        "laptop",
-        "carrot",
-        "motorcycle",
-        "oven",
-        "chair",
-        "mouse",
-        "boat",
-        "kite",
-        "sheep",
-        "horse",
-        "sandwich",
-        "clock",
-        "tv",
-        "backpack",
-        "toaster",
-        "bowl",
-        "microwave",
-        "bench",
-        "book",
-        "orange",
-        "bird",
-        "pizza",
-        "fork",
-        "frisbee",
-        "bear",
-        "vase",
-        "toothbrush",
-        "spoon",
-        "giraffe",
-        "handbag",
-        "broccoli",
-        "refrigerator",
-        "remote",
-        "surfboard",
-        "car",
-        "bed",
-        "banana",
-        "donut",
-        "skis",
-        "person",
-        "truck",
-        "bottle",
-        "suitcase",
-        "zebra",
-    )
-    UNSEEN_CLASSES = (
-        "umbrella",
-        "cow",
-        "cup",
-        "bus",
-        "keyboard",
-        "skateboard",
-        "dog",
-        "couch",
-        "tie",
-        "snowboard",
-        "sink",
-        "elephant",
-        "cake",
-        "scissors",
-        "airplane",
-        "cat",
-        "knife",
-    )
-
-    def __init__(
-            self,
-            dataset_dir,
-            image_dir,
-            anno_path,
-            dataset_fields=['image'],
-            sample_num=-1,
-            load_crowd=False,
-            allow_empty=False,
-            empty_ratio=1.,
-            repeat=-1,
-            label_map=False,
-    ):
-        super(CocoDetection, self).__init__(
-            dataset_dir,
-            image_dir,
-            anno_path,
-            dataset_fields,
-            sample_num,
-            repeat=repeat,
-        )
-        self.load_image_only = False
-        self.load_semantic = False
-        self.load_crowd = load_crowd
-        self.allow_empty = allow_empty
-        self.empty_ratio = empty_ratio
-        self._transforms = transforms
-        self.cat_ids = self.coco.getCatIds(self.SEEN_CLASSES + self.UNSEEN_CLASSES)
-        self.cat2label = {cat_id: i for i, cat_id in enumerate(self.cat_ids)}
-        self.cat_ids_unseen = self.coco.getCatIds(self.UNSEEN_CLASSES)
-        self.prepare = ConvertCocoPolysToMask(
-            return_masks, self.cat2label, label_map, self.cat_ids_unseen
-        )
-
-    def __getitem__(self, idx):
-        img, target = super(CocoDetection, self).__getitem__(idx)
-        # print('getitem_target',target)
-        image_id = self.ids[idx]
-        # print('cat_ids', self.cat_ids)
-        target = {"image_id": image_id, "annotations": target}
-        img, target = self.prepare(img, target)
-        # print('target', target['labels'])
-        if self._transforms is not None:
-            img, target = self._transforms(img, target)
-        if len(target["labels"]) == 0:
-            return self[(idx + 1) % len(self)]
-        else:
-            return img, target
-        return img, target
-
-
-def convert_coco_poly_to_mask(segmentations, height, width):
-    masks = []
-    for polygons in segmentations:
-        rles = coco_mask.frPyObjects(polygons, height, width)
-        mask = coco_mask.decode(rles)
-        if len(mask.shape) < 3:
-            mask = mask[..., None]
-        mask = paddle.to_tensor(mask, dtype='uint8')
-        mask = mask.any(dim=2)
-        masks.append(mask)
-    if masks:
-        masks = paddle.stack(masks, dim=0)
-    else:
-        masks = paddle.zeros((0, height, width), dtype='uint8')
-    return masks
-
-
-class ConvertCocoPolysToMask(object):
-    def __init__(self, return_masks=False, cat2label=None, label_map=False, cat_ids_unseen=None):
-        self.return_masks = return_masks
-        self.cat2label = cat2label
-        self.label_map = label_map
-        self.cat_ids_unseen = cat_ids_unseen
-
-    def __call__(self, image, target):
-        w, h = image.size
-
-        image_id = target["image_id"]
-        image_id = paddle.to_tensor([image_id])
-
-        anno = target["annotations"]
-
-        anno = [obj for obj in anno if "iscrowd" not in obj or obj["iscrowd"] == 0]
-
-        boxes = [obj["bbox"] for obj in anno]
-        # guard against no boxes via resizing
-        # boxes = paddle.to_tensor(boxes, dtype='float32').reshape(-1, 4)
-        boxes = paddle.reshape(paddle.to_tensor(boxes, dtype='float32'), [-1, 4])
-        # print('ori_boxes', boxes)
-        boxes[:, 2:] += boxes[:, :2]
-        # boxes[:, 0::2].clamp_(min=0, max=w)
-        # boxes[:, 1::2].clamp_(min=0, max=h)
-        boxes[:, 0::2] = paddle.clip(boxes[:, 0::2], 0, w)
-        boxes[:, 1::2] = paddle.clip(boxes[:, 1::2], 0, h)
-        # print('boxes', boxes)
-
-        # for obj in anno :
-        #     print('obj["category_id"]', obj["category_id"])
-        # print('self.cat2label', self.cat2label)
-        if self.label_map:
-            classes = [
-                self.cat2label[obj["category_id"]]
-                if obj["category_id"] >= 0
-                else obj["category_id"]
-                for obj in anno
-            ]
-        else:
-            classes = [obj["category_id"] for obj in anno]
-        classes = paddle.to_tensor(classes, dtype='int64')
-        # print('classes', classes)
-
-        if self.return_masks:
-            segmentations = [obj["segmentation"] for obj in anno]
-            masks = convert_coco_poly_to_mask(segmentations, h, w)
-
-        keypoints = None
-        if anno and "keypoints" in anno[0]:
-            keypoints = [obj["keypoints"] for obj in anno]
-            keypoints = paddle.to_tensor(keypoints, dtype='float32')
-            num_keypoints = keypoints.shape[0]
-            if num_keypoints:
-                keypoints = keypoints.view(num_keypoints, -1, 3)
-
-        keep = (boxes[:, 3] > boxes[:, 1]) & (boxes[:, 2] > boxes[:, 0])
-        boxes = boxes[keep]
-        classes = classes[keep]
-        # print('out_boxes', boxes)
-        # exit()
-        if self.return_masks:
-            masks = masks[keep]
-        if keypoints is not None:
-            keypoints = keypoints[keep]
-
-        target = {}
-        target["boxes"] = boxes
-        # exit()
-        target["labels"] = classes
-        if self.return_masks:
-            target["masks"] = masks
-        target["image_id"] = image_id
-        if keypoints is not None:
-            target["keypoints"] = keypoints
-
-        # for conversion to coco api
-        area = paddle.to_tensor([obj["area"] for obj in anno])
-        iscrowd = paddle.to_tensor([obj["iscrowd"] if "iscrowd" in obj else 0 for obj in anno])
-        target["area"] = area[keep]
-        target["iscrowd"] = iscrowd[keep]
-
-        target["orig_size"] = paddle.to_tensor([int(h), int(w)])
-        target["size"] = paddle.to_tensor([int(h), int(w)])
-
-        return image, target
-
-
-# 单元测试
-if __name__ == '__main__':
-    set_seed(7)
-
-    #字典转结构体
-    class DictToStruct:
-        def __init__(self, **entries):
-            self.__dict__.update(entries)
-
-    #COCO has a max_obj_id of 90, so we pass `num_classes` to be 91.
-    params = {"dataset_dir": 'dataset/coco',
-              "image_dir": 'val2017',
-              "anno_path": 'annotations/instances_val2017_all_2.json',
-              }
-    args = DictToStruct(**params)
-    trans = COCODataSet(args)
+# @register
+# @serializable
+# class ZeroshotCOCODataSet(COCODataSet):
+#     """Zeroshot COCODataSet used for OV-DETR"""
+#
+#     def __init__(
+#             self,
+#             dataset_dir,
+#             image_dir,
+#             anno_path,
+#             data_fields=['image'],
+#             sample_num=-1,
+#             load_crowd=False,
+#             allow_empty=False,
+#             empty_ratio=1.,
+#             repeat=-1,
+#     ):
+#         super(ZeroshotCOCODataSet, self).__init__(
+#             dataset_dir,
+#             image_dir,
+#             anno_path,
+#             data_fields,
+#             sample_num,
+#             load_crowd,
+#             allow_empty,
+#             empty_ratio,
+#             repeat,
+#         )
