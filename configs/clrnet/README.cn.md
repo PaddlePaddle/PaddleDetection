@@ -43,7 +43,6 @@ python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/clr
 
 ### 评估
 ```shell
-mkdir evaluation
 python tools/eval.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams output_eval=evaluation/ use_gpu=true
 ```
 
