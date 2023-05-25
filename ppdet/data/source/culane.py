@@ -1,6 +1,7 @@
 from ppdet.core.workspace import register,serializable
 import cv2
 import os
+import tarfile
 import numpy as np
 import os.path as osp
 from ppdet.data.source.dataset import DetDataset
@@ -14,6 +15,7 @@ try:
 except Exception:
     from collections import Sequence
 from .dataset import DetDataset, _make_dataset, _is_valid_file
+from ppdet.utils.download import download_dataset
 
 logger = setup_logger(__name__)
 
@@ -52,7 +54,18 @@ class CULaneDataSet(DetDataset):
         return len(self.data_infos)
     
     def check_or_download_dataset(self):
-        return 
+        if not osp.exists(self.dataset_dir):
+            download_dataset("dataset", dataset="culane")
+            # extract .tar files in self.dataset_dir
+            for fname in os.listdir(self.dataset_dir):
+                logger.info("Decompressing {}...".format(fname))
+                # ignore .* files
+                if fname.startswith('.'):
+                    continue
+                if fname.find('.tar.gz') >= 0:
+                    with tarfile.open(osp.join(self.dataset_dir,fname)) as tf:
+                        tf.extractall(path=self.dataset_dir)
+        logger.info("Dataset files are ready.")
 
     def parse_dataset(self):
         logger.info('Loading CULane annotations...')
