@@ -681,8 +681,9 @@ class SDE_Detector(Detector):
             if mot_skip_frame_num > 1 and frame_id > 0 and frame_id % mot_skip_frame_num > 0:
                 reuse_det_result = True
             seq_name = video_out_name.split('.')[0]
+            frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             mot_results = self.predict_image(
-                [frame],
+                [frame_rgb],
                 visual=False,
                 seq_name=seq_name,
                 reuse_det_result=reuse_det_result,
