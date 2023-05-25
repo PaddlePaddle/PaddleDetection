@@ -125,6 +125,7 @@ class ChannelMapper(nn.Layer):
 @register
 class DETRChannelMapper(nn.Layer):
     __shared__ = ['hidden_dim']
+
     def __init__(self,
                  backbone_num_channels=[512, 1024, 2048],
                  hidden_dim=256,

@@ -135,8 +135,9 @@ class OVDETR(DETR):
                  prob=0.5,
                  with_box_refine=True,
                  two_stage=True,
-                 bpe_path='ppdet/modeling/embedder/clip/bpe_simple_vocab_16e6.txt.gz',
-                 clip_feat_path='ppdet/modeling/transformers/clip_feat_coco_pickle_label.pkl',
+                 bpe_path='ppdet://v1/paddledet/models/clip/bpe_simple_vocab_16e6.txt.gz',
+                 clip_path='',
+                 clip_feat_path='ppdet://v1/paddledet/data/coco/clip_feat_coco_pickle_label.pkl',
                  post_process='OVDETRBBoxPostProcess',
                  exclude_post_process=False):
         super(OVDETR, self).__init__(
@@ -148,7 +149,7 @@ class OVDETR(DETR):
         if neck is not None:
             self.neck = neck
 
-        self.zeroshot_w = build_text_embedding_coco(bpe_path).t()
+        self.zeroshot_w = build_text_embedding_coco(bpe_path, clip_path).t()
         self.patch2query = nn.Linear(512, 256)
         self.patch2query_img = nn.Linear(512, 256)
         # mark 源码此处for layer in [self.patch2query]:
@@ -170,7 +171,7 @@ class OVDETR(DETR):
             self.transformer.decoder.bbox_head = None
 
         if two_stage:
-            self.transformer.decoder.score_head = self.detr_head.score_head[-1]
+            self.transformer.decoder.score_head = self.detr_head.score_head
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -206,6 +207,10 @@ class OVDETR(DETR):
     def forward_train(self):
         # Backbone
         body_feats = self.backbone(self.inputs)
+        # print(body_feats[0])
+        # print(self.neck)
+        # print(self.neck.input_proj[0][0].weight)
+        # exit()
 
         # Neck
         body_feats = self.neck(body_feats)
@@ -216,8 +221,8 @@ class OVDETR(DETR):
         if sum(len(a) for a in self.inputs["gt_class"]) > 0:
             uniq_labels = paddle.concat(self.inputs["gt_class"])
             uniq_labels = paddle.unique(uniq_labels)
-            # uniq_labels = uniq_labels[paddle.to_tensor(list(range(len(uniq_labels))))][: self.max_len]
-            uniq_labels = uniq_labels[paddle.randperm(len(uniq_labels))][: self.max_len]
+            uniq_labels = uniq_labels[paddle.to_tensor(list(range(len(uniq_labels))))][: self.max_len]
+            # uniq_labels = uniq_labels[paddle.randperm(len(uniq_labels))][: self.max_len]
         else:
             uniq_labels = paddle.to_tensor([])
         select_id = uniq_labels.tolist()
@@ -226,7 +231,8 @@ class OVDETR(DETR):
             pad_len = self.max_pad_len - len(uniq_labels)
             extra_list = [i for i in self.all_ids if i not in uniq_labels]
             extra_list = paddle.to_tensor(extra_list)
-            extra_labels = extra_list[paddle.randperm(len(extra_list))][:pad_len].squeeze(1)
+            # extra_labels = extra_list[paddle.randperm(len(extra_list))][:pad_len].squeeze(1)
+            extra_labels = extra_list[paddle.to_tensor(list(range(len(extra_list))))][:pad_len].squeeze(1)
 
             select_id += extra_labels.tolist()
         select_id_tensor = paddle.to_tensor(select_id)
@@ -234,8 +240,8 @@ class OVDETR(DETR):
 
         img_query = []
         for cat_id in select_id:
-            index = paddle.randperm(len(self.clip_feat[cat_id]))[0:1]
-
+            # index = paddle.randperm(len(self.clip_feat[cat_id]))[0:1]
+            index = paddle.to_tensor(list(range(len(self.clip_feat[cat_id]))))[0:1]
             img_query.append(paddle.to_tensor(self.clip_feat[cat_id]).index_select(index))
         img_query = paddle.concat(img_query)
         img_query = img_query / paddle.linalg.norm(img_query, axis=1, keepdim=True)

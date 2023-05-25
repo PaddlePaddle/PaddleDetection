@@ -18,6 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+from ppdet.utils.logger import setup_logger
+
 import gzip
 import html
 import os
@@ -32,10 +34,12 @@ import paddle
 
 __all__ = ['SimpleTokenizer', 'tokenize']
 
+logger = setup_logger(__name__)
+
 
 @lru_cache()
 def default_bpe():
-    parent_path = 'ppdet/modeling/embedder/clip'
+    parent_path = "~/.cache/paddle/weights"
     model_path = os.path.join(parent_path, "bpe_simple_vocab_16e6.txt.gz")
     return model_path
 
@@ -204,8 +208,13 @@ def tokenize(texts, context_length=77, bpe_path=default_bpe()):
 
 @functools.lru_cache(maxsize=1)
 def build_tokenizer(bpe_path=default_bpe()):
-
     url = 'https://bj.bcebos.com/v1/paddledet/models/clip/bpe_simple_vocab_16e6.txt.gz'
     if not os.path.isfile(bpe_path):
-        wget.download(url, out=bpe_path)
+        logger.warning(
+            "bpe_simple_vocab_16e6 {} is not exist for reason above, try searching {} or "
+            "downloading...".format(bpe_path, default_bpe()))
+        bpe_path = os.path.expanduser(default_bpe())
+        if not os.path.isfile(bpe_path):
+            wget.download(url, out=bpe_path)
+
     return SimpleTokenizer(bpe_path)

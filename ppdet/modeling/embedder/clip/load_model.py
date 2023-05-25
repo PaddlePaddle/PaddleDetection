@@ -104,18 +104,3 @@ model_dict = {
 }
 
 
-def load_model(model_name, pretrained=False):
-    model_fn, url, file_name = model_dict[model_name]
-    model, transforms = model_fn()
-
-    if pretrained:
-        model_path = os.path.join('pretrained_models', file_name)
-        if not os.path.isfile(model_path):
-            if not os.path.exists('pretrained_models'):
-                os.mkdir('pretrained_models')
-            wget.download(url, out=model_path)
-        params = paddle.load(model_path)
-        res = match_state_dict(model.state_dict(), params)
-        model.set_state_dict(params)
-    model.eval()
-    return model, transforms

@@ -4,6 +4,7 @@ import os
 import pickle
 
 from .clip import *
+from ppdet.utils.download import get_weights_path
 
 
 COCO_CATEGORIES = {
@@ -182,8 +183,26 @@ multiple_templates = [
 ]
 
 
-def load_clip_to_cpu(visual_backbone):
-    model, _ = load_model(visual_backbone, pretrained=True)
+def load_model(model_name, clip_path, pretrained=False):
+    model_fn, url, file_name = model_dict[model_name]
+    model, transforms = model_fn()
+    model_path = os.path.join(clip_path, file_name)
+    if pretrained:
+        if not os.path.isfile(model_path):
+            path = get_weights_path(url)
+            model_path = path
+            # if not os.path.exists('pretrained_models'):
+            #     os.mkdir('pretrained_models')
+            # wget.download(url, out=model_path)
+        params = paddle.load(model_path)
+        res = match_state_dict(model.state_dict(), params)
+        model.set_state_dict(params)
+    model.eval()
+    return model, transforms
+
+
+def load_clip_to_cpu(visual_backbone, clip_path):
+    model, _ = load_model(visual_backbone, clip_path, pretrained=True)
     return model
 
 
@@ -214,11 +233,11 @@ class TextEncoder(nn.Layer):
 
         return x
 
-def build_text_embedding_coco(bpe_path):
+def build_text_embedding_coco(bpe_path, clip_path):
     categories = COCO_CATEGORIES
     run_on_gpu = True
 
-    clip_model = load_clip_to_cpu("ViT_B_32")
+    clip_model = load_clip_to_cpu("ViT_B_32", clip_path)
     text_model = TextEncoder(clip_model)
 
     for name, param in text_model.named_parameters():
@@ -256,8 +275,13 @@ def build_text_embedding_coco(bpe_path):
 def read_clip_feat(clip_feat_path):
     url = 'https://bj.bcebos.com/v1/paddledet/data/coco/clip_feat_coco_pickle_label.pkl'
     if not os.path.isfile(clip_feat_path):
+        path = os.path.expanduser("~/.cache/paddle/weights")
+        # path = get_weights_path(url)
+        clip_feat_path = os.path.join(path, url.split('/')[-1])
         wget.download(url, clip_feat_path)
 
     with open(clip_feat_path, 'rb') as f:
         clip_feat = pickle.load(f)
         return clip_feat
+
+
