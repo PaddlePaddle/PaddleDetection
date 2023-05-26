@@ -17,7 +17,7 @@ English | [简体中文](README_cn.md)
 
 | backbone       | mF1 | F1@50   |    F1@75    | download | config |
 | :--------------| :------- |  :----: | :------: | :----: |:-----: |
-| ResNet-18         | 54.98 |  79.46  |    62.10   | [model](https://bj.bcebos.com/v1/paddledet/models/clr_r18_culane.pdparams) | [config](./clr_resnet18_culane.yml) |
+| ResNet-18         | 54.98 |  79.46  |    62.10   | [model](https://bj.bcebos.com/v1/paddledet/models/clr_resnet18_culane.pdparams) | [config](./clr_resnet18_culane.yml) |
 
 ### Download
 Download [CULane](https://xingangpan.github.io/projects/CULane.html). Then extract them to `dataset/culane`.
@@ -28,14 +28,14 @@ culane/driver_xx_xxframe    # data folders x6
 culane/laneseg_label_w16    # lane segmentation labels
 culane/list                 # data lists
 ```
-make sure that images in `driver_23_30frame_part1.tar.gz` and `driver_23_30frame_part2.tar.gz` are located in one folder `driver_23_30frame` instead of two seperate folders after you decompress them.
+If you use Baidu Cloud, make sure that images in `driver_23_30frame_part1.tar.gz` and `driver_23_30frame_part2.tar.gz` are located in one folder `driver_23_30frame` instead of two seperate folders after you decompress them.
 
-Now we have uploaded the CULane dataset to PaddleDetection. You can simply run the training script below to download it automatically.
+Now we have uploaded a small subset of CULane dataset to PaddleDetection for code checking. You can simply run the training script below to download it automatically. If you want to implement the results, you need to download the full dataset at th link for training.
 
 ### Training
 - single GPU
 ```shell
-python tools/train.py -c configs/clrnet/clr_resnet18_culane.yml -o use_gpu=true
+python tools/train.py -c configs/clrnet/clr_resnet18_culane.yml
 ```
 - multi GPU
 ```shell
@@ -43,14 +43,14 @@ export CUDA_VISIBLE_DEVICES=0,1,2,3
 python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/clrnet/clr_resnet18_culane.yml
 ```
 
-### Evaluation 
+### Evaluation
 ```shell
-python tools/eval.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams output_eval=evaluation/ use_gpu=true
+python tools/eval.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams output_eval=evaluation/
 ```
 
 ### Inference
 ```shell
-python tools/infer_culane.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams use_gpu=true --infer_img=demo/lane00000.jpg
+python tools/infer_culane.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams --infer_img=demo/lane00000.jpg
 ```
 
 

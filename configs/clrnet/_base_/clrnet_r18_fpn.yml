@@ -19,7 +19,7 @@ CLRHead:
   fc_hidden_dim: 64
   num_priors: 192
   num_fc: 2
-  refine_layers: 3 
+  refine_layers: 3
   sample_points: 36
   loss: CLRNetLoss
   conf_threshold: 0.4
@@ -35,7 +35,7 @@ CLRNetLoss:
   bg_weight: 0.4
 
 # for visualize lane detection results
-sample_y: 
+sample_y:
   start: 589
   end: 230
   step: -20

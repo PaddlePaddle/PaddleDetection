@@ -12,4 +12,3 @@ OptimizerBuilder:
   regularizer: False
   optimizer:
     type: AdamW
-  

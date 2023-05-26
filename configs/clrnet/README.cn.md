@@ -17,7 +17,7 @@
 
 | 骨架网络       | mF1 | F1@50   |    F1@75    | 下载链接 | 配置文件 |训练日志|
 | :--------------| :------- |  :----: | :------: | :----: |:-----: |:-----: |
-| ResNet-18         | 54.98 |  79.46  |    62.10   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/clr_r18_culane.pdparams) | [配置文件](./clr_resnet18_culane.yml) |[训练日志](https://bj.bcebos.com/v1/paddledet/logs/train_clrnet_r18_15_culane.log)|
+| ResNet-18         | 54.98 |  79.46  |    62.10   | [下载链接](https://bj.bcebos.com/v1/paddledet/models/clr_resnet18_culane.pdparams) | [配置文件](./clr_resnet18_culane.yml) |[训练日志](https://bj.bcebos.com/v1/paddledet/logs/train_clrnet_r18_15_culane.log)|
 
 ### 数据集下载
 下载[CULane数据集](https://xingangpan.github.io/projects/CULane.html)并解压到`dataset/culane`目录。
@@ -28,14 +28,14 @@ culane/driver_xx_xxframe    # data folders x6
 culane/laneseg_label_w16    # lane segmentation labels
 culane/list                 # data lists
 ```
-注意确保`driver_23_30frame_part1.tar.gz`和`driver_23_30frame_part2.tar.gz`解压后的文件都在`driver_23_30frame`目录下。
+如果您使用百度云链接下载，注意确保`driver_23_30frame_part1.tar.gz`和`driver_23_30frame_part2.tar.gz`解压后的文件都在`driver_23_30frame`目录下。
 
-现已将数据集上传到PaddleDetection，可通过运行训练脚本，自动下载并解压数据。
+现已将用于测试的小数据集上传到PaddleDetection，可通过运行训练脚本，自动下载并解压数据，如需复现结果请下载链接中的全量数据集训练。
 
 ### 训练
 - GPU单卡训练
 ```shell
-python tools/train.py -c configs/clrnet/clr_resnet18_culane.yml -o use_gpu=true
+python tools/train.py -c configs/clrnet/clr_resnet18_culane.yml
 ```
 - GPU多卡训练
 ```shell
@@ -45,12 +45,12 @@ python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/clr
 
 ### 评估
 ```shell
-python tools/eval.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams output_eval=evaluation/ use_gpu=true
+python tools/eval.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams output_eval=evaluation/
 ```
 
 ### 预测
 ```shell
-python tools/infer_culane.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams use_gpu=true --infer_img=demo/lane00000.jpg
+python tools/infer_culane.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams --infer_img=demo/lane00000.jpg
 ```
 
 ## 引用

@@ -3,9 +3,8 @@ _BASE_: [
   '_base_/clrnet_reader.yml',
   '_base_/clrnet_r18_fpn.yml',
   '_base_/optimizer_1x.yml',
+  '../runtime.yml'
 ]
-
-
 
 save_dir: output
 weights: output/clr_resnet18_culane/model_final
