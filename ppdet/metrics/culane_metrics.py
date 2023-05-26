@@ -229,12 +229,12 @@ def eval_predictions(pred_dir,
 
 class CULaneMetric(Metric):
     def __init__(self,
-                 output_eval,
                  cfg,
+                 output_eval=None,
                  split="test",
                  dataset_dir="dataset/CULane/"):
         super(CULaneMetric, self).__init__()
-        self.output_eval = output_eval
+        self.output_eval = "evaluation" if output_eval is None else output_eval
         self.dataset_dir = dataset_dir
         self.split = split
         self.list_path = osp.join(dataset_dir, LIST_FILE[split])

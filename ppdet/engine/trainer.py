@@ -388,8 +388,8 @@ class Trainer(object):
             output_eval = self.cfg.get('output_eval', None)
             self._metrics = [
                 CULaneMetric(
-                    output_eval=output_eval,
                     cfg=self.cfg,
+                    output_eval=output_eval,
                     split=self.dataset.split,
                     dataset_dir=self.cfg.dataset_dir)
             ]
