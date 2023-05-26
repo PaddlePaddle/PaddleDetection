@@ -9,20 +9,12 @@ from scipy.optimize import linear_sum_assignment
 from shapely.geometry import LineString, Polygon
 from ppdet.utils.logger import setup_logger
 
-
 logger = setup_logger(__name__)
 
-
 __all__ = [
-    'draw_lane',
-    'discrete_cross_iou',
-    'continuous_cross_iou',
-    'interp',
-    'culane_metric',
-    'load_culane_img_data',
-    'load_culane_data',
-    'eval_predictions',
-    "CULaneMetric"
+    'draw_lane', 'discrete_cross_iou', 'continuous_cross_iou', 'interp',
+    'culane_metric', 'load_culane_img_data', 'load_culane_data',
+    'eval_predictions', "CULaneMetric"
 ]
 
 LIST_FILE = {
@@ -49,11 +41,8 @@ def draw_lane(lane, img=None, img_shape=None, width=30):
         img = np.zeros(img_shape, dtype=np.uint8)
     lane = lane.astype(np.int32)
     for p1, p2 in zip(lane[:-1], lane[1:]):
-        cv2.line(img,
-                 tuple(p1),
-                 tuple(p2),
-                 color=(255, 255, 255),
-                 thickness=width)
+        cv2.line(
+            img, tuple(p1), tuple(p2), color=(255, 255, 255), thickness=width)
     return img
 
 
@@ -72,13 +61,13 @@ def continuous_cross_iou(xs, ys, width=30, img_shape=(590, 1640, 3)):
     h, w, _ = img_shape
     image = Polygon([(0, 0), (0, h - 1), (w - 1, h - 1), (w - 1, 0)])
     xs = [
-        LineString(lane).buffer(distance=width / 2., cap_style=1,
-                                join_style=2).intersection(image)
+        LineString(lane).buffer(
+            distance=width / 2., cap_style=1, join_style=2).intersection(image)
         for lane in xs
     ]
     ys = [
-        LineString(lane).buffer(distance=width / 2., cap_style=1,
-                                join_style=2).intersection(image)
+        LineString(lane).buffer(
+            distance=width / 2., cap_style=1, join_style=2).intersection(image)
         for lane in ys
     ]
 
@@ -112,21 +101,19 @@ def culane_metric(pred,
         fn = 0 if len(pred) != 0 else len(anno)
         _metric[thr] = [tp, fp, fn]
 
-    interp_pred = np.array([interp(pred_lane, n=5) for pred_lane in pred],
-                           dtype=object)  # (4, 50, 2)
-    interp_anno = np.array([interp(anno_lane, n=5) for anno_lane in anno],
-                           dtype=object)  # (4, 50, 2)
+    interp_pred = np.array(
+        [interp(
+            pred_lane, n=5) for pred_lane in pred], dtype=object)  # (4, 50, 2)
+    interp_anno = np.array(
+        [interp(
+            anno_lane, n=5) for anno_lane in anno], dtype=object)  # (4, 50, 2)
 
     if official:
-        ious = discrete_cross_iou(interp_pred,
-                                  interp_anno,
-                                  width=width,
-                                  img_shape=img_shape)
+        ious = discrete_cross_iou(
+            interp_pred, interp_anno, width=width, img_shape=img_shape)
     else:
-        ious = continuous_cross_iou(interp_pred,
-                                    interp_anno,
-                                    width=width,
-                                    img_shape=img_shape)
+        ious = continuous_cross_iou(
+            interp_pred, interp_anno, width=width, img_shape=img_shape)
 
     row_ind, col_ind = linear_sum_assignment(1 - ious)
 
@@ -151,14 +138,13 @@ def load_culane_img_data(path):
     return img_data
 
 
-
-
 def load_culane_data(data_dir, file_list_path):
     with open(file_list_path, 'r') as file_list:
         filepaths = [
-            os.path.join(
-                data_dir, line[1 if line[0] == '/' else 0:].rstrip().replace(
-                    '.jpg', '.lines.txt')) for line in file_list.readlines()
+            os.path.join(data_dir,
+                         line[1 if line[0] == '/' else 0:].rstrip().replace(
+                             '.jpg', '.lines.txt'))
+            for line in file_list.readlines()
         ]
 
     data = []
@@ -167,6 +153,7 @@ def load_culane_data(data_dir, file_list_path):
         data.append(img_data)
 
     return data
+
 
 def eval_predictions(pred_dir,
                      anno_dir,
@@ -180,21 +167,23 @@ def eval_predictions(pred_dir,
     annotations = load_culane_data(anno_dir, list_path)
     img_shape = (590, 1640, 3)
     if sequential:
-        results = map(
-            partial(culane_metric,
-                    width=width,
-                    official=official,
-                    iou_thresholds=iou_thresholds,
-                    img_shape=img_shape), predictions, annotations)
+        results = map(partial(
+            culane_metric,
+            width=width,
+            official=official,
+            iou_thresholds=iou_thresholds,
+            img_shape=img_shape),
+                      predictions,
+                      annotations)
     else:
         from multiprocessing import Pool, cpu_count
         from itertools import repeat
         with Pool(cpu_count()) as p:
-            results = p.starmap(culane_metric, zip(predictions, annotations,
-                        repeat(width),
-                        repeat(iou_thresholds),
-                        repeat(official),
-                        repeat(img_shape)))
+            results = p.starmap(culane_metric,
+                                zip(predictions, annotations,
+                                    repeat(width),
+                                    repeat(iou_thresholds),
+                                    repeat(official), repeat(img_shape)))
 
     mean_f1, mean_prec, mean_recall, total_tp, total_fp, total_fn = 0, 0, 0, 0, 0, 0
     ret = {}
@@ -204,10 +193,10 @@ def eval_predictions(pred_dir,
         fn = sum(m[thr][2] for m in results)
         precision = float(tp) / (tp + fp) if tp != 0 else 0
         recall = float(tp) / (tp + fn) if tp != 0 else 0
-        f1 = 2 * precision * recall / (precision + recall) if tp !=0 else 0
+        f1 = 2 * precision * recall / (precision + recall) if tp != 0 else 0
         logger.info('iou thr: {:.2f}, tp: {}, fp: {}, fn: {},'
-                'precision: {}, recall: {}, f1: {}'.format(
-            thr, tp, fp, fn, precision, recall, f1))
+                    'precision: {}, recall: {}, f1: {}'.format(
+                        thr, tp, fp, fn, precision, recall, f1))
         mean_f1 += f1 / len(iou_thresholds)
         mean_prec += precision / len(iou_thresholds)
         mean_recall += recall / len(iou_thresholds)
@@ -223,9 +212,10 @@ def eval_predictions(pred_dir,
             'F1': f1
         }
     if len(iou_thresholds) > 2:
-        logger.info('mean result, total_tp: {}, total_fp: {}, total_fn: {},'
-                'precision: {}, recall: {}, f1: {}'.format(total_tp, total_fp,
-            total_fn, mean_prec, mean_recall, mean_f1))
+        logger.info(
+            'mean result, total_tp: {}, total_fp: {}, total_fn: {},'
+            'precision: {}, recall: {}, f1: {}'.format(
+                total_tp, total_fp, total_fn, mean_prec, mean_recall, mean_f1))
         ret['mean'] = {
             'TP': total_tp,
             'FP': total_fp,
@@ -238,7 +228,11 @@ def eval_predictions(pred_dir,
 
 
 class CULaneMetric(Metric):
-    def __init__(self,output_eval,cfg,split="test",dataset_dir="dataset/CULane/"):
+    def __init__(self,
+                 output_eval,
+                 cfg,
+                 split="test",
+                 dataset_dir="dataset/CULane/"):
         super(CULaneMetric, self).__init__()
         self.output_eval = output_eval
         self.dataset_dir = dataset_dir
@@ -278,19 +272,18 @@ class CULaneMetric(Metric):
     def accumulate(self):
         loss_lines = [[], [], [], []]
         for idx, pred in enumerate(self.predictions):
-            output_dir = os.path.join(
-                self.output_eval,
-                os.path.dirname(self.img_names[idx]))
-            output_filename = os.path.basename(
-                self.img_names[idx])[:-3] + 'lines.txt'
+            output_dir = os.path.join(self.output_eval,
+                                      os.path.dirname(self.img_names[idx]))
+            output_filename = os.path.basename(self.img_names[
+                idx])[:-3] + 'lines.txt'
             os.makedirs(output_dir, exist_ok=True)
             output = self.get_prediction_string(pred)
 
             # store loss lines
             lanes = self.lanes[idx]
             if len(lanes) - len(pred) in [1, 2, 3, 4]:
-                loss_lines[len(lanes) - len(pred) - 1].append(
-                    self.img_names[idx])
+                loss_lines[len(lanes) - len(pred) - 1].append(self.img_names[
+                    idx])
 
             with open(os.path.join(output_dir, output_filename),
                       'w') as out_file:
@@ -298,26 +291,27 @@ class CULaneMetric(Metric):
 
         for i, names in enumerate(loss_lines):
             with open(
-                    os.path.join(output_dir,
-                                 'loss_{}_lines.txt'.format(i + 1)), 'w') as f:
+                    os.path.join(output_dir, 'loss_{}_lines.txt'.format(i + 1)),
+                    'w') as f:
                 for name in names:
                     f.write(name + '\n')
 
         for cate, cate_file in CATEGORYS.items():
-            result = eval_predictions(self.output_eval,
-                                                    self.dataset_dir,
-                                                    os.path.join(self.dataset_dir, cate_file),
-                                                    iou_thresholds=[0.5],
-                                                    official=True)
+            result = eval_predictions(
+                self.output_eval,
+                self.dataset_dir,
+                os.path.join(self.dataset_dir, cate_file),
+                iou_thresholds=[0.5],
+                official=True)
 
-        result = eval_predictions(self.output_eval,
-                                                self.dataset_dir,
-                                                self.list_path,
-                                                iou_thresholds=np.linspace(0.5, 0.95, 10),
-                                                official=True)
+        result = eval_predictions(
+            self.output_eval,
+            self.dataset_dir,
+            self.list_path,
+            iou_thresholds=np.linspace(0.5, 0.95, 10),
+            official=True)
         self.eval_results['F1@50'] = result[0.5]['F1']
         self.eval_results['result'] = result
-    
 
     def update(self, inputs, outputs):
         assert len(inputs['img_name']) == len(outputs['lanes'])

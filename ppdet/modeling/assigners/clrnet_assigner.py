@@ -10,7 +10,8 @@ def distance_cost(predictions, targets, img_w):
     """
     num_priors = predictions.shape[0]
     num_targets = targets.shape[0]
-    predictions = paddle.repeat_interleave(predictions, num_targets, axis=0)[..., 6:]
+    predictions = paddle.repeat_interleave(
+        predictions, num_targets, axis=0)[..., 6:]
     targets = paddle.concat(x=num_priors * [targets])[..., 6:]
     invalid_masks = (targets < 0) | (targets >= img_w)
     lengths = (~invalid_masks).sum(axis=1)
@@ -32,10 +33,11 @@ def focal_cost(cls_pred, gt_labels, alpha=0.25, gamma=2, eps=1e-12):
         torch.Tensor: cls_cost value
     """
     cls_pred = F.sigmoid(cls_pred)
-    neg_cost = -(1 - cls_pred + eps).log() * (1 - alpha) * cls_pred.pow(gamma
-        )
+    neg_cost = -(1 - cls_pred + eps).log() * (1 - alpha) * cls_pred.pow(gamma)
     pos_cost = -(cls_pred + eps).log() * alpha * (1 - cls_pred).pow(gamma)
-    cls_cost = pos_cost.index_select(gt_labels,axis=1) - neg_cost.index_select(gt_labels,axis=1)
+    cls_cost = pos_cost.index_select(
+        gt_labels, axis=1) - neg_cost.index_select(
+            gt_labels, axis=1)
     return cls_cost
 
 
@@ -60,19 +62,18 @@ def dynamic_k_assign(cost, pair_wise_ious):
     num_gt = cost.shape[1]
 
     for gt_idx in range(num_gt):
-        _, pos_idx = paddle.topk(x=cost[:, gt_idx], 
-                                 k=dynamic_ks[gt_idx].item(), 
-                                 largest=False)
+        _, pos_idx = paddle.topk(
+            x=cost[:, gt_idx], k=dynamic_ks[gt_idx].item(), largest=False)
         matching_matrix[pos_idx, gt_idx] = 1.0
     del topk_ious, dynamic_ks, pos_idx
     matched_gt = matching_matrix.sum(axis=1)
 
     if (matched_gt > 1).sum() > 0:
         matched_gt_indices = paddle.nonzero(matched_gt > 1)[:, 0]
-        cost_argmin = paddle.argmin(cost.index_select(matched_gt_indices), axis=1)
+        cost_argmin = paddle.argmin(
+            cost.index_select(matched_gt_indices), axis=1)
         matching_matrix[matched_gt_indices][0] *= 0.0
         matching_matrix[matched_gt_indices, cost_argmin] = 1.0
-
 
     prior_idx = matching_matrix.sum(axis=1).nonzero()
     gt_idx = matching_matrix[prior_idx].argmax(axis=-1)
@@ -85,13 +86,22 @@ def cdist_paddle(x1, x2, p=2):
     # if p == np.inf:
     #     dist = np.max(np.abs(x1[:, np.newaxis, :] - x2[np.newaxis, :, :]), axis=-1)
     if p == 1:
-        dist = paddle.sum(paddle.abs(x1.unsqueeze(axis=1) - x2.unsqueeze(axis=0)), axis=-1)
+        dist = paddle.sum(
+            paddle.abs(x1.unsqueeze(axis=1) - x2.unsqueeze(axis=0)), axis=-1)
     else:
-        dist = paddle.pow(paddle.sum(paddle.pow(paddle.abs(x1.unsqueeze(axis=1) - x2.unsqueeze(axis=0)), p), axis=-1), 1/p)
+        dist = paddle.pow(paddle.sum(paddle.pow(
+            paddle.abs(x1.unsqueeze(axis=1) - x2.unsqueeze(axis=0)), p),
+                                     axis=-1),
+                          1 / p)
     return dist
 
-def assign(predictions, targets, img_w, img_h, distance_cost_weight=3.0,
-    cls_cost_weight=1.0):
+
+def assign(predictions,
+           targets,
+           img_w,
+           img_h,
+           distance_cost_weight=3.0,
+           cls_cost_weight=1.0):
     """
     computes dynamicly matching based on the cost, including cls cost and lane similarity cost
     Args:
@@ -104,11 +114,10 @@ def assign(predictions, targets, img_w, img_h, distance_cost_weight=3.0,
     predictions = predictions.detach().clone()
     predictions[:, 3] *= img_w - 1
     predictions[:, 6:] *= img_w - 1
-    
+
     targets = targets.detach().clone()
     distances_score = distance_cost(predictions, targets, img_w)
-    distances_score = 1 - distances_score / paddle.max(x=distances_score
-        ) + 0.01
+    distances_score = 1 - distances_score / paddle.max(x=distances_score) + 0.01
 
     cls_score = focal_cost(predictions[:, :2], targets[:, 1].cast('int64'))
 
@@ -118,21 +127,21 @@ def assign(predictions, targets, img_w, img_h, distance_cost_weight=3.0,
     target_start_xys[..., 0] *= (img_h - 1)
     prediction_start_xys = predictions[:, 2:4]
     prediction_start_xys[..., 0] *= (img_h - 1)
-    start_xys_score = cdist_paddle(prediction_start_xys, target_start_xys, p=2
-        ).reshape([num_priors, num_targets])
-    
-    start_xys_score = 1 - start_xys_score / paddle.max(x=start_xys_score
-        ) + 0.01
-    
+    start_xys_score = cdist_paddle(
+        prediction_start_xys, target_start_xys,
+        p=2).reshape([num_priors, num_targets])
+
+    start_xys_score = 1 - start_xys_score / paddle.max(x=start_xys_score) + 0.01
+
     target_thetas = targets[:, 4].unsqueeze(axis=-1)
-    theta_score = cdist_paddle(predictions[:, 4].unsqueeze(axis=-1),
-        target_thetas, p=1).reshape([num_priors, num_targets]) * 180
+    theta_score = cdist_paddle(
+        predictions[:, 4].unsqueeze(axis=-1), target_thetas,
+        p=1).reshape([num_priors, num_targets]) * 180
     theta_score = 1 - theta_score / paddle.max(x=theta_score) + 0.01
-    
+
     cost = -(distances_score * start_xys_score * theta_score
-        ) ** 2 * distance_cost_weight + cls_score * cls_cost_weight
-    iou = line_iou(predictions[..., 6:], targets[..., 6:], img_w,
-        aligned=False)
+             )**2 * distance_cost_weight + cls_score * cls_cost_weight
+    iou = line_iou(predictions[..., 6:], targets[..., 6:], img_w, aligned=False)
 
     matched_row_inds, matched_col_inds = dynamic_k_assign(cost, iou)
     return matched_row_inds, matched_col_inds

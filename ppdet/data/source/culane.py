@@ -1,4 +1,4 @@
-from ppdet.core.workspace import register,serializable
+from ppdet.core.workspace import register, serializable
 import cv2
 import os
 import tarfile
@@ -23,36 +23,35 @@ logger = setup_logger(__name__)
 @register
 @serializable
 class CULaneDataSet(DetDataset):
-    def __init__(self,
-                dataset_dir,
-                cut_height,
-                list_path,
-                split='train',
-                data_fields=['image'],
-                video_file=None,
-                frame_rate=-1,
-                 ):
-        super(CULaneDataSet,self).__init__(
+    def __init__(
+            self,
+            dataset_dir,
+            cut_height,
+            list_path,
+            split='train',
+            data_fields=['image'],
+            video_file=None,
+            frame_rate=-1, ):
+        super(CULaneDataSet, self).__init__(
             dataset_dir=dataset_dir,
             cut_height=cut_height,
             split=split,
-            data_fields=data_fields
-        )
+            data_fields=data_fields)
         self.dataset_dir = dataset_dir
         self.list_path = osp.join(dataset_dir, list_path)
         self.cut_height = cut_height
         self.data_fields = data_fields
         self.split = split
-        self.training = 'train' in split       
+        self.training = 'train' in split
         self.data_infos = []
         self.video_file = video_file
         self.frame_rate = frame_rate
         self._imid2path = {}
         self.predict_dir = None
-    
+
     def __len__(self):
         return len(self.data_infos)
-    
+
     def check_or_download_dataset(self):
         if not osp.exists(self.dataset_dir):
             download_dataset("dataset", dataset="culane")
@@ -63,7 +62,7 @@ class CULaneDataSet(DetDataset):
                 if fname.startswith('.'):
                     continue
                 if fname.find('.tar.gz') >= 0:
-                    with tarfile.open(osp.join(self.dataset_dir,fname)) as tf:
+                    with tarfile.open(osp.join(self.dataset_dir, fname)) as tf:
                         tf.extractall(path=self.dataset_dir)
         logger.info("Dataset files are ready.")
 
@@ -82,12 +81,11 @@ class CULaneDataSet(DetDataset):
                     len(anno['lanes']) for anno in self.data_infos)
                 return
 
-        
         with open(self.list_path) as list_file:
             for line in list_file:
                 infos = self.load_annotation(line.split())
                 self.data_infos.append(infos)
-        
+
         # cache data infos to file
         with open(cache_path, 'wb') as cache_file:
             pkl.dump(self.data_infos, cache_file)
@@ -109,11 +107,11 @@ class CULaneDataSet(DetDataset):
             exist_list = [int(l) for l in line[2:]]
             infos['lane_exist'] = np.array(exist_list)
 
-        anno_path = img_path[:-3] + 'lines.txt'  # remove sufix jpg and add lines.txt
+        anno_path = img_path[:
+                             -3] + 'lines.txt'  # remove sufix jpg and add lines.txt
         with open(anno_path, 'r') as anno_file:
             data = [
-                list(map(float, line.split()))
-                for line in anno_file.readlines()
+                list(map(float, line.split())) for line in anno_file.readlines()
             ]
         lanes = [[(lane[i], lane[i + 1]) for i in range(0, len(lane), 2)
                   if lane[i] >= 0 and lane[i + 1] >= 0] for lane in data]
@@ -121,12 +119,12 @@ class CULaneDataSet(DetDataset):
         lanes = [lane for lane in lanes
                  if len(lane) > 2]  # remove lanes with less than 2 points
 
-        lanes = [sorted(lane, key=lambda x: x[1])
-                 for lane in lanes]  # sort by y
+        lanes = [sorted(
+            lane, key=lambda x: x[1]) for lane in lanes]  # sort by y
         infos['lanes'] = lanes
 
         return infos
-    
+
     def set_images(self, images):
         self.predict_dir = images
         self.data_infos = self._load_images()
@@ -153,17 +151,22 @@ class CULaneDataSet(DetDataset):
                     "Image {} not found".format(image)
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
-            rec = {'im_id': np.array([ct]), "img_path": os.path.abspath(image), "img_name": os.path.basename(image), "lanes":[]}
+            rec = {
+                'im_id': np.array([ct]),
+                "img_path": os.path.abspath(image),
+                "img_name": os.path.basename(image),
+                "lanes": []
+            }
             self._imid2path[ct] = image
             ct += 1
             records.append(rec)
         assert len(records) > 0, "No image file found"
         return records
-    
+
     def get_imid2path(self):
         return self._imid2path
 
-    def __getitem__(self,idx):
+    def __getitem__(self, idx):
         data_info = self.data_infos[idx]
         img = cv2.imread(data_info['img_path'])
         img = img[self.cut_height:, :, :]
@@ -186,19 +189,18 @@ class CULaneDataSet(DetDataset):
                         lanes.append((p[0], p[1] - self.cut_height))
                     new_lanes.append(lanes)
                 sample.update({'lanes': new_lanes})
-            
-            sample['mask'] = SegmentationMapsOnImage(sample['mask'],
-                                                shape=img_org.shape)
-                
-        
+
+            sample['mask'] = SegmentationMapsOnImage(
+                sample['mask'], shape=img_org.shape)
+
         sample['full_img_path'] = data_info['img_path']
         sample['img_name'] = data_info['img_name']
         sample['im_id'] = np.array([idx])
 
         sample['image'] = sample['image'].copy().astype(np.uint8)
         sample['lanes'] = lane_to_linestrings(sample['lanes'])
-        sample['lanes'] = LineStringsOnImage(sample['lanes'],
-                                              shape=img_org.shape)
+        sample['lanes'] = LineStringsOnImage(
+            sample['lanes'], shape=img_org.shape)
         sample['seg'] = np.zeros(img_org.shape)
 
         return sample

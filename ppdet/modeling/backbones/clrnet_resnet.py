@@ -45,6 +45,7 @@ model_urls = {
     'https://x2paddle.bj.bcebos.com/vision/models/wide_resnet101_2-pt.pdparams',
 }
 
+
 class BasicBlock(nn.Layer):
     expansion = 1
 
@@ -65,12 +66,8 @@ class BasicBlock(nn.Layer):
             raise NotImplementedError(
                 "Dilation > 1 not supported in BasicBlock")
 
-        self.conv1 = nn.Conv2D(inplanes,
-                               planes,
-                               3,
-                               padding=1,
-                               stride=stride,
-                               bias_attr=False)
+        self.conv1 = nn.Conv2D(
+            inplanes, planes, 3, padding=1, stride=stride, bias_attr=False)
         self.bn1 = norm_layer(planes)
         self.relu = nn.ReLU()
         self.conv2 = nn.Conv2D(planes, planes, 3, padding=1, bias_attr=False)
@@ -118,20 +115,19 @@ class BottleneckBlock(nn.Layer):
         self.conv1 = nn.Conv2D(inplanes, width, 1, bias_attr=False)
         self.bn1 = norm_layer(width)
 
-        self.conv2 = nn.Conv2D(width,
-                               width,
-                               3,
-                               padding=dilation,
-                               stride=stride,
-                               groups=groups,
-                               dilation=dilation,
-                               bias_attr=False)
+        self.conv2 = nn.Conv2D(
+            width,
+            width,
+            3,
+            padding=dilation,
+            stride=stride,
+            groups=groups,
+            dilation=dilation,
+            bias_attr=False)
         self.bn2 = norm_layer(width)
 
-        self.conv3 = nn.Conv2D(width,
-                               planes * self.expansion,
-                               1,
-                               bias_attr=False)
+        self.conv3 = nn.Conv2D(
+            width, planes * self.expansion, 1, bias_attr=False)
         self.bn3 = norm_layer(planes * self.expansion)
         self.relu = nn.ReLU()
         self.downsample = downsample
@@ -192,12 +188,7 @@ class ResNet(nn.Layer):
             # [1, 1000]
     """
 
-    def __init__(self,
-                 block,
-                 depth=50,
-                 width=64,
-                 with_pool=True,
-                 groups=1):
+    def __init__(self, block, depth=50, width=64, with_pool=True, groups=1):
         super(ResNet, self).__init__()
         layer_cfg = {
             18: [2, 2, 2, 2],
@@ -206,7 +197,7 @@ class ResNet(nn.Layer):
             101: [3, 4, 23, 3],
             152: [3, 8, 36, 3]
         }
-        
+
         layers = layer_cfg[depth]
         self.groups = groups
         self.base_width = width
@@ -216,12 +207,13 @@ class ResNet(nn.Layer):
         self.inplanes = 64
         self.dilation = 1
 
-        self.conv1 = nn.Conv2D(3,
-                               self.inplanes,
-                               kernel_size=7,
-                               stride=2,
-                               padding=3,
-                               bias_attr=False)
+        self.conv1 = nn.Conv2D(
+            3,
+            self.inplanes,
+            kernel_size=7,
+            stride=2,
+            padding=3,
+            bias_attr=False)
         self.bn1 = self._norm_layer(self.inplanes)
         self.relu = nn.ReLU()
         self.maxpool = nn.MaxPool2D(kernel_size=3, stride=2, padding=1)
@@ -231,14 +223,13 @@ class ResNet(nn.Layer):
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         if with_pool:
             self.avgpool = nn.AdaptiveAvgPool2D((1, 1))
-        
+
         ch_out_list = [64, 128, 256, 512]
         block = BottleneckBlock if depth >= 50 else BasicBlock
 
         self._out_channels = [block.expansion * v for v in ch_out_list]
         self._out_strides = [4, 8, 16, 32]
-        self.return_idx=[0, 1, 2, 3]
-
+        self.return_idx = [0, 1, 2, 3]
 
     def _make_layer(self, block, planes, blocks, stride=1, dilate=False):
         norm_layer = self._norm_layer
@@ -249,13 +240,13 @@ class ResNet(nn.Layer):
             stride = 1
         if stride != 1 or self.inplanes != planes * block.expansion:
             downsample = nn.Sequential(
-                nn.Conv2D(self.inplanes,
-                          planes * block.expansion,
-                          1,
-                          stride=stride,
-                          bias_attr=False),
-                norm_layer(planes * block.expansion),
-            )
+                nn.Conv2D(
+                    self.inplanes,
+                    planes * block.expansion,
+                    1,
+                    stride=stride,
+                    bias_attr=False),
+                norm_layer(planes * block.expansion), )
 
         layers = []
         layers.append(
@@ -264,11 +255,12 @@ class ResNet(nn.Layer):
         self.inplanes = planes * block.expansion
         for _ in range(1, blocks):
             layers.append(
-                block(self.inplanes,
-                      planes,
-                      groups=self.groups,
-                      base_width=self.base_width,
-                      norm_layer=norm_layer))
+                block(
+                    self.inplanes,
+                    planes,
+                    groups=self.groups,
+                    base_width=self.base_width,
+                    norm_layer=norm_layer))
 
         return nn.Sequential(*layers)
 
@@ -285,7 +277,7 @@ class ResNet(nn.Layer):
         x = self.bn1(x)
         x = self.relu(x)
         x = self.maxpool(x)
-        
+
         out_layers = []
         x = self.layer1(x)
         out_layers.append(x)
@@ -300,6 +292,7 @@ class ResNet(nn.Layer):
             x = self.avgpool(x)
 
         return out_layers
+
 
 @register
 @serializable
@@ -316,8 +309,7 @@ class CLRResNet(nn.Layer):
         self.cfg = cfg
         self.in_channels = in_channels
 
-        self.model = eval(resnet)(
-            pretrained=pretrained)
+        self.model = eval(resnet)(pretrained=pretrained)
         self.out = None
         if out_conv:
             out_channel = 512
@@ -325,10 +317,12 @@ class CLRResNet(nn.Layer):
                 if chan < 0: continue
                 out_channel = chan
                 break
-            self.out = nn.Conv2D(out_channel * self.model.expansion,
-                               cfg.featuremap_out_channel,
-                               kernel_size=1,bias_attr=False)
-    
+            self.out = nn.Conv2D(
+                out_channel * self.model.expansion,
+                cfg.featuremap_out_channel,
+                kernel_size=1,
+                bias_attr=False)
+
     @property
     def out_shape(self):
         return self.model.out_shape

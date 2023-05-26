@@ -6,16 +6,17 @@ from paddle.nn.initializer import KaimingNormal
 
 
 class ConvModule(nn.Layer):
-    def __init__(self,in_channels,
-                out_channels,
-                kernel_size=1,
-                stride=1,
-                padding=0,
-                dilation=1,
-                groups=1,
-                bias=False,
-                norm_type='bn',
-                wtih_act=True):
+    def __init__(self,
+                 in_channels,
+                 out_channels,
+                 kernel_size=1,
+                 stride=1,
+                 padding=0,
+                 dilation=1,
+                 groups=1,
+                 bias=False,
+                 norm_type='bn',
+                 wtih_act=True):
         super(ConvModule, self).__init__()
         assert norm_type in ['bn', 'sync_bn', 'gn', None]
         self.with_norm = norm_type is not None
@@ -39,7 +40,7 @@ class ConvModule(nn.Layer):
         if self.wtih_act:
             self.act = nn.ReLU()
 
-    def forward(self, inputs): 
+    def forward(self, inputs):
         x = self.conv(inputs)
         if self.with_norm:
             x = self.bn(x)
@@ -50,8 +51,8 @@ class ConvModule(nn.Layer):
 
 def LinearModule(hidden_dim):
     return nn.LayerList(
-        [nn.Linear(hidden_dim, hidden_dim,bias_attr=True),
-         nn.ReLU()])
+        [nn.Linear(
+            hidden_dim, hidden_dim, bias_attr=True), nn.ReLU()])
 
 
 class FeatureResize(nn.Layer):
@@ -74,6 +75,7 @@ class ROIGather(nn.Layer):
         fc_hidden_dim: the fc output channel
         refine_layers: the total number of layers to build refine
     '''
+
     def __init__(self,
                  in_channels,
                  num_priors,
@@ -84,33 +86,36 @@ class ROIGather(nn.Layer):
         super(ROIGather, self).__init__()
         self.in_channels = in_channels
         self.num_priors = num_priors
-        self.f_key = ConvModule(in_channels=self.in_channels,
-                                out_channels=self.in_channels,
-                                kernel_size=1,
-                                stride=1,
-                                padding=0,
-                                norm_type='bn')
+        self.f_key = ConvModule(
+            in_channels=self.in_channels,
+            out_channels=self.in_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            norm_type='bn')
 
         self.f_query = nn.Sequential(
-            nn.Conv1D(in_channels=num_priors,
-                      out_channels=num_priors,
-                      kernel_size=1,
-                      stride=1,
-                      padding=0,
-                      groups=num_priors),
-            nn.ReLU(),
-        )
-        self.f_value = nn.Conv2D(in_channels=self.in_channels,
-                                 out_channels=self.in_channels,
-                                 kernel_size=1,
-                                 stride=1,
-                                 padding=0)
-        self.W = nn.Conv1D(in_channels=num_priors,
-                           out_channels=num_priors,
-                           kernel_size=1,
-                           stride=1,
-                           padding=0,
-                           groups=num_priors)
+            nn.Conv1D(
+                in_channels=num_priors,
+                out_channels=num_priors,
+                kernel_size=1,
+                stride=1,
+                padding=0,
+                groups=num_priors),
+            nn.ReLU(), )
+        self.f_value = nn.Conv2D(
+            in_channels=self.in_channels,
+            out_channels=self.in_channels,
+            kernel_size=1,
+            stride=1,
+            padding=0)
+        self.W = nn.Conv1D(
+            in_channels=num_priors,
+            out_channels=num_priors,
+            kernel_size=1,
+            stride=1,
+            padding=0,
+            groups=num_priors)
 
         self.resize = FeatureResize()
         constant_(self.W.weight, 0)
@@ -120,20 +125,23 @@ class ROIGather(nn.Layer):
         self.catconv = nn.LayerList()
         for i in range(refine_layers):
             self.convs.append(
-                ConvModule(in_channels,
-                           mid_channels, (9, 1),
-                           padding=(4, 0),
-                           bias=False,
-                           norm_type='bn'))
+                ConvModule(
+                    in_channels,
+                    mid_channels, (9, 1),
+                    padding=(4, 0),
+                    bias=False,
+                    norm_type='bn'))
 
             self.catconv.append(
-                ConvModule(mid_channels * (i + 1),
-                           in_channels, (9, 1),
-                           padding=(4, 0),
-                           bias=False,
-                           norm_type='bn'))
+                ConvModule(
+                    mid_channels * (i + 1),
+                    in_channels, (9, 1),
+                    padding=(4, 0),
+                    bias=False,
+                    norm_type='bn'))
 
-        self.fc = nn.Linear(sample_points * fc_hidden_dim, fc_hidden_dim, bias_attr=True)
+        self.fc = nn.Linear(
+            sample_points * fc_hidden_dim, fc_hidden_dim, bias_attr=True)
 
         self.fc_norm = nn.LayerNorm(fc_hidden_dim)
 
@@ -176,11 +184,12 @@ class ROIGather(nn.Layer):
         roi = roi.reshape([bs, self.num_priors, -1])
         query = roi
 
-        value = self.resize(self.f_value(x)) # (B, C, N) global feature
-        query = self.f_query(query) # (B, N, 1) sample context feature from prior roi
+        value = self.resize(self.f_value(x))  # (B, C, N) global feature
+        query = self.f_query(
+            query)  # (B, N, 1) sample context feature from prior roi
         key = self.f_key(x)
         value = value.transpose(perm=[0, 2, 1])
-        key = self.resize(key) # (B, C, N) global feature
+        key = self.resize(key)  # (B, C, N) global feature
         sim_map = paddle.matmul(query, key)
         sim_map = (self.in_channels**-.5) * sim_map
         sim_map = F.softmax(sim_map, axis=-1)
@@ -193,12 +202,11 @@ class ROIGather(nn.Layer):
         return roi
 
 
-
-
 class SegDecoder(nn.Layer):
     '''
     Optionaly seg decoder
     '''
+
     def __init__(self,
                  image_height,
                  image_width,
@@ -207,26 +215,22 @@ class SegDecoder(nn.Layer):
                  refine_layers=3):
         super().__init__()
         self.dropout = nn.Dropout2D(0.1)
-        self.conv = nn.Conv2D(prior_feat_channels * refine_layers, num_class,
-                              1)
+        self.conv = nn.Conv2D(prior_feat_channels * refine_layers, num_class, 1)
         self.image_height = image_height
         self.image_width = image_width
 
     def forward(self, x):
         x = self.dropout(x)
         x = self.conv(x)
-        x = F.interpolate(x,
-                          size=[self.image_height, self.image_width],
-                          mode='bilinear',
-                          align_corners=False)
+        x = F.interpolate(
+            x,
+            size=[self.image_height, self.image_width],
+            mode='bilinear',
+            align_corners=False)
         return x
 
 
-
-
-
 import paddle.nn as nn
-
 
 
 def accuracy(pred, target, topk=1, thresh=None):
@@ -265,14 +269,15 @@ def accuracy(pred, target, topk=1, thresh=None):
         f'maxk {maxk} exceeds pred dimension {pred.shape[1]}'
     pred_value, pred_label = pred.topk(maxk, axis=1)
     pred_label = pred_label.t()  # transpose to shape (maxk, N)
-    correct = pred_label.equal(target.reshape([1,-1]).expand_as(pred_label))
+    correct = pred_label.equal(target.reshape([1, -1]).expand_as(pred_label))
     if thresh is not None:
         # Only prediction values larger than thresh are counted as correct
         correct = correct & (pred_value > thresh).t()
     res = []
     for k in topk:
-        correct_k = correct[:k].reshape([-1]).cast("float32").sum(0, keepdim=True)
-        correct_k = correct_k*(100.0 / pred.shape[0])
+        correct_k = correct[:k].reshape([-1]).cast("float32").sum(0,
+                                                                  keepdim=True)
+        correct_k = correct_k * (100.0 / pred.shape[0])
         res.append(correct_k)
     return res[0] if return_single else res
 

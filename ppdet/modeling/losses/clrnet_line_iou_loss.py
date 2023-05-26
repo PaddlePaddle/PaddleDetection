@@ -24,11 +24,11 @@ def line_iou(pred, target, img_w, length=15, aligned=True):
         num_pred = pred.shape[0]
         invalid_mask = target.tile([num_pred, 1, 1])
 
-        ovr = (paddle.minimum(px2[:, None, :], tx2[None, ...]) -
-               paddle.maximum(px1[:, None, :], tx1[None, ...]))
+        ovr = (paddle.minimum(px2[:, None, :], tx2[None, ...]) - paddle.maximum(
+            px1[:, None, :], tx1[None, ...]))
         union = (paddle.maximum(px2[:, None, :], tx2[None, ...]) -
                  paddle.minimum(px1[:, None, :], tx1[None, ...]))
-    
+
     invalid_masks = (invalid_mask < 0) | (invalid_mask >= img_w)
 
     ovr[invalid_masks] = 0.

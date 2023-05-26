@@ -16,12 +16,13 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
 from paddle.nn.initializer import XavierUniform
-from ppdet.modeling.initializer import kaiming_normal_,constant_
+from ppdet.modeling.initializer import kaiming_normal_, constant_
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling.layers import ConvNormLayer
 from ppdet.modeling.shape_spec import ShapeSpec
 
 __all__ = ['CLRFPN']
+
 
 @register
 @serializable
@@ -91,7 +92,7 @@ class CLRFPN(nn.Layer):
             #     lateral_name = 'fpn_inner_res5_sum'
             # else:
             #     lateral_name = 'fpn_inner_res{}_sum_lateral'.format(i + 2)
-            lateral_name = "lateral_convs.{}.conv".format(i-1)
+            lateral_name = "lateral_convs.{}.conv".format(i - 1)
             in_c = in_channels[i - st_stage]
             if self.norm_type is not None:
                 lateral = self.add_sublayer(
@@ -116,7 +117,7 @@ class CLRFPN(nn.Layer):
                             initializer=XavierUniform(fan_out=in_c))))
             self.lateral_convs.append(lateral)
 
-            fpn_name = "fpn_convs.{}.conv".format(i-1)
+            fpn_name = "fpn_convs.{}.conv".format(i - 1)
             if self.norm_type is not None:
                 fpn_conv = self.add_sublayer(
                     fpn_name,
@@ -179,7 +180,8 @@ class CLRFPN(nn.Layer):
     def init_weights(self):
         for m in self.lateral_convs:
             if isinstance(m, (nn.Conv1D, nn.Conv2D)):
-                kaiming_normal_(m.weight, a=0, mode='fan_out', nonlinearity='relu')
+                kaiming_normal_(
+                    m.weight, a=0, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     constant_(m.bias, value=0.)
             elif isinstance(m, (nn.BatchNorm1D, nn.BatchNorm2D)):
@@ -187,7 +189,8 @@ class CLRFPN(nn.Layer):
                 constant_(m.bias, value=0)
         for m in self.fpn_convs:
             if isinstance(m, (nn.Conv1D, nn.Conv2D)):
-                kaiming_normal_(m.weight, a=0, mode='fan_out', nonlinearity='relu')
+                kaiming_normal_(
+                    m.weight, a=0, mode='fan_out', nonlinearity='relu')
                 if m.bias is not None:
                     constant_(m.bias, value=0.)
             elif isinstance(m, (nn.BatchNorm1D, nn.BatchNorm2D)):
@@ -249,4 +252,3 @@ class CLRFPN(nn.Layer):
                 channels=self.out_channel, stride=1. / s)
             for s in self.spatial_scales
         ]
-    
