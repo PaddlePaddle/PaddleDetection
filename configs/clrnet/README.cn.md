@@ -30,6 +30,8 @@ culane/list                 # data lists
 ```
 注意确保`driver_23_30frame_part1.tar.gz`和`driver_23_30frame_part2.tar.gz`解压后的文件都在`driver_23_30frame`目录下。
 
+现已将数据集上传到PaddleDetection，可通过运行训练脚本，自动下载并解压数据。
+
 ### 训练
 - GPU单卡训练
 ```shell

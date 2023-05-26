@@ -30,6 +30,8 @@ culane/list                 # data lists
 ```
 make sure that images in `driver_23_30frame_part1.tar.gz` and `driver_23_30frame_part2.tar.gz` are located in one folder `driver_23_30frame` instead of two seperate folders after you decompress them.
 
+Now we have uploaded the CULane dataset to PaddleDetection. You can simply run the training script below to download it automatically.
+
 ### Training
 - single GPU
 ```shell
