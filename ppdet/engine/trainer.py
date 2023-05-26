@@ -39,7 +39,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric,CULaneMetric
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -386,7 +386,13 @@ class Trainer(object):
             self._metrics = [JDEDetMetric(), ]
         elif self.cfg.metric == 'CULaneMetric':
             output_eval = self.cfg.get('output_eval', None)
-            self._metrics = [CULaneMetric(output_eval=output_eval,cfg=self.cfg,split=self.dataset.split,dataset_dir=self.cfg.dataset_dir)]
+            self._metrics = [
+                CULaneMetric(
+                    output_eval=output_eval,
+                    cfg=self.cfg,
+                    split=self.dataset.split,
+                    dataset_dir=self.cfg.dataset_dir)
+            ]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -1143,6 +1149,12 @@ class Trainer(object):
                 "crops": InputSpec(
                     shape=[None, 3, 192, 64], name='crops')
             })
+
+        if self.cfg.architecture == 'CLRNet':
+            input_spec[0].update({
+                "full_img_path": str,
+                "img_name": str,
+            })
         if prune_input:
             static_model = paddle.jit.to_static(
                 self.model, input_spec=input_spec)
@@ -1283,10 +1295,10 @@ class Trainer(object):
         return all_images
 
     def predict_culane(self,
-                images,
-                output_dir='output',
-                save_results=False,
-                visualize=True):
+                       images,
+                       output_dir='output',
+                       save_results=False,
+                       visualize=True):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
@@ -1358,7 +1370,6 @@ class Trainer(object):
                     outs[key] = value.numpy()
             results.append(outs)
 
-
         for _m in metrics:
             _m.accumulate()
             _m.reset()
@@ -1372,8 +1383,8 @@ class Trainer(object):
                     img_path = outs['img_path'][i]
                     img = cv2.imread(img_path)
                     out_file = os.path.join(output_dir,
-                                        os.path.basename(img_path))
+                                            os.path.basename(img_path))
                     lanes = [lane.to_array(self.cfg) for lane in lanes]
                     imshow_lanes(img, lanes, out_file=out_file)
-            
+
         return results

@@ -1,7 +1,6 @@
 from .meta_arch import BaseArch
 from ppdet.core.workspace import register, create
-
-
+from paddle import in_dynamic_mode
 
 __all__ = ['CLRNet']
 
@@ -49,11 +48,19 @@ class CLRNet(BaseArch):
             output = self.heads(neck_feats, self.inputs)
         else:
             output = self.heads(neck_feats)
-            output = self.heads.get_lanes(output)
-            output = {"lanes": output, "img_path": self.inputs['full_img_path'], "img_name": self.inputs['img_name']}
-        
+            if in_dynamic_mode():
+                output = self.heads.get_lanes(output)
+            else:
+                # TODO: hard code fix as_lanes=False problem in clrnet_head.py "predictions_to_pred" function for static mode
+                output = self.heads.get_lanes(output, as_lanes=False)
+            output = {
+                "lanes": output,
+                "img_path": self.inputs['full_img_path'],
+                "img_name": self.inputs['img_name']
+            }
+
         return output
-            
+
     def get_loss(self):
         return self._forward()
 

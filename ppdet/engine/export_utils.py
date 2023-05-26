@@ -54,10 +54,12 @@ TRT_MIN_SUBGRAPH = {
     'YOLOF': 40,
     'METRO_Body': 3,
     'DETR': 3,
+    'CLRNet': 3
 }
 
 KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
 MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
+LANE_ARCH = ['CLRNet']
 
 TO_STATIC_SPEC = {
     'yolov3_darknet53_270e_coco': [{
@@ -215,12 +217,13 @@ def _prune_input_spec(input_spec, program, targets):
 
 def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
     preprocess_list = []
+    label_list = []
+    if arch != "lane_arch":
+        anno_file = dataset_cfg.get_anno()
 
-    anno_file = dataset_cfg.get_anno()
+        clsid2catid, catid2name = get_categories(metric, anno_file, arch)
 
-    clsid2catid, catid2name = get_categories(metric, anno_file, arch)
-
-    label_list = [str(cat) for cat in catid2name.values()]
+        label_list = [str(cat) for cat in catid2name.values()]
 
     fuse_normalize = reader_cfg.get('fuse_normalize', False)
     sample_transforms = reader_cfg['sample_transforms']
@@ -314,6 +317,12 @@ def _dump_infer_config(config, path, image_shape, model):
     label_arch = 'detection_arch'
     if infer_arch in KEYPOINT_ARCH:
         label_arch = 'keypoint_arch'
+
+    if infer_arch in LANE_ARCH:
+        infer_cfg['arch'] = infer_arch
+        infer_cfg['min_subgraph_size'] = TRT_MIN_SUBGRAPH[infer_arch]
+        label_arch = 'lane_arch'
+        arch_state = True
 
     if infer_arch in MOT_ARCH:
         if config['metric'] in ['COCO', 'VOC']:
