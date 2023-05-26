@@ -278,7 +278,8 @@ def read_clip_feat(clip_feat_path):
         path = os.path.expanduser("~/.cache/paddle/weights")
         # path = get_weights_path(url)
         clip_feat_path = os.path.join(path, url.split('/')[-1])
-        wget.download(url, clip_feat_path)
+        if not os.path.exists(clip_feat_path):
+            wget.download(url, clip_feat_path)
 
     with open(clip_feat_path, 'rb') as f:
         clip_feat = pickle.load(f)

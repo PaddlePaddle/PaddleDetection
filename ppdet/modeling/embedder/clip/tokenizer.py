@@ -210,11 +210,11 @@ def tokenize(texts, context_length=77, bpe_path=default_bpe()):
 def build_tokenizer(bpe_path=default_bpe()):
     url = 'https://bj.bcebos.com/v1/paddledet/models/clip/bpe_simple_vocab_16e6.txt.gz'
     if not os.path.isfile(bpe_path):
-        bpe_path = os.path.expanduser(default_bpe())
         logger.warning(
             "bpe_simple_vocab_16e6 {} is not exist for reason above, try searching {} or "
-            "downloading...".format(bpe_path, default_bpe()))
-        if not os.path.isfile(bpe_path):
+            "downloading...".format(bpe_path, os.path.expanduser(default_bpe())))
+        bpe_path = os.path.expanduser(default_bpe())
+        if not os.path.exists(bpe_path):
             wget.download(url, out=bpe_path)
 
     return SimpleTokenizer(bpe_path)

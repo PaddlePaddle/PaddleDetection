@@ -13,6 +13,11 @@ Code is reproduced by [OV-DETR](https://github.com/yuhangzang/OV-DETR).
 - regex
 - paddlepaddle(gpu) >= 2.4.0
 
+## Data Prepare
+
+OV-DETR uses COCO Dataset with zero-shot [annotation](https://bj.bcebos.com/v1/paddledet/data/coco/ov_detr_zero-shot.zip).
+Try to download to dataset dir before training.
+
 ## Model Zoo
 
 | Backbone |                     Model                      | Images/GPU | Epochs | Box AP |                       Config                       | init_model  | Log | Download |
