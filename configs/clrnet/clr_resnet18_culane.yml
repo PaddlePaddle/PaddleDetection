@@ -6,5 +6,4 @@ _BASE_: [
   '../runtime.yml'
 ]
 
-save_dir: output
 weights: output/clr_resnet18_culane/model_final
