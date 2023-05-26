@@ -284,8 +284,8 @@ class CLRHead(nn.Layer):
             end = start + length - 1
             end = min(end, len(self.prior_ys) - 1)
             if start > 0:
-                mask = (lane_xs[:start] >= 0.) & (
-                    lane_xs[:start] <= 1.).cpu().detach().numpy()[::-1]
+                mask = ((lane_xs[:start] >= 0.) &
+                        (lane_xs[:start] <= 1.)).cpu().detach().numpy()[::-1]
                 mask = ~((mask.cumprod()[::-1]).astype(np.bool))
                 lane_xs[:start][mask] = -2
             if end < len(self.prior_ys) - 1:
@@ -346,7 +346,7 @@ class CLRHead(nn.Layer):
             mask = ious <= nms_overlap_thresh
             id = paddle.where(mask == False)[0]
 
-            if id[0].shape[0] == 0:
+            if id.shape[0] == 0:
                 break
             condidates = condidates[1:].index_select(id)
             idx = idx[1:].index_select(id)
