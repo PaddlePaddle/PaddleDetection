@@ -10,7 +10,7 @@ max_lanes: &max_lanes 4
 TrainReader:
   batch_size: 24
   batch_transforms:
-    - TrainProcess: {img_h: *img_h, img_w: *img_w}
+    - CULaneTrainProcess: {img_h: *img_h, img_w: *img_w}
     - CULaneDataProcess: {num_points: *num_points, max_lanes: *max_lanes, img_w: *img_w, img_h: *img_h}
   shuffle: True
   drop_last: False
