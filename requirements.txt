@@ -11,6 +11,10 @@ Cython
 pycocotools
 setuptools
 
+wget==3.2
+ftfy==6.1.1
+regex=2022.10.31
+
 # for MOT evaluation and inference
 lap
 motmetrics

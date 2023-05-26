@@ -15,9 +15,9 @@ Code is reproduced by [OV-DETR](https://github.com/yuhangzang/OV-DETR).
 
 ## Model Zoo
 
-| Backbone |                     Model                      | Images/GPU | Epochs | Box AP |                       Config                       | Log | Download |
-|:--------:|:----------------------------------------------:|:----------:|:------:|:------:|:--------------------------------------------------:|:---:|:--------:|
-|   R-50   | Open-Vocabulary DETR with Conditional Matching |     2      |   50   |  待更新   | configs/ov_detr/ov_deformable_detr_r50_1x_coco.yml | 待更新 |   待更新    |
+| Backbone |                     Model                      | Images/GPU | Epochs | Box AP |                       Config                       | init_model  | Log | Download |
+|:--------:|:----------------------------------------------:|:----------:|:------:|:------:|:--------------------------------------------------:|-------------|:---:|:--------:|
+|   R-50   | Open-Vocabulary DETR with Conditional Matching |     2      |   50   |  待更新   | configs/ov_detr/ov_deformable_detr_r50_1x_coco.yml | [OV-DETR](https://bj.bcebos.com/v1/paddledet/models/pretrained/ov_detr_r50_pre.pdparams) | 待更新 |   待更新    |
 
 **Notes:**
 
