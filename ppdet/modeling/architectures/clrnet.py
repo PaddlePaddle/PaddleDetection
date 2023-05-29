@@ -48,16 +48,15 @@ class CLRNet(BaseArch):
             output = self.heads(neck_feats, self.inputs)
         else:
             output = self.heads(neck_feats)
+            output = {'lanes': output}
+            # TODO: hard code fix as_lanes=False problem in clrnet_head.py "get_lanes" function for static mode
             if in_dynamic_mode():
-                output = self.heads.get_lanes(output)
-            else:
-                # TODO: hard code fix as_lanes=False problem in clrnet_head.py "predictions_to_pred" function for static mode
-                output = self.heads.get_lanes(output, as_lanes=False)
-            output = {
-                "lanes": output,
-                "img_path": self.inputs['full_img_path'],
-                "img_name": self.inputs['img_name']
-            }
+                output = self.heads.get_lanes(output['lanes'])
+                output = {
+                    "lanes": output,
+                    "img_path": self.inputs['full_img_path'],
+                    "img_name": self.inputs['img_name']
+                }
 
         return output
 

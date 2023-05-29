@@ -14,7 +14,6 @@ class Lane:
             points[:, 1], points[:, 0], k=min(3, len(points) - 1))
         self.min_y = points[:, 1].min() - 0.01
         self.max_y = points[:, 1].max() + 0.01
-
         self.metadata = metadata or {}
 
     def __repr__(self):
@@ -27,10 +26,11 @@ class Lane:
                                           )] = self.invalid_value
         return lane_xs
 
-    def to_array(self, cfg):
-        sample_y = range(cfg['sample_y']['start'], cfg['sample_y']['end'],
-                         cfg['sample_y']['step'])
-        img_w, img_h = cfg.ori_img_w, cfg.ori_img_h
+    def to_array(self, sample_y_range, img_w, img_h):
+        self.sample_y = range(sample_y_range[0], sample_y_range[1],
+                              sample_y_range[2])
+        sample_y = self.sample_y
+        img_w, img_h = img_w, img_h
         ys = np.array(sample_y) / float(img_h)
         xs = self(ys)
         valid_mask = (xs >= 0) & (xs < 1)

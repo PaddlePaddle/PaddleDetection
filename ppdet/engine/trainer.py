@@ -1384,7 +1384,16 @@ class Trainer(object):
                     img = cv2.imread(img_path)
                     out_file = os.path.join(output_dir,
                                             os.path.basename(img_path))
-                    lanes = [lane.to_array(self.cfg) for lane in lanes]
+                    lanes = [
+                        lane.to_array(
+                            sample_y_range=[
+                                self.cfg['sample_y']['start'],
+                                self.cfg['sample_y']['end'],
+                                self.cfg['sample_y']['step']
+                            ],
+                            img_w=self.cfg.ori_img_w,
+                            img_h=self.cfg.ori_img_h) for lane in lanes
+                    ]
                     imshow_lanes(img, lanes, out_file=out_file)
 
         return results
