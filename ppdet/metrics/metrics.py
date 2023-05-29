@@ -505,58 +505,9 @@ class SNIPERCOCOMetric(COCOMetric):
         super(SNIPERCOCOMetric, self).accumulate()
 
 
-
-class Zeroshot_COCOMetric(Metric):
+class Zeroshot_COCOMetric(COCOMetric):
     def __init__(self, anno_file, **kwargs):
-        self.anno_file = anno_file
-        self.clsid2catid = kwargs.get('clsid2catid', None)
-        if self.clsid2catid is None:
-            self.clsid2catid, _ = get_categories('COCO', anno_file)
-        self.classwise = kwargs.get('classwise', False)
-        self.output_eval = kwargs.get('output_eval', None)
-        # bias should be unified
-        self.bias = kwargs.get('bias', 0)
-        self.save_prediction_only = kwargs.get('save_prediction_only', False)
-        self.iou_type = kwargs.get('IouType', 'bbox')
-
-        if not self.save_prediction_only:
-            assert os.path.isfile(anno_file), \
-                    "anno_file {} not a file".format(anno_file)
-
-        if self.output_eval is not None:
-            Path(self.output_eval).mkdir(exist_ok=True)
-
-        self.reset()
-
-    def reset(self):
-        # only bbox and mask evaluation support currently
-        self.results = {'bbox': [], 'mask': [], 'segm': [], 'keypoint': []}
-        self.eval_results = {}
-
-    def update(self, inputs, outputs):
-        outs = {}
-        # outputs Tensor -> numpy.ndarray
-        for k, v in outputs.items():
-            outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
-
-        # multi-scale inputs: all inputs have same im_id
-        if isinstance(inputs, typing.Sequence):
-            im_id = inputs[0]['im_id']
-        else:
-            im_id = inputs['im_id']
-        outs['im_id'] = im_id.numpy() if isinstance(im_id,
-                                                    paddle.Tensor) else im_id
-
-        infer_results = get_infer_results(
-            outs, self.clsid2catid, bias=self.bias)
-        self.results['bbox'] += infer_results[
-            'bbox'] if 'bbox' in infer_results else []
-        self.results['mask'] += infer_results[
-            'mask'] if 'mask' in infer_results else []
-        self.results['segm'] += infer_results[
-            'segm'] if 'segm' in infer_results else []
-        self.results['keypoint'] += infer_results[
-            'keypoint'] if 'keypoint' in infer_results else []
+        super(Zeroshot_COCOMetric, self).__init__(anno_file, **kwargs)
 
     def accumulate(self):
         if len(self.results['bbox']) > 0:
@@ -577,75 +528,6 @@ class Zeroshot_COCOMetric(Metric):
                     anno_file=self.anno_file,
                     classwise=self.classwise)
                 self.eval_results['bbox'] = bbox_stats
-                sys.stdout.flush()
-
-        if len(self.results['mask']) > 0:
-            output = "mask.json"
-            if self.output_eval:
-                output = os.path.join(self.output_eval, output)
-            with open(output, 'w') as f:
-                json.dump(self.results['mask'], f)
-                logger.info('The mask result is saved to mask.json.')
-
-            if self.save_prediction_only:
-                logger.info('The mask result is saved to {} and do not '
-                            'evaluate the mAP.'.format(output))
-            else:
-                seg_stats = cocoapi_eval(
-                    output,
-                    'segm',
-                    anno_file=self.anno_file,
-                    classwise=self.classwise)
-                self.eval_results['mask'] = seg_stats
-                sys.stdout.flush()
-
-        if len(self.results['segm']) > 0:
-            output = "segm.json"
-            if self.output_eval:
-                output = os.path.join(self.output_eval, output)
-            with open(output, 'w') as f:
-                json.dump(self.results['segm'], f)
-                logger.info('The segm result is saved to segm.json.')
-
-            if self.save_prediction_only:
-                logger.info('The segm result is saved to {} and do not '
-                            'evaluate the mAP.'.format(output))
-            else:
-                seg_stats = cocoapi_eval(
-                    output,
-                    'segm',
-                    anno_file=self.anno_file,
-                    classwise=self.classwise)
-                self.eval_results['mask'] = seg_stats
-                sys.stdout.flush()
-
-        if len(self.results['keypoint']) > 0:
-            output = "keypoint.json"
-            if self.output_eval:
-                output = os.path.join(self.output_eval, output)
-            with open(output, 'w') as f:
-                json.dump(self.results['keypoint'], f)
-                logger.info('The keypoint result is saved to keypoint.json.')
-
-            if self.save_prediction_only:
-                logger.info('The keypoint result is saved to {} and do not '
-                            'evaluate the mAP.'.format(output))
-            else:
-                style = 'keypoints'
-                use_area = True
-                sigmas = COCO_SIGMAS
-                if self.iou_type == 'keypoints_crowd':
-                    style = 'keypoints_crowd'
-                    use_area = False
-                    sigmas = CROWD_SIGMAS
-                keypoint_stats = cocoapi_eval(
-                    output,
-                    style,
-                    anno_file=self.anno_file,
-                    classwise=self.classwise,
-                    sigmas=sigmas,
-                    use_area=use_area)
-                self.eval_results['keypoint'] = keypoint_stats
                 sys.stdout.flush()
 
     def log(self):
