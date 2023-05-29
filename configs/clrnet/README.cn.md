@@ -53,6 +53,8 @@ python tools/eval.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output
 python tools/infer_culane.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams --infer_img=demo/lane00000.jpg
 ```
 
+注意：预测功能暂不支持模型静态图推理部署。
+
 ## 引用
 ```
 @InProceedings{Zheng_2022_CVPR,

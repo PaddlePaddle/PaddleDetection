@@ -53,6 +53,7 @@ python tools/eval.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output
 python tools/infer_culane.py -c configs/clrnet/clr_resnet18_culane.yml -o weights=output/clr_resnet18_culane/model_final.pdparams --infer_img=demo/lane00000.jpg
 ```
 
+Notice: The inference phase does not support static model graph deploy at present.
 
 ## Citations
 ```
