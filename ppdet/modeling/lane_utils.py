@@ -107,5 +107,5 @@ def imshow_lanes(img, lanes, show=False, out_file=None, width=4):
 
     if out_file:
         if not os.path.exists(os.path.dirname(out_file)):
-            os.path.makedirs(os.path.dirname(out_file))
+            os.makedirs(os.path.dirname(out_file))
         cv2.imwrite(out_file, img)
