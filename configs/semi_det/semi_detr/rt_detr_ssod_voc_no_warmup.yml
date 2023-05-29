@@ -75,8 +75,8 @@ TestReader:
   drop_last: false
 
 
-pretrain_student_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
-pretrain_teacher_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+pretrain_student_weights: https://bj.bcebos.com/v1/paddledet/data/semidet/rtdetr_ssod/baseline/rtdetr_r50vd_6x_voc2007.pdparams
+pretrain_teacher_weights: https://bj.bcebos.com/v1/paddledet/data/semidet/rtdetr_ssod/baseline/rtdetr_r50vd_6x_voc2007.pdparams
 hidden_dim: 256
 use_focal_loss: True
 eval_size: [640, 640]
@@ -199,7 +199,7 @@ EvalDataset:
 epoch: 400 #epoch: 60
 
 LearningRate:
-  base_lr: 0.0002 #8gpu  and  lr = 0.0001 for 4gpu 
+  base_lr: 0.0002 #8gpu  and  lr = 0.0001 for 4gpu
   schedulers:
   - !PiecewiseDecay
     gamma: 1.0

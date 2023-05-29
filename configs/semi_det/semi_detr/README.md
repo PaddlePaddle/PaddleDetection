@@ -11,9 +11,9 @@
 
 |      模型       |  监督数据比例 |        Sup Baseline     |    Sup Epochs (Iters)   |  Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
 | :------------: | :---------: | :---------------------: | :---------------------: |:---------------------------: |:----------------------------: | :------------------: |:--------: |:----------: |
-| RTDETR-SSOD    |   5% |   [sup_config](../baseline/rtdetr_r50vd_6x_coco_sup005.yml)    |  - | 39.0 |  **42.3**  | -  | [download](https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams) | [config](./rt_detr_ssod005_coco_no_warmup.yml) |
-| RTDETR-SSOD     |   10% |   [sup_config](../baseline/rtdetr_r50vd_6x_coco_sup010.yml)    | -| 42.3 |  **44.8**  | - | [download](https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams) | [config](./rt_detr_ssod010_coco_with_warmup.yml) |
-| RTDETR-SSOD(VOC)|   VOC |   [sup_config](../baseline/rtdetr_r50vd_6x_coco_voc2007.yml)    | -  | 62.7 |  **65.8(LSJ)**  | -  | [download](https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams) | [config](./rt_detr_ssod_voc_with_warmup.yml) |
+| RTDETR-SSOD    |   5% |   [sup_config](../baseline/rtdetr_r50vd_6x_coco_sup005.yml)    |  - | 39.0 |  **42.3**  | -  | [download](https://bj.bcebos.com/v1/paddledet/data/semidet/rtdetr_ssod/rt_detr_ssod005_coco/rt_detr_ssod005_coco_no_warmup_t.pdparams) | [config](./rt_detr_ssod005_coco_no_warmup.yml) |
+| RTDETR-SSOD     |   10% |   [sup_config](../baseline/rtdetr_r50vd_6x_coco_sup010.yml)    | -| 42.3 |  **44.8**  | - | [download](https://bj.bcebos.com/v1/paddledet/data/semidet/rtdetr_ssod/rt_detr_ssod010_coco/rt_detr_ssod010_coco_no_warmup_t.pdparams) | [config](./rt_detr_ssod010_coco_with_warmup.yml) |
+| RTDETR-SSOD(VOC)|   VOC |   [sup_config](../baseline/rtdetr_r50vd_6x_coco_voc2007.yml)    | -  | 62.7 |  **65.8(LSJ)**  | -  | [download](https://bj.bcebos.com/v1/paddledet/data/semidet/rtdetr_ssod/rt_detr_ssod_voc/rt_detr_ssod_voc_no_warmup_t.pdparams) | [config](./rt_detr_ssod_voc_with_warmup.yml) |
 
 **注意:**
  - 以上模型训练默认使用8 GPUs，监督数据总batch_size默认为16，无监督数据总batch_size默认也为16，默认初始学习率为0.01。如果改动了总batch_size，请按线性比例相应地调整学习率；

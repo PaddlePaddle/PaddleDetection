@@ -1,5 +1,5 @@
 _BASE_: [
-  '../../rt-detr/rtdetr_r50vd_6x_coco.yml',
+  '../../rtdetr/rtdetr_r50vd_6x_coco.yml',
 ]
 log_iter: 50
 snapshot_epoch: 2
@@ -43,5 +43,3 @@ TrainReader:
   drop_last: true
   collate_batch: false
   use_shared_memory: false
-
-
