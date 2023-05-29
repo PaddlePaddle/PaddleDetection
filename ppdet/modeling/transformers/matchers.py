@@ -92,7 +92,7 @@ class HungarianMatcher(nn.Layer):
         if sum(num_gts) == 0:
             return [(paddle.to_tensor(
                 [], dtype=paddle.int64), paddle.to_tensor(
-                [], dtype=paddle.int64)) for _ in range(bs)]
+                    [], dtype=paddle.int64)) for _ in range(bs)]
 
         # We flatten to compute the cost matrices in a batch
         # [batch_size * num_queries, num_classes]
@@ -119,7 +119,7 @@ class HungarianMatcher(nn.Layer):
 
         # Compute the L1 cost between boxes
         cost_bbox = (
-                out_bbox.unsqueeze(1) - tgt_bbox.unsqueeze(0)).abs().sum(-1)
+            out_bbox.unsqueeze(1) - tgt_bbox.unsqueeze(0)).abs().sum(-1)
 
         # Compute the giou cost betwen boxes
         cost_giou = self.giou_loss(
@@ -181,7 +181,7 @@ class HungarianMatcher(nn.Layer):
         ]
         return [(paddle.to_tensor(
             i, dtype=paddle.int64), paddle.to_tensor(
-            j, dtype=paddle.int64)) for i, j in indices]
+                j, dtype=paddle.int64)) for i, j in indices]
 
 
 @register
@@ -246,8 +246,10 @@ class OVHungarianMatcher_ori(nn.Layer):
 
         # Compute the classification cost
         if self.use_focal_loss:
-            neg_cost_class = (1 - self.alpha) * (out_prob ** self.gamma) * (-paddle.log(1 - out_prob + 1e-8))
-            pos_cost_class = self.alpha * ((1 - out_prob) ** self.gamma) * (-paddle.log(out_prob + 1e-8))
+            neg_cost_class = (1 - self.alpha) * (out_prob**self.gamma) * (
+                -paddle.log(1 - out_prob + 1e-8))
+            pos_cost_class = self.alpha * (
+                (1 - out_prob)**self.gamma) * (-paddle.log(out_prob + 1e-8))
             cost_class = pos_cost_class.index_select(paddle.to_tensor([0]), axis=1) \
                          - neg_cost_class.index_select(paddle.to_tensor([0]), axis=1)
         else:
@@ -255,14 +257,18 @@ class OVHungarianMatcher_ori(nn.Layer):
 
         # Compute the L1 cost between boxes
         num_all_target_boxes = tgt_bbox.shape[0]
-        expanded_out_bbox = paddle.expand(paddle.unsqueeze(out_bbox, [1]),
-                                          [bs * num_queries, num_all_target_boxes, 4])  # [batch_size * num_queries, num_all_target_boxes, 4]
-        expanded_tgt_bbox = paddle.expand(paddle.unsqueeze(tgt_bbox, [0]),
-                                          [bs * num_queries, num_all_target_boxes, 4])  # [batch_size * num_queries, num_all_target_boxes, 4]
-        cost_bbox = F.loss.l1_loss(expanded_out_bbox, expanded_tgt_bbox,
-                                   reduction='none')  # [batch_size * num_queries, num_all_target_boxes,4]
+        expanded_out_bbox = paddle.expand(
+            paddle.unsqueeze(out_bbox, [1]),
+            [bs * num_queries, num_all_target_boxes,
+             4])  # [batch_size * num_queries, num_all_target_boxes, 4]
+        expanded_tgt_bbox = paddle.expand(
+            paddle.unsqueeze(tgt_bbox, [0]),
+            [bs * num_queries, num_all_target_boxes,
+             4])  # [batch_size * num_queries, num_all_target_boxes, 4]
+        cost_bbox = F.loss.l1_loss(
+            expanded_out_bbox, expanded_tgt_bbox, reduction='none'
+        )  # [batch_size * num_queries, num_all_target_boxes,4]
         cost_bbox = paddle.sum(cost_bbox, -1)
-
 
         # Compute the giou cost betwen boxes
         cost_giou = self.giou_loss(
@@ -270,8 +276,9 @@ class OVHungarianMatcher_ori(nn.Layer):
             bbox_cxcywh_to_xyxy(expanded_tgt_bbox)).squeeze(-1)
 
         # Final cost matrix
-        C = (self.matcher_coeff['class'] * cost_class + self.matcher_coeff['bbox'] * cost_bbox
-            + self.matcher_coeff['giou'] * cost_giou)
+        C = (self.matcher_coeff['class'] * cost_class +
+             self.matcher_coeff['bbox'] * cost_bbox + self.matcher_coeff['giou']
+             * cost_giou)
         C = paddle.reshape(C, [bs, num_queries, -1])
         C = [a.squeeze(0) for a in C.chunk(bs)]
 
@@ -283,6 +290,7 @@ class OVHungarianMatcher_ori(nn.Layer):
         return [(paddle.to_tensor(
             i, dtype=paddle.int64), paddle.to_tensor(
                 j, dtype=paddle.int64)) for i, j in indices]
+
 
 @register
 @serializable
@@ -327,12 +335,13 @@ class OVHungarianMatcher(OVHungarianMatcher_ori):
         if num_gts == 0:
             return [(paddle.to_tensor(
                 [], dtype=paddle.int64), paddle.to_tensor(
-                [], dtype=paddle.int64)) for _ in range(bs)]
+                    [], dtype=paddle.int64)) for _ in range(bs)]
 
         num_queries = num_queries // num_patch
 
         out_prob_all = paddle.reshape(logits, [bs, num_patch, num_queries, -1])
-        out_bbox_all = paddle.reshape(boxes, [bs, num_patch, num_queries, -1]).astype('float32')
+        out_bbox_all = paddle.reshape(
+            boxes, [bs, num_patch, num_queries, -1]).astype('float32')
 
         # Also concat the target labels and boxes
         tgt_ids_all = paddle.concat(gt_class).flatten()
@@ -350,21 +359,26 @@ class OVHungarianMatcher(OVHungarianMatcher_ori):
                 tgt_bbox = tgt_bbox_all.index_select(mask, axis=0)
 
                 # Compute the classification cost.
-                neg_cost_class = (1 - self.alpha) * (out_prob ** self.gamma) * (-paddle.log(1 - out_prob + 1e-8))
-                pos_cost_class = self.alpha * ((1 - out_prob) ** self.gamma) * (-paddle.log(out_prob + 1e-8))
+                neg_cost_class = (1 - self.alpha) * (out_prob**self.gamma) * (
+                    -paddle.log(1 - out_prob + 1e-8))
+                pos_cost_class = self.alpha * (
+                    (1 - out_prob)**self.gamma) * (-paddle.log(out_prob + 1e-8))
                 cost_class = pos_cost_class.index_select(paddle.to_tensor([0]), axis=1) \
                              - neg_cost_class.index_select(paddle.to_tensor([0]), axis=1)
 
                 # Compute the L1 cost between boxes
                 num_all_target_boxes = tgt_bbox.shape[0]
-                expanded_out_bbox = paddle.expand(paddle.unsqueeze(out_bbox, [1]),
-                                                  [bs * num_queries, num_all_target_boxes,
-                                                   4])  # [batch_size * num_queries, num_all_target_boxes, 4]
-                expanded_tgt_bbox = paddle.expand(paddle.unsqueeze(tgt_bbox, [0]),
-                                                  [bs * num_queries, num_all_target_boxes,
-                                                   4])  # [batch_size * num_queries, num_all_target_boxes, 4]
-                cost_bbox = F.loss.l1_loss(expanded_out_bbox, expanded_tgt_bbox,
-                                           reduction='none')  # [batch_size * num_queries, num_all_target_boxes,4]
+                expanded_out_bbox = paddle.expand(
+                    paddle.unsqueeze(out_bbox, [1]),
+                    [bs * num_queries, num_all_target_boxes,
+                     4])  # [batch_size * num_queries, num_all_target_boxes, 4]
+                expanded_tgt_bbox = paddle.expand(
+                    paddle.unsqueeze(tgt_bbox, [0]),
+                    [bs * num_queries, num_all_target_boxes,
+                     4])  # [batch_size * num_queries, num_all_target_boxes, 4]
+                cost_bbox = F.loss.l1_loss(
+                    expanded_out_bbox, expanded_tgt_bbox, reduction='none'
+                )  # [batch_size * num_queries, num_all_target_boxes,4]
                 cost_bbox = paddle.sum(cost_bbox, -1)
 
                 # Compute the giou cost betwen boxes
@@ -373,17 +387,17 @@ class OVHungarianMatcher(OVHungarianMatcher_ori):
                     bbox_cxcywh_to_xyxy(expanded_tgt_bbox)).squeeze(-1)
 
                 # Final cost matrix
-                C = (self.matcher_coeff['class'] * cost_class
-                     + self.matcher_coeff['bbox'] * cost_bbox
-                     + self.matcher_coeff['giou'] * cost_giou)
+                C = (self.matcher_coeff['class'] * cost_class +
+                     self.matcher_coeff['bbox'] * cost_bbox +
+                     self.matcher_coeff['giou'] * cost_giou)
 
                 C = paddle.reshape(C, [bs, num_queries, -1])
 
                 sizes = []
                 for a in gt_class:
                     if len(a) > 0:
-                        mask = a == label
-                        sizes.append(len(paddle.masked_select(a, mask)))
+                        label_mask = a == label
+                        sizes.append(len(paddle.masked_select(a, label_mask)))
                     else:
                         sizes.append(0)
 
@@ -398,10 +412,11 @@ class OVHungarianMatcher(OVHungarianMatcher_ori):
                         continue
                     x += index * num_queries
                     ans[ind][0] += x.tolist()
-                    y_label = (gt_class[ind].squeeze(1) == label).nonzero().squeeze(1).cpu().numpy()
+                    y_label = (gt_class[ind].squeeze(1) == label
+                               ).nonzero().squeeze(1).cpu().numpy()
                     y_label = y_label[y].tolist()
                     ans[ind][1] += y_label
 
-        return [(paddle.to_tensor(i, dtype="int64"), paddle.to_tensor(j, dtype="int64"))
-                for i, j in ans]
-
+        return [(paddle.to_tensor(
+            i, dtype="int64"), paddle.to_tensor(
+                j, dtype="int64")) for i, j in ans]
