@@ -13,3 +13,11 @@
 
 **注意:**
 - 多机训练细节见[文档](../../../docs/tutorials/DistributedTraining_cn.md)
+- Objects365数据集下载请参考[objects365官网](http://www.objects365.org/overview.html)。具体种类列表可下载由PaddleDetection团队整理的[objects365_detection_label_list.txt](https://bj.bcebos.com/v1/paddledet/data/objects365/objects365_detection_label_list.txt)并存放在`dataset/objects365/`，每一行即表示第几个种类。inference或导出模型时需要读取到种类数，如果没有标注json文件时，可以进行如下更改`configs/datasets/objects365_detection.yml`：
+```
+TestDataset:
+  !ImageFolder
+    # anno_path: annotations/zhiyuan_objv2_val.json
+    anno_path: objects365_detection_label_list.txt
+    dataset_dir: dataset/objects365/
+```

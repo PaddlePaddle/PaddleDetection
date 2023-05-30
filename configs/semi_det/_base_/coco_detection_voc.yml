@@ -1,0 +1,31 @@
+metric: COCO
+num_classes: 20
+# before training, change VOC to COCO format by 'python voc2coco.py'
+# partial labeled COCO, use `SemiCOCODataSet` rather than `COCODataSet`
+TrainDataset:
+  !SemiCOCODataSet
+    image_dir: VOC2007/JPEGImages
+    anno_path: PseudoAnnotations/VOC2007_trainval.json
+    dataset_dir:  dataset/voc/VOCdevkit
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
+
+# partial unlabeled COCO, use `SemiCOCODataSet` rather than `COCODataSet`
+UnsupTrainDataset:
+  !SemiCOCODataSet
+    image_dir: VOC2012/JPEGImages
+    anno_path: PseudoAnnotations/VOC2012_trainval.json
+    dataset_dir: dataset/voc/VOCdevkit
+    data_fields: ['image']
+    supervised: False
+
+EvalDataset:
+  !COCODataSet
+    image_dir: VOC2007/JPEGImages
+    anno_path: PseudoAnnotations/VOC2007_test.json
+    dataset_dir: dataset/voc/VOCdevkit/
+    allow_empty: true
+
+TestDataset:
+  !ImageFolder
+    anno_path: PseudoAnnotations/VOC2007_test.json # also support txt (like VOC's label_list.txt)
+    dataset_dir: dataset/voc/VOCdevkit/ # if set, anno_path will be 'dataset_dir/anno_path'

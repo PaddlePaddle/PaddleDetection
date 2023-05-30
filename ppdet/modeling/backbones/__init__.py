@@ -35,6 +35,9 @@ from . import convnext
 from . import vision_transformer
 from . import mobileone
 from . import trans_encoder
+from . import focalnet
+from . import vit_mae
+from . import hgnet_v2
 
 from .vgg import *
 from .resnet import *
@@ -57,6 +60,9 @@ from .cspresnet import *
 from .csp_darknet import *
 from .convnext import *
 from .vision_transformer import *
-from .vision_transformer import *
 from .mobileone import *
 from .trans_encoder import *
+from .focalnet import *
+from .vitpose import *
+from .vit_mae import *
+from .hgnet_v2 import *

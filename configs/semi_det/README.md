@@ -7,6 +7,7 @@
 - [模型库](#模型库)
     - [Baseline](#Baseline)
     - [DenseTeacher](#DenseTeacher)
+    - [ARSL](#ARSL)
 - [半监督数据集准备](#半监督数据集准备)
 - [半监督检测配置](#半监督检测配置)
     - [训练集配置](#训练集配置)
@@ -23,7 +24,7 @@
 - [引用](#引用)
 
 ## 简介
-半监督目标检测(Semi DET)是**同时使用有标注数据和无标注数据**进行训练的目标检测，既可以极大地节省标注成本，也可以充分利用无标注数据进一步提高检测精度。PaddleDetection团队复现了[DenseTeacher](denseteacher)半监督检测算法，用户可以下载使用。
+半监督目标检测(Semi DET)是**同时使用有标注数据和无标注数据**进行训练的目标检测，既可以极大地节省标注成本，也可以充分利用无标注数据进一步提高检测精度。PaddleDetection团队提供了[DenseTeacher](denseteacher/)和[ARSL](arsl/)等最前沿的半监督检测算法，用户可以下载使用。
 
 ## 模型库
 
@@ -40,6 +41,25 @@
 | DenseTeacher-FCOS     |   10% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **35.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010.yml) |
 | DenseTeacher-FCOS(LSJ)|   10% |   [sup_config](./baseline/fcos_r50_fpn_2x_coco_sup010.yml)    | 24 (17424)  | 26.3 |  **37.1(LSJ)**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_semi010_lsj.yml) |
 | DenseTeacher-FCOS |100%(full)|   [sup_config](./../fcos/fcos_r50_fpn_iou_multiscale_2x_coco.ymll) | 24 (175896) | 42.6 | **44.2** | 24 (175896)| [download](https://paddledet.bj.bcebos.com/models/denseteacher_fcos_r50_fpn_coco_full.pdparams) | [config](denseteacher/denseteacher_fcos_r50_fpn_coco_full.yml) |
+
+|      模型       |  监督数据比例 |        Sup Baseline     |    Sup Epochs (Iters)   |  Sup mAP<sup>val<br>0.5:0.95 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
+| :------------: | :---------: | :---------------------: | :---------------------: |:---------------------------: |:----------------------------: | :------------------: |:--------: |:----------: |
+| DenseTeacher-PPYOLOE+_s | 5% |   [sup_config](./baseline/ppyoloe_plus_crn_s_80e_coco_sup005.yml) | 80 (14480) | 32.8 |  **34.0**  | 200 (36200)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_ppyoloe_plus_crn_s_coco_semi005.pdparams) | [config](denseteacher/denseteacher_ppyoloe_plus_crn_s_coco_semi005.yml) |
+| DenseTeacher-PPYOLOE+_s | 10% |   [sup_config](./baseline/ppyoloe_plus_crn_s_80e_coco_sup010.yml) | 80 (14480) | 35.3 |  **37.5**  | 200 (36200)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_ppyoloe_plus_crn_s_coco_semi010.pdparams) | [config](denseteacher/denseteacher_ppyoloe_plus_crn_s_coco_semi010.yml) |
+| DenseTeacher-PPYOLOE+_l | 5% |   [sup_config](./baseline/ppyoloe_plus_crn_s_80e_coco_sup005.yml) | 80 (14480) | 42.9 |  **45.4**  | 200 (36200)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_ppyoloe_plus_crn_l_coco_semi005.pdparams) | [config](denseteacher/denseteacher_ppyoloe_plus_crn_l_coco_semi005.yml) |
+| DenseTeacher-PPYOLOE+_l | 10% |   [sup_config](./baseline/ppyoloe_plus_crn_l_80e_coco_sup010.yml) | 80 (14480) | 45.7 |  **47.4**  | 200 (36200)  | [download](https://paddledet.bj.bcebos.com/models/denseteacher_ppyoloe_plus_crn_l_coco_semi010.pdparams) | [config](denseteacher/denseteacher_ppyoloe_plus_crn_l_coco_semi010.yml) |
+
+
+### [ARSL](arsl)
+
+|      模型      |  COCO监督数据比例 | Semi mAP<sup>val<br>0.5:0.95 |  Semi Epochs (Iters)  |  模型下载  |   配置文件   |
+| :------------: | :---------:|:----------------------------: | :------------------: |:--------: |:----------: |
+| ARSL-FCOS     |    1% |  **22.8**  | 240 (87120)   | [download](https://paddledet.bj.bcebos.com/models/arsl_fcos_r50_fpn_coco_semi001.pdparams) | [config](arsl/arsl_fcos_r50_fpn_coco_semi001.yml) |
+| ARSL-FCOS     |    5% |  **33.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/arsl_fcos_r50_fpn_coco_semi005.pdparams) | [config](arsl/arsl_fcos_r50_fpn_coco_semi005.yml ) |
+| ARSL-FCOS     |   10% |  **36.9**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/arsl_fcos_r50_fpn_coco_semi010.pdparams) | [config](arsl/arsl_fcos_r50_fpn_coco_semi010.yml ) |
+| ARSL-FCOS     |   10% |  **38.5(LSJ)**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/arsl_fcos_r50_fpn_coco_semi010_lsj.pdparams) | [config](arsl/arsl_fcos_r50_fpn_coco_semi010_lsj.yml ) |
+| ARSL-FCOS     |   full(100%) |  **45.1**  | 240 (174240)  | [download](https://paddledet.bj.bcebos.com/models/arsl_fcos_r50_fpn_coco_full.pdparams) | [config](arsl/arsl_fcos_r50_fpn_coco_full.yml ) |
+
 
 
 ## 半监督数据集准备

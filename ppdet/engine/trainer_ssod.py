@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import os
 import copy
 import time
 import typing
@@ -26,18 +27,20 @@ import paddle.nn as nn
 import paddle.distributed as dist
 from paddle.distributed import fleet
 from ppdet.optimizer import ModelEMA, SimpleModelEMA
-
 from ppdet.core.workspace import create
-from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
+from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, save_model
 import ppdet.utils.stats as stats
 from ppdet.utils import profiler
 from ppdet.modeling.ssod.utils import align_weak_strong_shape
 from .trainer import Trainer
-
 from ppdet.utils.logger import setup_logger
+from paddle.static import InputSpec
+from ppdet.engine.export_utils import _dump_infer_config, _prune_input_spec
+MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
+
 logger = setup_logger('ppdet.engine')
 
-__all__ = ['Trainer_DenseTeacher']
+__all__ = ['Trainer_DenseTeacher', 'Trainer_ARSL']
 
 
 class Trainer_DenseTeacher(Trainer):
@@ -199,11 +202,6 @@ class Trainer_DenseTeacher(Trainer):
         self.status['data_time'] = stats.SmoothedValue(
             self.cfg.log_iter, fmt='{avg:.4f}')
         self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
-
-        if self.cfg.get('print_flops', False):
-            flops_loader = create('{}Reader'.format(self.mode.capitalize()))(
-                self.dataset, self.cfg.worker_num)
-            self._flops(flops_loader)
         profiler_options = self.cfg.get('profiler_options', None)
         self._compose_callback.on_train_begin(self.status)
 
@@ -471,5 +469,390 @@ class Trainer_DenseTeacher(Trainer):
             metric.accumulate()
             metric.log()
         self._compose_callback.on_epoch_end(self.status)
+        self._reset_metrics()
+
+
+class Trainer_ARSL(Trainer):
+    def __init__(self, cfg, mode='train'):
+        self.cfg = cfg
+        assert mode.lower() in ['train', 'eval', 'test'], \
+                "mode should be 'train', 'eval' or 'test'"
+        self.mode = mode.lower()
+        self.optimizer = None
+        self.is_loaded_weights = False
+        capital_mode = self.mode.capitalize()
+        self.use_ema = False
+        self.dataset = self.cfg['{}Dataset'.format(capital_mode)] = create(
+            '{}Dataset'.format(capital_mode))()
+        if self.mode == 'train':
+            self.dataset_unlabel = self.cfg['UnsupTrainDataset'] = create(
+                'UnsupTrainDataset')
+            self.loader = create('SemiTrainReader')(
+                self.dataset, self.dataset_unlabel, cfg.worker_num)
+
+        # build model
+        if 'model' not in self.cfg:
+            self.student_model = create(cfg.architecture)
+            self.teacher_model = create(cfg.architecture)
+            self.model = EnsembleTSModel(self.teacher_model, self.student_model)
+        else:
+            self.model = self.cfg.model
+            self.is_loaded_weights = True
+        # save path for burn-in model
+        self.base_path = cfg.get('weights')
+        self.base_path = os.path.dirname(self.base_path)
+
+        # EvalDataset build with BatchSampler to evaluate in single device
+        # TODO: multi-device evaluate
+        if self.mode == 'eval':
+            self._eval_batch_sampler = paddle.io.BatchSampler(
+                self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
+            self.loader = create('{}Reader'.format(self.mode.capitalize()))(
+                self.dataset, cfg.worker_num, self._eval_batch_sampler)
+        # TestDataset build after user set images, skip loader creation here
+
+        self.start_epoch = 0
+        self.end_epoch = 0 if 'epoch' not in cfg else cfg.epoch
+        self.epoch_iter = self.cfg.epoch_iter  # set fixed iter in each epoch to control checkpoint
+
+        # build optimizer in train mode
+        if self.mode == 'train':
+            steps_per_epoch = self.epoch_iter
+            self.lr = create('LearningRate')(steps_per_epoch)
+            self.optimizer = create('OptimizerBuilder')(self.lr,
+                                                        self.model.modelStudent)
+
+        self._nranks = dist.get_world_size()
+        self._local_rank = dist.get_rank()
+
+        self.status = {}
+
+        # initial default callbacks
+        self._init_callbacks()
+
+        # initial default metrics
+        self._init_metrics()
+        self._reset_metrics()
+        self.iter = 0
+
+    def resume_weights(self, weights):
+        # support Distill resume weights
+        if hasattr(self.model, 'student_model'):
+            self.start_epoch = load_weight(self.model.student_model, weights,
+                                           self.optimizer)
+        else:
+            self.start_epoch = load_weight(self.model, weights, self.optimizer)
+        logger.debug("Resume weights of epoch {}".format(self.start_epoch))
+
+    def train(self, validate=False):
+        assert self.mode == 'train', "Model not in 'train' mode"
+        Init_mark = False
+
+        # if validation in training is enabled, metrics should be re-init
+        if validate:
+            self._init_metrics(validate=validate)
+            self._reset_metrics()
+
+        if self.cfg.get('fleet', False):
+            self.model.modelStudent = fleet.distributed_model(
+                self.model.modelStudent)
+            self.optimizer = fleet.distributed_optimizer(self.optimizer)
+        elif self._nranks > 1:
+            find_unused_parameters = self.cfg[
+                'find_unused_parameters'] if 'find_unused_parameters' in self.cfg else False
+            self.model.modelStudent = paddle.DataParallel(
+                self.model.modelStudent,
+                find_unused_parameters=find_unused_parameters)
+
+        # set fixed iter in each epoch to control checkpoint
+        self.status.update({
+            'epoch_id': self.start_epoch,
+            'step_id': 0,
+            'steps_per_epoch': self.epoch_iter
+        })
+        print('338 Len of DataLoader: {}'.format(len(self.loader)))
+
+        self.status['batch_time'] = stats.SmoothedValue(
+            self.cfg.log_iter, fmt='{avg:.4f}')
+        self.status['data_time'] = stats.SmoothedValue(
+            self.cfg.log_iter, fmt='{avg:.4f}')
+        self.status['training_staus'] = stats.TrainingStats(self.cfg.log_iter)
+
+        self._compose_callback.on_train_begin(self.status)
+
+        epoch_id = self.start_epoch
+        self.iter = self.start_epoch * self.epoch_iter
+        # use iter rather than epoch to control training schedule
+        while self.iter < self.cfg.max_iter:
+            # epoch loop
+            self.status['mode'] = 'train'
+            self.status['epoch_id'] = epoch_id
+            self._compose_callback.on_epoch_begin(self.status)
+            self.loader.dataset_label.set_epoch(epoch_id)
+            self.loader.dataset_unlabel.set_epoch(epoch_id)
+            paddle.device.cuda.empty_cache()  # clear GPU memory
+            # set model status
+            self.model.modelStudent.train()
+            self.model.modelTeacher.eval()
+            iter_tic = time.time()
+
+            # iter loop in each eopch
+            for step_id in range(self.epoch_iter):
+                data = next(self.loader)
+                self.status['data_time'].update(time.time() - iter_tic)
+                self.status['step_id'] = step_id
+                # profiler.add_profiler_step(profiler_options)
+                self._compose_callback.on_step_begin(self.status)
+
+                # model forward and calculate loss
+                loss_dict = self.run_step_full_semisup(data)
+
+                if (step_id + 1) % self.cfg.optimize_rate == 0:
+                    self.optimizer.step()
+                    self.optimizer.clear_grad()
+                curr_lr = self.optimizer.get_lr()
+                self.lr.step()
+
+                # update log status
+                self.status['learning_rate'] = curr_lr
+                if self._nranks < 2 or self._local_rank == 0:
+                    self.status['training_staus'].update(loss_dict)
+                self.status['batch_time'].update(time.time() - iter_tic)
+                self._compose_callback.on_step_end(self.status)
+                self.iter += 1
+                iter_tic = time.time()
+
+            self._compose_callback.on_epoch_end(self.status)
+
+            if validate and (self._nranks < 2 or self._local_rank == 0) \
+                    and ((epoch_id + 1) % self.cfg.snapshot_epoch == 0 \
+                             or epoch_id == self.end_epoch - 1):
+                if not hasattr(self, '_eval_loader'):
+                    # build evaluation dataset and loader
+                    self._eval_dataset = self.cfg.EvalDataset
+                    self._eval_batch_sampler = \
+                        paddle.io.BatchSampler(
+                            self._eval_dataset,
+                            batch_size=self.cfg.EvalReader['batch_size'])
+                    self._eval_loader = create('EvalReader')(
+                        self._eval_dataset,
+                        self.cfg.worker_num,
+                        batch_sampler=self._eval_batch_sampler)
+                if validate and Init_mark == False:
+                    Init_mark = True
+                    self._init_metrics(validate=validate)
+                    self._reset_metrics()
+                with paddle.no_grad():
+                    self.status['save_best_model'] = True
+                    # before burn-in stage, eval student. after burn-in stage, eval teacher
+                    if self.iter <= self.cfg.SEMISUPNET['BURN_UP_STEP']:
+                        print("start eval student model")
+                        self._eval_with_loader(
+                            self._eval_loader, mode="student")
+                    else:
+                        print("start eval teacher model")
+                        self._eval_with_loader(
+                            self._eval_loader, mode="teacher")
+
+            epoch_id += 1
+
+        self._compose_callback.on_train_end(self.status)
+
+    def merge_data(self, data1, data2):
+        data = copy.deepcopy(data1)
+        for k, v in data1.items():
+            if type(v) is paddle.Tensor:
+                data[k] = paddle.concat(x=[data[k], data2[k]], axis=0)
+            elif type(v) is list:
+                data[k].extend(data2[k])
+        return data
+
+    def run_step_full_semisup(self, data):
+        label_data_k, label_data_q, unlabel_data_k, unlabel_data_q = data
+        data_merge = self.merge_data(label_data_k, label_data_q)
+        loss_sup_dict = self.model.modelStudent(data_merge, branch="supervised")
+        loss_dict = {}
+        for key in loss_sup_dict.keys():
+            if key[:4] == "loss":
+                loss_dict[key] = loss_sup_dict[key] * 1
+        losses_sup = paddle.add_n(list(loss_dict.values()))
+        # norm loss when using gradient accumulation
+        losses_sup = losses_sup / self.cfg.optimize_rate
+        losses_sup.backward()
+
+        for key in loss_sup_dict.keys():
+            loss_dict[key + "_pseudo"] = paddle.to_tensor([0])
+        loss_dict["loss_tot"] = losses_sup
+        """
+        semi-supervised training after burn-in stage
+        """
+        if self.iter >= self.cfg.SEMISUPNET['BURN_UP_STEP']:
+            # init teacher model with burn-up weight
+            if self.iter == self.cfg.SEMISUPNET['BURN_UP_STEP']:
+                print(
+                    'Starting semi-supervised learning and load the teacher model.'
+                )
+                self._update_teacher_model(keep_rate=0.00)
+                # save burn-in model
+                if dist.get_world_size() < 2 or dist.get_rank() == 0:
+                    print('saving burn-in model.')
+                    save_name = 'burnIn'
+                    epoch_id = self.iter // self.epoch_iter
+                    save_model(self.model, self.optimizer, self.base_path,
+                               save_name, epoch_id)
+            # Update teacher model with EMA
+            elif (self.iter + 1) % self.cfg.optimize_rate == 0:
+                self._update_teacher_model(
+                    keep_rate=self.cfg.SEMISUPNET['EMA_KEEP_RATE'])
+
+            #warm-up weight for pseudo loss
+            pseudo_weight = self.cfg.SEMISUPNET['UNSUP_LOSS_WEIGHT']
+            pseudo_warmup_iter = self.cfg.SEMISUPNET['PSEUDO_WARM_UP_STEPS']
+            temp = self.iter - self.cfg.SEMISUPNET['BURN_UP_STEP']
+            if temp <= pseudo_warmup_iter:
+                pseudo_weight *= (temp / pseudo_warmup_iter)
+
+            # get teacher predictions on weak-augmented unlabeled data
+            with paddle.no_grad():
+                teacher_pred = self.model.modelTeacher(
+                    unlabel_data_k, branch='semi_supervised')
+
+            # calculate unsupervised loss on strong-augmented unlabeled data
+            loss_unsup_dict = self.model.modelStudent(
+                unlabel_data_q,
+                branch="semi_supervised",
+                teacher_prediction=teacher_pred, )
+
+            for key in loss_unsup_dict.keys():
+                if key[-6:] == "pseudo":
+                    loss_unsup_dict[key] = loss_unsup_dict[key] * pseudo_weight
+            losses_unsup = paddle.add_n(list(loss_unsup_dict.values()))
+            # norm loss when using gradient accumulation
+            losses_unsup = losses_unsup / self.cfg.optimize_rate
+            losses_unsup.backward()
+
+            loss_dict.update(loss_unsup_dict)
+            loss_dict["loss_tot"] += losses_unsup
+        return loss_dict
+
+    def export(self, output_dir='output_inference'):
+        self.model.eval()
+        model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
+        save_dir = os.path.join(output_dir, model_name)
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir)
+        image_shape = None
+        if self.cfg.architecture in MOT_ARCH:
+            test_reader_name = 'TestMOTReader'
+        else:
+            test_reader_name = 'TestReader'
+        if 'inputs_def' in self.cfg[test_reader_name]:
+            inputs_def = self.cfg[test_reader_name]['inputs_def']
+            image_shape = inputs_def.get('image_shape', None)
+        # set image_shape=[3, -1, -1] as default
+        if image_shape is None:
+            image_shape = [3, -1, -1]
+
+        self.model.modelTeacher.eval()
+        if hasattr(self.model.modelTeacher, 'deploy'):
+            self.model.modelTeacher.deploy = True
+
+        # Save infer cfg
+        _dump_infer_config(self.cfg,
+                           os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
+                           self.model.modelTeacher)
+
+        input_spec = [{
+            "image": InputSpec(
+                shape=[None] + image_shape, name='image'),
+            "im_shape": InputSpec(
+                shape=[None, 2], name='im_shape'),
+            "scale_factor": InputSpec(
+                shape=[None, 2], name='scale_factor')
+        }]
+        if self.cfg.architecture == 'DeepSORT':
+            input_spec[0].update({
+                "crops": InputSpec(
+                    shape=[None, 3, 192, 64], name='crops')
+            })
+
+        static_model = paddle.jit.to_static(
+            self.model.modelTeacher, input_spec=input_spec)
+        # NOTE: dy2st do not pruned program, but jit.save will prune program
+        # input spec, prune input spec here and save with pruned input spec
+        pruned_input_spec = _prune_input_spec(input_spec,
+                                              static_model.forward.main_program,
+                                              static_model.forward.outputs)
+
+        # dy2st and save model
+        if 'slim' not in self.cfg or self.cfg['slim_type'] != 'QAT':
+            paddle.jit.save(
+                static_model,
+                os.path.join(save_dir, 'model'),
+                input_spec=pruned_input_spec)
+        else:
+            self.cfg.slim.save_quantized_model(
+                self.model.modelTeacher,
+                os.path.join(save_dir, 'model'),
+                input_spec=pruned_input_spec)
+        logger.info("Export model and saved in {}".format(save_dir))
+
+    def _eval_with_loader(self, loader, mode="teacher"):
+        sample_num = 0
+        tic = time.time()
+        self._compose_callback.on_epoch_begin(self.status)
+        self.status['mode'] = 'eval'
+        # self.model.eval()
+        self.model.modelTeacher.eval()
+        self.model.modelStudent.eval()
+        for step_id, data in enumerate(loader):
+            self.status['step_id'] = step_id
+            self._compose_callback.on_step_begin(self.status)
+            if mode == "teacher":
+                outs = self.model.modelTeacher(data)
+            else:
+                outs = self.model.modelStudent(data)
+
+            # update metrics
+            for metric in self._metrics:
+                metric.update(data, outs)
+
+            sample_num += data['im_id'].numpy().shape[0]
+            self._compose_callback.on_step_end(self.status)
+
+        self.status['sample_num'] = sample_num
+        self.status['cost_time'] = time.time() - tic
+
+        # accumulate metric to log out
+        for metric in self._metrics:
+            metric.accumulate()
+            metric.log()
+        self._compose_callback.on_epoch_end(self.status)
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
+
+    def evaluate(self):
+        with paddle.no_grad():
+            self._eval_with_loader(self.loader)
+
+    @paddle.no_grad()
+    def _update_teacher_model(self, keep_rate=0.996):
+        student_model_dict = copy.deepcopy(self.model.modelStudent.state_dict())
+        new_teacher_dict = dict()
+        for key, value in self.model.modelTeacher.state_dict().items():
+            if key in student_model_dict.keys():
+                v = student_model_dict[key] * (1 - keep_rate
+                                               ) + value * keep_rate
+                v.stop_gradient = True
+                new_teacher_dict[key] = v
+            else:
+                raise Exception("{} is not found in student model".format(key))
+
+        self.model.modelTeacher.set_dict(new_teacher_dict)
+
+
+class EnsembleTSModel(nn.Layer):
+    def __init__(self, modelTeacher, modelStudent):
+        super(EnsembleTSModel, self).__init__()
+        self.modelTeacher = modelTeacher
+        self.modelStudent = modelStudent

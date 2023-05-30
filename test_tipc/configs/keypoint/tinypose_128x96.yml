@@ -83,25 +83,25 @@ TestDataset:
   !ImageFolder
     anno_path: dataset/coco/keypoint_imagelist.txt
 
-worker_num: 2
+worker_num: 16
 global_mean: &global_mean [0.485, 0.456, 0.406]
 global_std: &global_std [0.229, 0.224, 0.225]
 TrainReader:
   sample_transforms:
-    - RandomFlipHalfBodyTransform:
-        scale: 0.25
-        rot: 30
-        num_joints_half_body: 8
-        prob_half_body: 0.3
-        pixel_std: *pixel_std
-        trainsize: *trainsize
-        upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-        flip_pairs: *flip_perm
-    - AugmentationbyInformantionDropping:
-        prob_cutout: 0.5
-        offset_factor: 0.05
-        num_patch: 1
-        trainsize: *trainsize
+    # - RandomFlipHalfBodyTransform:
+    #     scale: 0.25
+    #     rot: 30
+    #     num_joints_half_body: 8
+    #     prob_half_body: 0.3
+    #     pixel_std: *pixel_std
+    #     trainsize: *trainsize
+    #     upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    #     flip_pairs: *flip_perm
+    # - AugmentationbyInformantionDropping:
+    #     prob_cutout: 0.5
+    #     offset_factor: 0.05
+    #     num_patch: 1
+    #     trainsize: *trainsize
     - TopDownAffine:
         trainsize: *trainsize
         use_udp: true

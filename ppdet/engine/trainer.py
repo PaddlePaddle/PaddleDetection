@@ -38,8 +38,8 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
-from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
+from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -348,6 +348,19 @@ class Trainer(object):
                     self.cfg.save_dir,
                     save_prediction_only=save_prediction_only)
             ]
+        elif self.cfg.metric == 'KeyPointTopDownCOCOWholeBadyHandEval':
+            eval_dataset = self.cfg['EvalDataset']
+            eval_dataset.check_or_download_dataset()
+            anno_file = eval_dataset.get_anno()
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+            self._metrics = [
+                KeyPointTopDownCOCOWholeBadyHandEval(
+                    anno_file,
+                    len(eval_dataset),
+                    self.cfg.num_joints,
+                    self.cfg.save_dir,
+                    save_prediction_only=save_prediction_only)
+            ]
         elif self.cfg.metric == 'KeyPointTopDownMPIIEval':
             eval_dataset = self.cfg['EvalDataset']
             eval_dataset.check_or_download_dataset()
@@ -394,11 +407,11 @@ class Trainer(object):
                     "metrics shoule be instances of subclass of Metric"
         self._metrics.extend(metrics)
 
-    def load_weights(self, weights):
+    def load_weights(self, weights, ARSL_eval=False):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        load_pretrain_weight(self.model, weights)
+        load_pretrain_weight(self.model, weights, ARSL_eval)
         logger.debug("Load weights {} to start training".format(weights))
 
     def load_weights_sde(self, det_weights, reid_weights):
@@ -429,10 +442,8 @@ class Trainer(object):
         model = self.model
         if self.cfg.get('to_static', False):
             model = apply_to_static(self.cfg, model)
-        sync_bn = (
-            getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
-            (self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu) and
-            self._nranks > 1)
+        sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
+                   (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
@@ -487,6 +498,9 @@ class Trainer(object):
                 profiler.add_profiler_step(profiler_options)
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
+                if self.cfg.get('to_static',
+                                False) and 'image_file' in data.keys():
+                    data.pop('image_file')
 
                 if self.use_amp:
                     if isinstance(
@@ -982,8 +996,10 @@ class Trainer(object):
         for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward
-            outs = self.model(data)
-
+            if hasattr(self.model, 'modelTeacher'):
+                outs = self.model.modelTeacher(data)
+            else:
+                outs = self.model(data)
             for _m in metrics:
                 _m.update(data, outs)
 

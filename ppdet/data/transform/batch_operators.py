@@ -950,7 +950,7 @@ class Gt2SparseTarget(BaseOperator):
 @register_op
 class PadMaskBatch(BaseOperator):
     """
-    Pad a batch of samples so they can be divisible by a stride.
+    Pad a batch of samples so that they can be divisible by a stride.
     The layout of each image should be 'CHW'.
     Args:
         pad_to_stride (int): If `pad_to_stride > 0`, pad zeros to ensure
@@ -959,7 +959,7 @@ class PadMaskBatch(BaseOperator):
             `pad_mask` for transformer.
     """
 
-    def __init__(self, pad_to_stride=0, return_pad_mask=False):
+    def __init__(self, pad_to_stride=0, return_pad_mask=True):
         super(PadMaskBatch, self).__init__()
         self.pad_to_stride = pad_to_stride
         self.return_pad_mask = return_pad_mask
@@ -984,7 +984,7 @@ class PadMaskBatch(BaseOperator):
             im_c, im_h, im_w = im.shape[:]
             padding_im = np.zeros(
                 (im_c, max_shape[1], max_shape[2]), dtype=np.float32)
-            padding_im[:, :im_h, :im_w] = im
+            padding_im[:, :im_h, :im_w] = im.astype(np.float32)
             data['image'] = padding_im
             if 'semantic' in data and data['semantic'] is not None:
                 semantic = data['semantic']
@@ -1108,12 +1108,13 @@ class PadGT(BaseOperator):
         self.pad_img = pad_img
         self.minimum_gtnum = minimum_gtnum
 
-    def _impad(self, img: np.ndarray,
-            *,
-            shape = None,
-            padding = None,
-            pad_val = 0,
-            padding_mode = 'constant') -> np.ndarray:
+    def _impad(self,
+               img: np.ndarray,
+               *,
+               shape=None,
+               padding=None,
+               pad_val=0,
+               padding_mode='constant') -> np.ndarray:
         """Pad the given image to a certain shape or pad on all sides with
         specified padding mode and padding value.
 
@@ -1169,7 +1170,7 @@ class PadGT(BaseOperator):
             padding = (padding, padding, padding, padding)
         else:
             raise ValueError('Padding must be a int or a 2, or 4 element tuple.'
-                            f'But received {padding}')
+                             f'But received {padding}')
 
         # check padding mode
         assert padding_mode in ['constant', 'edge', 'reflect', 'symmetric']
@@ -1194,10 +1195,10 @@ class PadGT(BaseOperator):
     def checkmaxshape(self, samples):
         maxh, maxw = 0, 0
         for sample in samples:
-            h,w = sample['im_shape']
-            if h>maxh:
+            h, w = sample['im_shape']
+            if h > maxh:
                 maxh = h
-            if w>maxw:
+            if w > maxw:
                 maxw = w
         return (maxh, maxw)
 
@@ -1246,7 +1247,8 @@ class PadGT(BaseOperator):
                 sample['difficult'] = pad_diff
             if 'gt_joints' in sample:
                 num_joints = sample['gt_joints'].shape[1]
-                pad_gt_joints = np.zeros((num_max_boxes, num_joints, 3), dtype=np.float32)
+                pad_gt_joints = np.zeros(
+                    (num_max_boxes, num_joints, 3), dtype=np.float32)
                 if num_gt > 0:
                     pad_gt_joints[:num_gt] = sample['gt_joints']
                 sample['gt_joints'] = pad_gt_joints

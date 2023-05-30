@@ -159,7 +159,7 @@ python tools/eval.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml \
 ## 6 预测
 
   ```bash
-  python tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --infer_img=demo/000000570688.jpg -o weights=https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_roadsign.pdparams
+  python tools/infer.py -c configs/yolov3/yolov3_mobilenet_v1_roadsign.yml --infer_img=demo/road554.png -o weights=https://paddledet.bj.bcebos.com/models/yolov3_mobilenet_v1_roadsign.pdparams
   ```
  * 设置参数预测
 

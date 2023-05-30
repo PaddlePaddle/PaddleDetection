@@ -1,0 +1,25 @@
+metric: COCO
+num_classes: 10
+
+# Datset configuration
+TrainDataset:
+  !COCODataSet
+    image_dir: train_images_640_025
+    anno_path: train_640_025.json
+    dataset_dir: dataset/visdrone_sliced
+
+EvalDataset:
+  !COCODataSet
+    image_dir: val_images_640_025
+    anno_path: val_640_025.json
+    dataset_dir: dataset/visdrone_sliced
+worker_num: 0
+
+# preprocess reader in test
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    #- NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 16

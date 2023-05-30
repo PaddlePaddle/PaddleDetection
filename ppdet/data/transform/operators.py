@@ -501,7 +501,8 @@ class RandomDistort(BaseOperator):
                  brightness=[0.5, 1.5, 0.5],
                  random_apply=True,
                  count=4,
-                 random_channel=False):
+                 random_channel=False,
+                 prob=1.0):
         super(RandomDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
@@ -510,6 +511,7 @@ class RandomDistort(BaseOperator):
         self.random_apply = random_apply
         self.count = count
         self.random_channel = random_channel
+        self.prob = prob
 
     def apply_hue(self, img):
         low, high, prob = self.hue
@@ -563,6 +565,8 @@ class RandomDistort(BaseOperator):
         return img
 
     def apply(self, sample, context=None):
+        if random.random() > self.prob:
+            return sample
         img = sample['image']
         if self.random_apply:
             functions = [
@@ -1488,7 +1492,8 @@ class RandomCrop(BaseOperator):
                  allow_no_crop=True,
                  cover_all_box=False,
                  is_mask_crop=False,
-                 ioumode="iou"):
+                 ioumode="iou",
+                 prob=1.0):
         super(RandomCrop, self).__init__()
         self.aspect_ratio = aspect_ratio
         self.thresholds = thresholds
@@ -1498,6 +1503,7 @@ class RandomCrop(BaseOperator):
         self.cover_all_box = cover_all_box
         self.is_mask_crop = is_mask_crop
         self.ioumode = ioumode
+        self.prob = prob
 
     def crop_segms(self, segms, valid_ids, crop, height, width):
         def _crop_poly(segm, crop):
@@ -1588,6 +1594,9 @@ class RandomCrop(BaseOperator):
         return sample
 
     def apply(self, sample, context=None):
+        if random.random() > self.prob:
+            return sample
+
         if 'gt_bbox' not in sample:
             # only used in semi-det as unsup data
             sample = self.set_fake_bboxes(sample)
@@ -1782,55 +1791,109 @@ class RandomScaledCrop(BaseOperator):
     """Resize image and bbox based on long side (with optional random scaling),
        then crop or pad image to target size.
     Args:
-        target_dim (int): target size.
+        target_size (int|list): target size, "hw" format.
         scale_range (list): random scale range.
         interp (int): interpolation method, default to `cv2.INTER_LINEAR`.
+        fill_value (float|list|tuple): color value used to fill the canvas,
+            in RGB order.
     """
 
     def __init__(self,
-                 target_dim=512,
+                 target_size=512,
                  scale_range=[.1, 2.],
-                 interp=cv2.INTER_LINEAR):
+                 interp=cv2.INTER_LINEAR,
+                 fill_value=(123.675, 116.28, 103.53)):
         super(RandomScaledCrop, self).__init__()
-        self.target_dim = target_dim
+        assert isinstance(target_size, (
+            Integral, Sequence)), "target_size must be Integer, List or Tuple"
+        if isinstance(target_size, Integral):
+            target_size = [target_size, ] * 2
+
+        self.target_size = target_size
         self.scale_range = scale_range
         self.interp = interp
+        assert isinstance(fill_value, (Number, Sequence)), \
+            "fill value must be either float or sequence"
+        if isinstance(fill_value, Number):
+            fill_value = (fill_value, ) * 3
+        if not isinstance(fill_value, tuple):
+            fill_value = tuple(fill_value)
+        self.fill_value = fill_value
+
+    def apply_image(self, img, output_size, offset_x, offset_y):
+        th, tw = self.target_size
+        rh, rw = output_size
+        img = cv2.resize(
+            img, (rw, rh), interpolation=self.interp).astype(np.float32)
+        canvas = np.ones([th, tw, 3], dtype=np.float32)
+        canvas *= np.array(self.fill_value, dtype=np.float32)
+        canvas[:min(th, rh), :min(tw, rw)] = \
+            img[offset_y:offset_y + th, offset_x:offset_x + tw]
+        return canvas
+
+    def apply_bbox(self, gt_bbox, gt_class, scale, offset_x, offset_y):
+        th, tw = self.target_size
+        shift_array = np.array(
+            [
+                offset_x,
+                offset_y,
+            ] * 2, dtype=np.float32)
+        boxes = gt_bbox * scale - shift_array
+        boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, tw)
+        boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, th)
+        # filter boxes with no area
+        area = np.prod(boxes[..., 2:] - boxes[..., :2], axis=1)
+        valid = (area > 1.).nonzero()[0]
+        return boxes[valid], gt_class[valid], valid
+
+    def apply_segm(self, segms, output_size, offset_x, offset_y, valid=None):
+        th, tw = self.target_size
+        rh, rw = output_size
+        out_segms = []
+        for segm in segms:
+            segm = cv2.resize(segm, (rw, rh), interpolation=cv2.INTER_NEAREST)
+            segm = segm.astype(np.float32)
+            canvas = np.zeros([th, tw], dtype=segm.dtype)
+            canvas[:min(th, rh), :min(tw, rw)] = \
+                segm[offset_y:offset_y + th, offset_x:offset_x + tw]
+            out_segms.append(canvas)
+        out_segms = np.stack(out_segms)
+        return out_segms if valid is None else out_segms[valid]
 
     def apply(self, sample, context=None):
         img = sample['image']
         h, w = img.shape[:2]
         random_scale = np.random.uniform(*self.scale_range)
-        dim = self.target_dim
-        random_dim = int(dim * random_scale)
-        dim_max = max(h, w)
-        scale = random_dim / dim_max
-        resize_w = int(w * scale + 0.5)
-        resize_h = int(h * scale + 0.5)
-        offset_x = int(max(0, np.random.uniform(0., resize_w - dim)))
-        offset_y = int(max(0, np.random.uniform(0., resize_h - dim)))
+        target_scale_size = [t * random_scale for t in self.target_size]
+        # Compute actual rescaling applied to image.
+        scale = min(target_scale_size[0] / h, target_scale_size[1] / w)
+        output_size = [int(round(h * scale)), int(round(w * scale))]
+        # get offset
+        offset_x = int(
+            max(0, np.random.uniform(0., output_size[1] - self.target_size[1])))
+        offset_y = int(
+            max(0, np.random.uniform(0., output_size[0] - self.target_size[0])))
 
-        img = cv2.resize(img, (resize_w, resize_h), interpolation=self.interp)
-        img = np.array(img)
-        canvas = np.zeros((dim, dim, 3), dtype=img.dtype)
-        canvas[:min(dim, resize_h), :min(dim, resize_w), :] = img[
-            offset_y:offset_y + dim, offset_x:offset_x + dim, :]
-        sample['image'] = canvas
-        sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
-        scale_factor = sample['sacle_factor']
+        # apply to image
+        sample['image'] = self.apply_image(img, output_size, offset_x, offset_y)
+
+        # apply to bbox
+        valid = None
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'], sample['gt_class'], valid = self.apply_bbox(
+                sample['gt_bbox'], sample['gt_class'], scale, offset_x,
+                offset_y)
+
+        # apply to segm
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            sample['gt_segm'] = self.apply_segm(sample['gt_segm'], output_size,
+                                                offset_x, offset_y, valid)
+
+        sample['im_shape'] = np.asarray(output_size, dtype=np.float32)
+        scale_factor = sample['scale_factor']
         sample['scale_factor'] = np.asarray(
             [scale_factor[0] * scale, scale_factor[1] * scale],
             dtype=np.float32)
-
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            scale_array = np.array([scale, scale] * 2, dtype=np.float32)
-            shift_array = np.array([offset_x, offset_y] * 2, dtype=np.float32)
-            boxes = sample['gt_bbox'] * scale_array - shift_array
-            boxes = np.clip(boxes, 0, dim - 1)
-            # filter boxes with no area
-            area = np.prod(boxes[..., 2:] - boxes[..., :2], axis=1)
-            valid = (area > 1.).nonzero()[0]
-            sample['gt_bbox'] = boxes[valid]
-            sample['gt_class'] = sample['gt_class'][valid]
 
         return sample
 
@@ -2775,22 +2838,23 @@ class RandomShortSideResize(BaseOperator):
 
     def get_size_with_aspect_ratio(self, image_shape, size, max_size=None):
         h, w = image_shape
+        max_clip = False
         if max_size is not None:
             min_original_size = float(min((w, h)))
             max_original_size = float(max((w, h)))
             if max_original_size / min_original_size * size > max_size:
-                size = int(
-                    round(max_size * min_original_size / max_original_size))
+                size = int(max_size * min_original_size / max_original_size)
+                max_clip = True
 
         if (w <= h and w == size) or (h <= w and h == size):
             return (w, h)
 
         if w < h:
             ow = size
-            oh = int(round(size * h / w))
+            oh = int(round(size * h / w)) if not max_clip else max_size
         else:
             oh = size
-            ow = int(round(size * w / h))
+            ow = int(round(size * w / h)) if not max_clip else max_size
 
         return (ow, oh)
 

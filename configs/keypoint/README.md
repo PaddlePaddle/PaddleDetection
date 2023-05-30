@@ -72,8 +72,11 @@ COCO数据集
 | LiteHRNet-18                   |Top-Down| 384x288  |     69.7     | [lite_hrnet_18_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_18_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_18_384x288_coco.yml)     |
 | LiteHRNet-30                   | Top-Down|256x192  |     69.4     | [lite_hrnet_30_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_256x192_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_256x192_coco.yml)     |
 | LiteHRNet-30                   |Top-Down| 384x288  |     72.5     | [lite_hrnet_30_384x288_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/lite_hrnet_30_384x288_coco.pdparams) | [config](./lite_hrnet/lite_hrnet_30_384x288_coco.yml)     |
+|Vitpose_base_simple                   |Top-Down| 256x192  |     77.7     | [vitpose_base_simple_256x192_coco.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/vitpose_base_simple_256x192_coco.pdparams) | [config](./vit_pose/vitpose_base_simple_coco_256x192.yml)     |
+|Vitpose_base                   |Top-Down| 256x192  |     78.2     | [vitpose_base_coco_256x192.pdparams](https://bj.bcebos.com/v1/paddledet/models/keypoint/vitpose_base_coco_256x192.pdparams) | [config](./vit_pose/vitpose_base_coco_256x192.yml)     |
 
-备注： Top-Down模型测试AP结果基于GroundTruth标注框
+备注： 1.Top-Down模型测试AP结果基于GroundTruth标注框
+      2.vitpose训练用[MAE](https://bj.bcebos.com/v1/paddledet/models/keypoint/mae_pretrain_vit_base.pdparams)做为预训练模型
 
 MPII数据集
 | 模型  | 方案| 输入尺寸 | PCKh(Mean) | PCKh(Mean@0.1) |                           模型下载                           | 配置文件                                     |
@@ -283,5 +286,13 @@ python deploy/python/det_keypoint_unite_infer.py \
   author={Yu, Changqian and Xiao, Bin and Gao, Changxin and Yuan, Lu and Zhang, Lei and Sang, Nong and Wang, Jingdong},
   booktitle={CVPR},
   year={2021}
+}
+
+@inproceedings{
+  xu2022vitpose,
+  title={ViTPose: Simple Vision Transformer Baselines for Human Pose Estimation},
+  author={Yufei Xu and Jing Zhang and Qiming Zhang and Dacheng Tao},
+  booktitle={Advances in Neural Information Processing Systems},
+  year={2022},
 }
 ```

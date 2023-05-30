@@ -32,6 +32,7 @@ from ppdet.core.workspace import load_config, merge_config
 from ppdet.utils.check import check_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 from ppdet.engine import Trainer
+from ppdet.engine.trainer_ssod import Trainer_ARSL
 from ppdet.slim import build_slim_model
 
 from ppdet.utils.logger import setup_logger
@@ -60,14 +61,19 @@ def parse_args():
 
 
 def run(FLAGS, cfg):
+    ssod_method = cfg.get('ssod_method', None)
+    if ssod_method is not None and ssod_method == 'ARSL':
+        trainer = Trainer_ARSL(cfg, mode='test')
+        trainer.load_weights(cfg.weights, ARSL_eval=True)
     # build detector
-    trainer = Trainer(cfg, mode='test')
-
-    # load weights
-    if cfg.architecture in ['DeepSORT', 'ByteTrack']:
-        trainer.load_weights_sde(cfg.det_weights, cfg.reid_weights)
     else:
-        trainer.load_weights(cfg.weights)
+        trainer = Trainer(cfg, mode='test')
+
+        # load weights
+        if cfg.architecture in ['DeepSORT', 'ByteTrack']:
+            trainer.load_weights_sde(cfg.det_weights, cfg.reid_weights)
+        else:
+            trainer.load_weights(cfg.weights)
 
     # export model
     trainer.export(FLAGS.output_dir)

@@ -38,6 +38,7 @@ registered_ops = []
 __all__ = [
     'RandomAffine', 'KeyPointFlip', 'TagGenerate', 'ToHeatmaps',
     'NormalizePermute', 'EvalAffine', 'RandomFlipHalfBodyTransform',
+    'TopDownRandomFlip', 'TopDownRandomShiftBboxCenter', 'TopDownGetRandomScaleRotation',
     'TopDownAffine', 'ToHeatmapsTopDown', 'ToHeatmapsTopDown_DARK',
     'ToHeatmapsTopDown_UDP', 'TopDownEvalAffine',
     'AugmentationbyInformantionDropping', 'SinglePoseAffine', 'NoiseJitter',
@@ -76,7 +77,7 @@ class KeyPointFlip(object):
         '''
         records['gt_joints'] is Sequence in higherhrnet
         '''
-        if not ('gt_joints' in records and records['gt_joints'].size > 0):
+        if not ('gt_joints' in records and len(records['gt_joints']) > 0):
             return records
 
         kpts_lst = records['gt_joints']
@@ -147,7 +148,7 @@ class RandomAffine(object):
         max_scale (list[2]): the scale range to apply, transform range is [min, max]
         max_shift (float): the max abslute shift ratio to apply, transform range is [-max_shift*imagesize, max_shift*imagesize]
         hmsize (list[2]): output heatmap's shape list of different scale outputs of higherhrnet
-        trainsize (int): the standard length used to train, the 'scale_type' of [h,w] will be resize to trainsize for standard
+        trainsize (list[2]): the standard length used to train, the 'scale_type' of [h,w] will be resize to trainsize for standard
         scale_type (str): the length of [h,w] to used for trainsize, chosed between 'short' and 'long'
         records(dict): the dict contained the image, mask and coords
 
@@ -161,7 +162,7 @@ class RandomAffine(object):
                  scale=[0.75, 1.5],
                  max_shift=0.2,
                  hmsize=None,
-                 trainsize=512,
+                 trainsize=[512, 512],
                  scale_type='short',
                  boldervalue=[114, 114, 114]):
         super(RandomAffine, self).__init__()
@@ -304,7 +305,7 @@ class RandomAffine(object):
         input_size = 2 * center
         if self.trainsize != -1:
             dsize = self.trainsize
-            imgshape = (dsize, dsize)
+            imgshape = (dsize)
         else:
             dsize = scale
             imgshape = (shape.tolist())
@@ -379,6 +380,7 @@ class EvalAffine(object):
         if 'gt_joints' in records:
             del records['gt_joints']
         records['image'] = image_resized
+        records['scale_factor'] = self.size / min(h, w)
         return records
 
 
@@ -684,6 +686,134 @@ class AugmentationbyInformantionDropping(object):
             img = self._cutout(img, joints, joints_vis)
         records['image'] = img
         return records
+
+
+@register_keypointop
+class TopDownRandomFlip(object):
+    """Data augmentation with random image flip.
+
+    Args:
+        flip_perm: (list[tuple]): Pairs of keypoints which are mirrored
+                (for example, left ear and right ear).
+        flip_prob (float): Probability of flip.
+    """
+
+    def __init__(self, flip_perm=[], flip_prob=0.5):
+        self.flip_perm = flip_perm
+        self.flip_prob = flip_prob
+
+    def flip_joints(self, joints_3d, joints_3d_visible, img_width, flip_pairs):
+        assert len(joints_3d) == len(joints_3d_visible)
+        assert img_width > 0
+
+        joints_3d_flipped = joints_3d.copy()
+        joints_3d_visible_flipped = joints_3d_visible.copy()
+
+        # Swap left-right parts
+        for left, right in flip_pairs:
+            joints_3d_flipped[left, :] = joints_3d[right, :]
+            joints_3d_flipped[right, :] = joints_3d[left, :]
+
+            joints_3d_visible_flipped[left, :] = joints_3d_visible[right, :]
+            joints_3d_visible_flipped[right, :] = joints_3d_visible[left, :]
+
+        # Flip horizontally
+        joints_3d_flipped[:, 0] = img_width - 1 - joints_3d_flipped[:, 0]
+        joints_3d_flipped = joints_3d_flipped * (joints_3d_visible_flipped > 0)
+
+        return joints_3d_flipped, joints_3d_visible_flipped
+
+    def __call__(self, results):
+        """Perform data augmentation with random image flip."""
+        if np.random.rand() <= self.flip_prob:
+            return results
+
+        img = results['image']
+        joints_3d = results['gt_joints']
+        joints_3d_visible = results['joints_vis']
+        center = results['center']
+
+        # A flag indicating whether the image is flipped,
+        # which can be used by child class.
+        if not isinstance(img, list):
+            img = img[:, ::-1, :]
+        else:
+            img = [i[:, ::-1, :] for i in img]
+        if not isinstance(img, list):
+            joints_3d, joints_3d_visible = self.flip_joints(
+                joints_3d, joints_3d_visible, img.shape[1],
+                self.flip_perm)
+            center[0] = img.shape[1] - center[0] - 1
+        else:
+            joints_3d, joints_3d_visible = self.flip_joints(
+                joints_3d, joints_3d_visible, img[0].shape[1],
+                self.flip_perm)
+            center[0] = img[0].shape[1] - center[0] - 1
+
+        results['image'] = img
+        results['gt_joints'] = joints_3d
+        results['joints_vis'] = joints_3d_visible
+        results['center'] = center
+
+        return results
+
+
+@register_keypointop
+class TopDownRandomShiftBboxCenter(object):
+    """Random shift the bbox center.
+
+    Args:
+        shift_factor (float): The factor to control the shift range, which is
+            scale*pixel_std*scale_factor. Default: 0.16
+        shift_prob (float): Probability of applying random shift. Default: 0.3
+    """
+
+    def __init__(self, shift_factor=0.16, shift_prob=0.3):
+        self.shift_factor = shift_factor
+        self.shift_prob = shift_prob
+
+    def __call__(self, results):
+        center = results['center']
+        scale = results['scale']
+        if np.random.rand() < self.shift_prob:
+            center += np.random.uniform(
+                -1, 1, 2) * self.shift_factor * scale * 200.0
+
+        results['center'] = center
+        return results
+
+@register_keypointop
+class TopDownGetRandomScaleRotation(object):
+    """Data augmentation with random scaling & rotating.
+
+    Args:
+        rot_factor (int): Rotating to ``[-2*rot_factor, 2*rot_factor]``.
+        scale_factor (float): Scaling to ``[1-scale_factor, 1+scale_factor]``.
+        rot_prob (float): Probability of random rotation.
+    """
+
+    def __init__(self, rot_factor=40, scale_factor=0.5, rot_prob=0.6):
+        self.rot_factor = rot_factor
+        self.scale_factor = scale_factor
+        self.rot_prob = rot_prob
+
+    def __call__(self, results):
+        """Perform data augmentation with random scaling & rotating."""
+        s = results['scale']
+
+        sf = self.scale_factor
+        rf = self.rot_factor
+
+        s_factor = np.clip(np.random.randn() * sf + 1, 1 - sf, 1 + sf)
+        s = s * s_factor
+
+        r_factor = np.clip(np.random.randn() * rf, -rf * 2, rf * 2)
+        r = r_factor if np.random.rand() <= self.rot_prob else 0
+
+        results['scale'] = s
+        results['rotate'] = r
+
+        return results
 
 
 @register_keypointop
@@ -1574,14 +1704,13 @@ class PETR_Resize:
             dict: Resized results, 'im_shape', 'pad_shape', 'scale_factor', \
                 'keep_ratio' keys are added into result dict.
         """
-
         if 'scale' not in results:
             if 'scale_factor' in results:
                 img_shape = results['image'].shape[:2]
-                scale_factor = results['scale_factor']
-                assert isinstance(scale_factor, float)
-                results['scale'] = tuple(
-                    [int(x * scale_factor) for x in img_shape][::-1])
+                scale_factor = results['scale_factor'][0]
+                # assert isinstance(scale_factor, float)
+                results['scale'] = [int(x * scale_factor)
+                                    for x in img_shape][::-1]
             else:
                 self._random_scale(results)
         else:

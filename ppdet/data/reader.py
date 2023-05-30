@@ -248,7 +248,7 @@ class EvalReader(BaseDataLoader):
                  batch_transforms=[],
                  batch_size=1,
                  shuffle=False,
-                 drop_last=True,
+                 drop_last=False,
                  num_classes=80,
                  **kwargs):
         super(EvalReader, self).__init__(sample_transforms, batch_transforms,
