@@ -17,7 +17,7 @@ English | [简体中文](README_cn.md)
 
 | backbone       | mF1 | F1@50   |    F1@75    | download | config |
 | :--------------| :------- |  :----: | :------: | :----: |:-----: |
-| ResNet-18         | 54.98 |  79.46  |    62.10   | [model](https://bj.bcebos.com/v1/paddledet/models/clr_resnet18_culane.pdparams) | [config](./clr_resnet18_culane.yml) |
+| ResNet-18         | 54.98 |  79.46  |    62.10   | [model](https://bj.bcebos.com/v1/paddledet/models/clr_resnet18_culane.pdparams) | [config](./clrnet_resnet18_culane.yml) |
 
 ### Download
 Download [CULane](https://xingangpan.github.io/projects/CULane.html). Then extract them to `dataset/culane`.
