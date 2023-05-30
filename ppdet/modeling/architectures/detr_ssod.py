@@ -150,16 +150,17 @@ class DETR_SSOD(MultiSteamDetector):
                 else:
                     data_sup_s[k] = paddle.concat([v, data_sup_w[k]])
             loss = {}
-            unsup_loss = {}
-            sup_loss = self.student(data_sup_s)
-            sup_loss = {k: v for k, v in sup_loss.items()}
+            sup_loss=self.student(data_sup_s)
+            unsup_loss = {"unsup_" + k: v*paddle.to_tensor(0) for k, v in sup_loss.items()}
+            sup_loss = {"sup_" + k: v for k, v in sup_loss.items()}
+            loss.update(**sup_loss)
             unsup_loss.update({
                 'loss': paddle.add_n(
                     [v * 0 for k, v in sup_loss.items() if 'log' not in k])
             })
             unsup_loss = {"unsup_" + k: v * 0 for k, v in unsup_loss.items()}
             loss.update(**unsup_loss)
-            loss.update({'loss': loss['sup_loss']})
+            loss.update({'loss': loss['sup_loss']})    
         return loss
 
     def foward_unsup_train(self, data_unsup_w, data_unsup_s):
