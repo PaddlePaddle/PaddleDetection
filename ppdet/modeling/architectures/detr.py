@@ -126,26 +126,27 @@ class OVDETR(DETR):
     __inject__ = ['post_process']
     __shared__ = ['exclude_post_process']
 
-    def __init__(self,
-                 backbone,
-                 neck,
-                 transformer,
-                 detr_head,
-                 max_len=15,
-                 prob=0.5,
-                 with_box_refine=True,
-                 two_stage=True,
-                 bpe_path='ppdet://v1/paddledet/models/clip/bpe_simple_vocab_16e6.txt.gz',
-                 clip_path='',
-                 clip_feat_path='ppdet://v1/paddledet/data/coco/clip_feat_coco_pickle_label.pkl',
-                 post_process='OVDETRBBoxPostProcess',
-                 exclude_post_process=False):
+    def __init__(
+            self,
+            backbone,
+            neck,
+            transformer,
+            detr_head,
+            max_len=15,
+            prob=0.5,
+            with_box_refine=True,
+            two_stage=True,
+            bpe_path='ppdet://v1/paddledet/models/clip/bpe_simple_vocab_16e6.txt.gz',
+            clip_path='',
+            clip_feat_path='ppdet://v1/paddledet/data/coco/clip_feat_coco_pickle_label.pkl',
+            post_process='OVDETRBBoxPostProcess',
+            exclude_post_process=False):
         super(OVDETR, self).__init__(
-                backbone=backbone,
-                transformer=transformer,
-                detr_head=detr_head,
-                post_process=post_process,
-                exclude_post_process=exclude_post_process)
+            backbone=backbone,
+            transformer=transformer,
+            detr_head=detr_head,
+            post_process=post_process,
+            exclude_post_process=exclude_post_process)
         if neck is not None:
             self.neck = neck
 
@@ -207,10 +208,6 @@ class OVDETR(DETR):
     def forward_train(self):
         # Backbone
         body_feats = self.backbone(self.inputs)
-        # print(body_feats[0])
-        # print(self.neck)
-        # print(self.neck.input_proj[0][0].weight)
-        # exit()
 
         # Neck
         body_feats = self.neck(body_feats)
@@ -221,7 +218,8 @@ class OVDETR(DETR):
         if sum(len(a) for a in self.inputs["gt_class"]) > 0:
             uniq_labels = paddle.concat(self.inputs["gt_class"])
             uniq_labels = paddle.unique(uniq_labels)
-            uniq_labels = uniq_labels[paddle.to_tensor(list(range(len(uniq_labels))))][: self.max_len]
+            uniq_labels = uniq_labels[paddle.to_tensor(
+                list(range(len(uniq_labels))))][:self.max_len]
             # uniq_labels = uniq_labels[paddle.randperm(len(uniq_labels))][: self.max_len]
         else:
             uniq_labels = paddle.to_tensor([])
@@ -232,21 +230,27 @@ class OVDETR(DETR):
             extra_list = [i for i in self.all_ids if i not in uniq_labels]
             extra_list = paddle.to_tensor(extra_list)
             # extra_labels = extra_list[paddle.randperm(len(extra_list))][:pad_len].squeeze(1)
-            extra_labels = extra_list[paddle.to_tensor(list(range(len(extra_list))))][:pad_len].squeeze(1)
+            extra_labels = extra_list[paddle.to_tensor(
+                list(range(len(extra_list))))][:pad_len].squeeze(1)
 
             select_id += extra_labels.tolist()
         select_id_tensor = paddle.to_tensor(select_id)
-        text_query = paddle.index_select(self.zeroshot_w, select_id_tensor, axis=1).t()
+        text_query = paddle.index_select(
+            self.zeroshot_w, select_id_tensor, axis=1).t()
 
         img_query = []
         for cat_id in select_id:
             # index = paddle.randperm(len(self.clip_feat[cat_id]))[0:1]
-            index = paddle.to_tensor(list(range(len(self.clip_feat[cat_id]))))[0:1]
-            img_query.append(paddle.to_tensor(self.clip_feat[cat_id]).index_select(index))
+            index = paddle.to_tensor(list(range(len(self.clip_feat[cat_id]))))[
+                0:1]
+            img_query.append(
+                paddle.to_tensor(self.clip_feat[cat_id]).index_select(index))
         img_query = paddle.concat(img_query)
-        img_query = img_query / paddle.linalg.norm(img_query, axis=1, keepdim=True)
+        img_query = img_query / paddle.linalg.norm(
+            img_query, axis=1, keepdim=True)
 
-        mask = (paddle.rand([len(text_query)]) < self.prob).astype('float16').unsqueeze(1)
+        mask = (paddle.rand([len(text_query)]) < self.prob
+                ).astype('float16').unsqueeze(1)
         clip_query_ori = (text_query * mask + img_query * (1 - mask)).detach()
 
         dtype = self.patch2query.weight.dtype
@@ -255,11 +259,12 @@ class OVDETR(DETR):
         clip_query = text_query * mask + img_query * (1 - mask)
 
         # Transformer
-        head_inputs_dict = self.transformer(body_feats, pad_mask, text_query=clip_query)
-        head_inputs_dict.update(dict(
-            select_id=select_id,
-            clip_query_ori=clip_query_ori,
-        ))
+        head_inputs_dict = self.transformer(
+            body_feats, pad_mask, text_query=clip_query)
+        head_inputs_dict.update(
+            dict(
+                select_id=select_id,
+                clip_query_ori=clip_query_ori, ))
 
         # DETR Head
         loss = self.detr_head(head_inputs_dict, body_feats, self.inputs)
@@ -287,16 +292,18 @@ class OVDETR(DETR):
         logits_list = []
 
         for c in range(len(select_id) // num_patch + 1):
-            clip_query = self.zeroshot_w[:, c * num_patch: (c + 1) * num_patch].t()
+            clip_query = self.zeroshot_w[:, c * num_patch:(c + 1) *
+                                         num_patch].t()
             clip_query_ori = clip_query
             clip_query = self.patch2query(clip_query.astype(dtype))
 
             # Transformer
-            head_inputs_dict = self.transformer(body_feats, pad_mask, text_query=clip_query)
-            head_inputs_dict.update(dict(
-                select_id=select_id,
-                clip_query_ori=clip_query_ori,
-            ))
+            head_inputs_dict = self.transformer(
+                body_feats, pad_mask, text_query=clip_query)
+            head_inputs_dict.update(
+                dict(
+                    select_id=select_id,
+                    clip_query_ori=clip_query_ori, ))
 
             # DETR Head
             preds = self.detr_head(head_inputs_dict, body_feats)
@@ -312,8 +319,9 @@ class OVDETR(DETR):
             # bboxes, logits, masks = preds
             return bboxes, logits
         else:
-            bbox, bbox_num = self.post_process(
-                bboxes, logits, select_id, self.inputs['im_shape'], self.inputs['scale_factor'])
+            bbox, bbox_num = self.post_process(bboxes, logits, select_id,
+                                               self.inputs['im_shape'],
+                                               self.inputs['scale_factor'])
             # print(bbox)
             # exit()
             return bbox, bbox_num

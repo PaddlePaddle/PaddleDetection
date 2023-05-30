@@ -585,33 +585,3 @@ class SemiCOCODataSet(COCODataSet):
         self._curr_iter += 1
 
         return self.transform(roidb)
-
-
-# @register
-# @serializable
-# class ZeroshotCOCODataSet(COCODataSet):
-#     """Zeroshot COCODataSet used for OV-DETR"""
-#
-#     def __init__(
-#             self,
-#             dataset_dir,
-#             image_dir,
-#             anno_path,
-#             data_fields=['image'],
-#             sample_num=-1,
-#             load_crowd=False,
-#             allow_empty=False,
-#             empty_ratio=1.,
-#             repeat=-1,
-#     ):
-#         super(ZeroshotCOCODataSet, self).__init__(
-#             dataset_dir,
-#             image_dir,
-#             anno_path,
-#             data_fields,
-#             sample_num,
-#             load_crowd,
-#             allow_empty,
-#             empty_ratio,
-#             repeat,
-#         )
