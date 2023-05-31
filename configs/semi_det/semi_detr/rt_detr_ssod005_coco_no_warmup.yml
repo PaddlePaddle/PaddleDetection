@@ -151,7 +151,6 @@ DETR_SSOD:
   train_cfg:
     sup_weight: 1.0
     unsup_weight: 1.0
-    semi_start_iters: -1
     ema_start_iters:  -1
     pseudo_label_initial_score_thr: 0.7
     min_pseduo_box_size: 0
