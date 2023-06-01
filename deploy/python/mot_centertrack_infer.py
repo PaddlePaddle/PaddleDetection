@@ -65,7 +65,7 @@ class CenterTrack(Detector):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU/NPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
@@ -130,7 +130,7 @@ class CenterTrack(Detector):
             vertical_ratio=vertical_ratio,
             track_thresh=track_thresh,
             pre_thresh=pre_thresh)
-    
+
         self.pre_image = None
 
     def get_additional_inputs(self, dets, meta, with_hm=True):
@@ -173,11 +173,10 @@ class CenterTrack(Detector):
         #inputs = create_inputs(im, im_info)
         inputs = {}
         inputs['image'] = np.array((im, )).astype('float32')
-        inputs['im_shape'] = np.array(
-            (im_info['im_shape'], )).astype('float32')
+        inputs['im_shape'] = np.array((im_info['im_shape'], )).astype('float32')
         inputs['scale_factor'] = np.array(
             (im_info['scale_factor'], )).astype('float32')
-        
+
         inputs['trans_input'] = im_info['trans_input']
         inputs['inp_width'] = im_info['inp_width']
         inputs['inp_height'] = im_info['inp_height']
@@ -185,7 +184,7 @@ class CenterTrack(Detector):
         inputs['scale'] = im_info['scale']
         inputs['out_height'] = im_info['out_height']
         inputs['out_width'] = im_info['out_width']
-        
+
         if self.pre_image is None:
             self.pre_image = inputs['image']
             # initializing tracker for the first frame
@@ -196,7 +195,7 @@ class CenterTrack(Detector):
         # render input heatmap from tracker status
         pre_hm = self.get_additional_inputs(
             self.tracker.tracks, inputs, with_hm=True)
-        inputs['pre_hm'] = pre_hm #.to_tensor(pre_hm)
+        inputs['pre_hm'] = pre_hm  #.to_tensor(pre_hm)
 
         input_names = self.predictor.get_input_names()
         for i in range(len(input_names)):
@@ -256,8 +255,8 @@ class CenterTrack(Detector):
         return preds
 
     def tracking(self, inputs, det_results):
-        result = self.centertrack_post_process(
-            det_results, inputs, self.tracker.out_thresh)
+        result = self.centertrack_post_process(det_results, inputs,
+                                               self.tracker.out_thresh)
         online_targets = self.tracker.update(result)
 
         online_tlwhs, online_scores, online_ids = [], [], []
@@ -292,10 +291,7 @@ class CenterTrack(Detector):
             tracking_tensor = self.predictor.get_output_handle(output_names[2])
             np_tracking = tracking_tensor.copy_to_cpu()
 
-        result = dict(
-            bboxes=np_bboxes,
-            cts=np_cts,
-            tracking=np_tracking)
+        result = dict(bboxes=np_bboxes, cts=np_cts, tracking=np_tracking)
         return result
 
     def predict_image(self,
@@ -333,8 +329,8 @@ class CenterTrack(Detector):
                 # tracking
                 result_warmup = self.tracking(inputs, det_result)
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(inputs,
-                    det_result)
+                online_tlwhs, online_scores, online_ids = self.tracking(
+                    inputs, det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
 
@@ -358,8 +354,8 @@ class CenterTrack(Detector):
 
                 # tracking process
                 self.det_times.tracking_time_s.start()
-                online_tlwhs, online_scores, online_ids = self.tracking(inputs, 
-                    det_result)
+                online_tlwhs, online_scores, online_ids = self.tracking(
+                    inputs, det_result)
                 self.det_times.tracking_time_s.end()
                 self.det_times.img_num += 1
 
@@ -499,7 +495,7 @@ if __name__ == '__main__':
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
     FLAGS.device = FLAGS.device.upper()
-    assert FLAGS.device in ['CPU', 'GPU', 'XPU'
-                            ], "device should be CPU, GPU or XPU"
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU'
+                            ], "device should be CPU, GPU, NPU or XPU"
 
     main()

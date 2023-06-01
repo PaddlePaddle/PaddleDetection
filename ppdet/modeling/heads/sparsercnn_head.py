@@ -317,12 +317,15 @@ class SparseRCNNHead(nn.Layer):
             pooler_scales = [1.0 / 4.0, 1.0 / 8.0, 1.0 / 16.0, 1.0 / 32.0]
             end_level = 3
 
+        aligned = True
+        if paddle.device.is_compiled_with_custom_device('npu'):
+            aligned = False
         box_pooler = RoIAlign(
             resolution=pooler_resolution,
             spatial_scale=pooler_scales,
             sampling_ratio=sampling_ratio,
             end_level=end_level,
-            aligned=True)
+            aligned=aligned)
         return box_pooler
 
     def forward(self, features, input_whwh):

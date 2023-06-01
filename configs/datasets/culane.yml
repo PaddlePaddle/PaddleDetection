@@ -1,0 +1,28 @@
+metric: CULaneMetric
+num_classes: 5 # 4 lanes + background
+
+cut_height: &cut_height 270
+dataset_dir: &dataset_dir dataset/culane
+
+TrainDataset:
+  name: CULaneDataSet
+  dataset_dir: *dataset_dir
+  list_path: 'list/train_gt.txt'
+  split: train
+  cut_height: *cut_height
+
+
+EvalDataset:
+  name: CULaneDataSet
+  dataset_dir: *dataset_dir
+  list_path: 'list/test.txt'
+  split: test
+  cut_height: *cut_height
+
+
+TestDataset:
+  name: CULaneDataSet
+  dataset_dir: *dataset_dir
+  list_path: 'list/test.txt'
+  split: test
+  cut_height: *cut_height

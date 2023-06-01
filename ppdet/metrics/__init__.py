@@ -28,3 +28,7 @@ __all__ = metrics.__all__ + mot_metrics.__all__
 from . import mcmot_metrics
 from .mcmot_metrics import *
 __all__ = metrics.__all__ + mcmot_metrics.__all__
+
+from . import culane_metrics
+from .culane_metrics import *
+__all__ = metrics.__all__ + culane_metrics.__all__

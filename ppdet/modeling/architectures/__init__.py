@@ -44,6 +44,7 @@ from . import centertrack
 from . import queryinst
 from . import detr_ssod
 from . import multi_stream_detector
+from . import clrnet
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -79,3 +80,4 @@ from .queryinst import *
 from .keypoint_petr import *
 from .detr_ssod import *
 from .multi_stream_detector import *
+from .clrnet import *
