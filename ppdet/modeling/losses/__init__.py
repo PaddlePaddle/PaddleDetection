@@ -31,6 +31,8 @@ from . import probiou_loss
 from . import cot_loss
 from . import supcontrast
 from . import queryinst_loss
+from . import clrnet_loss
+from . import clrnet_line_iou_loss
 
 from .yolo_loss import *
 from .iou_aware_loss import *
@@ -52,3 +54,5 @@ from .probiou_loss import *
 from .cot_loss import *
 from .supcontrast import *
 from .queryinst_loss import *
+from .clrnet_loss import *
+from .clrnet_line_iou_loss import *

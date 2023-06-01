@@ -1,0 +1,41 @@
+architecture: CLRNet
+
+CLRNet:
+  backbone: CLRResNet
+  neck: CLRFPN
+  clr_head: CLRHead
+
+CLRResNet:
+  resnet: 'resnet18'
+  pretrained: True
+
+CLRFPN:
+  in_channels: [128,256,512]
+  out_channel: 64
+  extra_stage: 0
+
+CLRHead:
+  prior_feat_channels: 64
+  fc_hidden_dim: 64
+  num_priors: 192
+  num_fc: 2
+  refine_layers: 3
+  sample_points: 36
+  loss: CLRNetLoss
+  conf_threshold: 0.4
+  nms_thres: 0.8
+
+CLRNetLoss:
+  cls_loss_weight : 2.0
+  xyt_loss_weight : 0.2
+  iou_loss_weight : 2.0
+  seg_loss_weight : 1.0
+  refine_layers : 3
+  ignore_label: 255
+  bg_weight: 0.4
+
+# for visualize lane detection results
+sample_y:
+  start: 589
+  end: 230
+  step: -20
