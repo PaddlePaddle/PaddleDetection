@@ -391,7 +391,7 @@ class DiffusionDetHead(nn.Layer):
         return box_pooler
     
     
-    def prepare_targets(self, targets):
+    def prepare_training_targets(self, targets):
         new_targets = []
         diffused_boxes = []
         noises = []
@@ -575,13 +575,9 @@ class DiffusionDetHead(nn.Layer):
 
         return results
     
-    
-    
-    
 
     @paddle.no_grad()
     def ddim_sample(self, batched_inputs, backbone_feats, images=None, clip_denoised=True, do_postprocess=True):
-        
         
         images_real_whwh = batched_inputs["img_whwh"]
         batch = images_real_whwh.shape[0]
@@ -604,60 +600,59 @@ class DiffusionDetHead(nn.Layer):
             preds, outputs_class, outputs_coord = self.model_predictions(backbone_feats, images_real_whwh, 
                                                                          img, time_cond,
                                                                          self_cond, clip_x_start=clip_denoised)
-            pred_noise, x_start = preds.pred_noise, preds.pred_x_start
+            # pred_noise, x_start = preds.pred_noise, preds.pred_x_start
 
-            if self.box_renewal:  # filter
-                score_per_image, box_per_image = outputs_class[-1][0], outputs_coord[-1][0]
-                threshold = 0.5
-                score_per_image = F.sigmoid(score_per_image)
-                value = paddle.max(score_per_image, axis=-1, keepdim=False)
-                keep_idx = value > threshold
-                num_remain = keep_idx.sum()
+            # if self.box_renewal:  # filter
+            #     score_per_image, box_per_image = outputs_class[-1][0], outputs_coord[-1][0]
+            #     threshold = 0.5
+            #     score_per_image = F.sigmoid(score_per_image)
+            #     value = paddle.max(score_per_image, axis=-1, keepdim=False)
+            #     keep_idx = value > threshold
+            #     num_remain = keep_idx.sum()
                 
                 
-                bs_zero_4_tensor = paddle.to_tensor(np.array([]).reshape([batch, 0, 4]))
-                pred_noise = pred_noise[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(pred_noise.dtype)
-                x_start = x_start[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(x_start.dtype)
-                img = img[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(img.dtype)
-            if time_next < 0:
-                img = x_start
-                continue
+            #     bs_zero_4_tensor = paddle.to_tensor(np.array([]).reshape([batch, 0, 4]))
+            #     pred_noise = pred_noise[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(pred_noise.dtype)
+            #     x_start = x_start[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(x_start.dtype)
+            #     img = img[:, keep_idx] if keep_idx.all().item() else bs_zero_4_tensor.astype(img.dtype)
+            # if time_next < 0:
+            #     img = x_start
+            #     continue
 
-            alpha = self.alphas_cumprod[time]
-            alpha_next = self.alphas_cumprod[time_next]
+            # alpha = self.alphas_cumprod[time]
+            # alpha_next = self.alphas_cumprod[time_next]
 
-            sigma = eta * ((1 - alpha / alpha_next) * (1 - alpha_next) / (1 - alpha)).sqrt()
-            c = (1 - alpha_next - sigma ** 2).sqrt()
+            # sigma = eta * ((1 - alpha / alpha_next) * (1 - alpha_next) / (1 - alpha)).sqrt()
+            # c = (1 - alpha_next - sigma ** 2).sqrt()
 
-            noise = torch.randn_like(img)
+            # noise = paddle.randn(img.shape)
 
-            img = x_start * alpha_next.sqrt() + \
-                  c * pred_noise + \
-                  sigma * noise
-
-            if self.box_renewal:  # filter
-                # replenish with randn boxes
-                img = paddle.concat((img, torch.randn(1, self.num_proposals - num_remain, 4, device=img.device)), dim=1)
-            if self.use_ensemble and self.sampling_timesteps > 1:
-                box_pred_per_image, scores_per_image, labels_per_image = self.inference(outputs_class[-1],
-                                                                                        outputs_coord[-1],
-                                                                                        images.image_sizes)
-                ensemble_score.append(scores_per_image)
-                ensemble_label.append(labels_per_image)
-                ensemble_coord.append(box_pred_per_image)
+            # img = x_start * alpha_next.sqrt() + \
+            #       c * pred_noise + \
+            #       sigma * noise
+            
+            # if self.box_renewal:  # filter
+            #     # replenish with randn boxes
+            #     img = paddle.concat((img, paddle.randn([1, self.num_proposals - num_remain, 4])), axis=1)
+            # if self.use_ensemble and self.sampling_timesteps > 1:
+            #     box_pred_per_image, scores_per_image, labels_per_image = self.inference(outputs_class[-1],
+            #                                                                             outputs_coord[-1],
+            #                                                                             images.image_sizes)
+            #     ensemble_score.append(scores_per_image)
+            #     ensemble_label.append(labels_per_image)
+            #     ensemble_coord.append(box_pred_per_image)
 
         if self.use_ensemble and self.sampling_timesteps > 1: # False
             box_pred_per_image = paddle.concat(ensemble_coord, axis=0)
             scores_per_image = paddle.concat(ensemble_score, axis=0)
             labels_per_image = paddle.concat(ensemble_label, axis=0)
             if self.use_nms:
-                # keep = batched_nms(box_pred_per_image, scores_per_image, labels_per_image, 0.5)
+                
                 keep = batched_nms(box_pred_per_image, 0.5, scores_per_image, labels_per_image)
                 box_pred_per_image = box_pred_per_image[keep]
                 scores_per_image = scores_per_image[keep]
                 labels_per_image = labels_per_image[keep]
 
-            # result = Instances(images.image_sizes[0])
             result = {}
             result["pred_boxes"] = box_pred_per_image
             result["scores"] = scores_per_image
@@ -682,14 +677,12 @@ class DiffusionDetHead(nn.Layer):
     
     def forward(self, features, batched_inputs, init_features=None):
         
-
         # Prepare Proposals.
         if not self.training:
             results = self.ddim_sample(batched_inputs, features)
             return results, None
         
-        
-        targets, x_boxes, noises, t = self.prepare_targets(batched_inputs)
+        targets, x_boxes, noises, t = self.prepare_training_targets(batched_inputs)
         t = t.squeeze(-1)
         init_bboxes = x_boxes * batched_inputs['img_whwh'][:, None, :]
         
@@ -739,7 +732,7 @@ class DiffusionDetHead(nn.Layer):
 
         bs = len(features[0])
         bboxes = init_bboxes
-        num_boxes = bboxes.shape[1]
+        # num_boxes = bboxes.shape[1]
 
         if init_features is not None:
             init_features = init_features[None].tile([1, bs, 1])
@@ -757,43 +750,7 @@ class DiffusionDetHead(nn.Layer):
         if self.return_intermediate:
             return paddle.stack(inter_class_logits), paddle.stack(inter_pred_bboxes)
 
-        return class_logits[None], pred_bboxes[None]
-
-
-
-        # if self.return_intermediate:
-        #     return paddle.stack(inter_class_logits), paddle.stack(inter_pred_bboxes)
-        
-        # return class_logits[None], pred_bboxes[None]
-        
-
-        # init_features = self.init_proposal_features.weight.unsqueeze(0).tile([bs, 1, 1])
-        # proposal_features = init_features.clone()
-
-        # inter_class_logits = []
-        # inter_pred_bboxes = []
-
-        # for stage, rcnn_head in enumerate(self.head_series):
-        #     class_logits, pred_bboxes, proposal_features = rcnn_head(
-        #         features, bboxes, proposal_features, self.box_pooler)
-
-        #     if self.return_intermediate or stage == len(self.head_series) - 1:
-        #         inter_class_logits.append(class_logits)
-        #         inter_pred_bboxes.append(pred_bboxes)
-        #     bboxes = pred_bboxes.detach()
-
-        # output = {
-        #     'pred_logits': inter_class_logits[-1],
-        #     'pred_boxes': inter_pred_bboxes[-1]
-        # }
-        # if self.return_intermediate:
-        #     output['aux_outputs'] = [{
-        #         'pred_logits': a,
-        #         'pred_boxes': b
-        #     } for a, b in zip(inter_class_logits[:-1], inter_pred_bboxes[:-1])]
-
-        # return output
-    
+        return class_logits[None], pred_bboxes[None]    
     
 
     def get_loss(self, outputs, targets):

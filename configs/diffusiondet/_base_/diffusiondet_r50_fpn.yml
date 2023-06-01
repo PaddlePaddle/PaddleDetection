@@ -1,5 +1,5 @@
 architecture: DiffusionDet
-pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+# pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
 
 DiffusionDet:
   backbone: ResNet
@@ -11,7 +11,7 @@ ResNet:
   # index 0 stands for res2
   depth: 50
   norm_type: bn
-  freeze_at: 0
+  freeze_at: -1
   freeze_norm: true
   return_idx: [0,1,2,3]
   num_stages: 4

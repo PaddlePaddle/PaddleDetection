@@ -30,7 +30,7 @@ class DiffusionDet(BaseArch):
     def __init__(self,
                  backbone,
                  neck,
-                 head="SparsercnnHead",
+                 head="DiffusionDetHead",
                  postprocess="SparsePostProcess"):
         super(DiffusionDet, self).__init__()
         self.backbone = backbone
