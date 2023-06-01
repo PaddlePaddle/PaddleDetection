@@ -41,6 +41,7 @@ from . import centertrack_head
 from . import sparse_roi_head
 from . import diffusion_det_head
 from . import vitpose_head
+from . import clrnet_head
 
 
 from .bbox_head import *
@@ -73,3 +74,4 @@ from .sparse_roi_head import *
 from .petr_head import *
 from .diffusion_det_head import *
 from .vitpose_head import *
+from .clrnet_head import *
