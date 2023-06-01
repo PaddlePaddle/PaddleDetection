@@ -1,4 +1,4 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2023 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -68,22 +68,6 @@ class DiffusionDet(BaseArch):
             return head_outs, targets
 
     def get_loss(self):
-        # batch_gt_class = self.inputs["gt_class"]
-        # batch_gt_box = self.inputs["gt_bbox"]
-        # batch_whwh = self.inputs["img_whwh"]
-        # targets = []
-
-        # for i in range(len(batch_gt_class)):
-        #     boxes = batch_gt_box[i]
-        #     labels = batch_gt_class[i].squeeze(-1)
-        #     img_whwh = batch_whwh[i]
-        #     img_whwh_tgt = img_whwh.unsqueeze(0).tile([int(boxes.shape[0]), 1])
-        #     targets.append({
-        #         "boxes": boxes,
-        #         "labels": labels,
-        #         "img_whwh": img_whwh,
-        #         "img_whwh_tgt": img_whwh_tgt
-        #     })
 
         outputs, targets = self._forward()
         loss_dict = self.head.get_loss(outputs, targets)
@@ -92,6 +76,7 @@ class DiffusionDet(BaseArch):
         return loss_dict
 
     def get_pred(self):
+        
         bbox_pred, bbox_num = self._forward()
         output = {'bbox': bbox_pred, 'bbox_num': bbox_num}
         return output

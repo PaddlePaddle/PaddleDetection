@@ -30,7 +30,7 @@ import paddle.nn.functional as F
 from ..bbox_utils import bbox_overlaps
 
 __all__ = [
-    '_get_clones', 'bbox_overlaps', 'bbox_cxcywh_to_xyxy',
+    '_get_clones', 'bbox_overlaps', 'bbox_cxcywh_to_xyxy', 'boxes_iou',
     'bbox_xyxy_to_cxcywh', 'sigmoid_focal_loss', 'inverse_sigmoid',
     'deformable_attention_core_func', 'varifocal_loss_with_logits'
 ]
@@ -408,3 +408,34 @@ def varifocal_loss_with_logits(pred_logits,
     loss = F.binary_cross_entropy_with_logits(
         pred_logits, gt_score, weight=weight, reduction='none')
     return loss.mean(1).sum() / normalizer
+
+
+def box_area(boxes):
+    assert (boxes[:, 2:] >= boxes[:, :2]).all()
+    wh = boxes[:, 2:] - boxes[:, :2]
+    return wh[:, 0] * wh[:, 1]
+
+
+
+def boxes_iou(boxes1, boxes2):
+    '''
+    Compute iou
+    Args:
+        boxes1 (paddle.tensor) shape (N, 4)
+        boxes2 (paddle.tensor) shape (M, 4)
+    Return:
+        (paddle.tensor) shape (N, M)
+    '''
+    area1 = box_area(boxes1)
+    area2 = box_area(boxes2)
+
+    lt = paddle.maximum(boxes1.unsqueeze(-2)[:, :, :2], boxes2[:, :2])
+    rb = paddle.minimum(boxes1.unsqueeze(-2)[:, :, 2:], boxes2[:, 2:])
+
+    wh = (rb - lt).astype("float32").clip(min=1e-9)
+    inter = wh[:, :, 0] * wh[:, :, 1]
+
+    union = area1.unsqueeze(-1) + area2 - inter + 1e-9
+
+    iou = inter / union
+    return iou, union
