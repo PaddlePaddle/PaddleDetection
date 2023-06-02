@@ -360,7 +360,7 @@ class S2ANetHead(nn.Layer):
         for i in range(bbox_num.shape[0]):
             expand_shape = paddle.expand(origin_shape[i:i + 1, :],
                                          [bbox_num[i], 2])
-            scale_y, scale_x = scale_factor[i][0], scale_factor[i][1]
+            scale_y, scale_x = scale_factor[i, 0:1], scale_factor[i, 1:2]
             scale = paddle.concat([
                 scale_x, scale_y, scale_x, scale_y, scale_x, scale_y, scale_x,
                 scale_y

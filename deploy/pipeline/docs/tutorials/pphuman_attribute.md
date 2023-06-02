@@ -69,8 +69,8 @@ python deploy/pipeline/pipeline.py --config deploy/pipeline/config/infer_cfg_pph
 
 测试效果如下：
 
-<div width="1000" align="center">
-  <img src="../images/attribute.gif"/>
+<div width="600" align="center">
+  <img src="https://user-images.githubusercontent.com/22989727/205597518-7a602bd5-e643-44a1-a4ca-03c9ffecd918.gif"/>
 </div>
 
 数据来源及版权归属：天覆科技，感谢提供并开源实际场景数据，仅限学术研究使用

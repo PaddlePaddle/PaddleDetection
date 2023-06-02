@@ -1,0 +1,122 @@
+use_gpu: true
+log_iter: 5
+save_dir: output
+snapshot_epoch: 1
+weights: output/tinypose3d_human36M/model_final
+epoch: 220
+num_joints: &num_joints 24
+pixel_std: &pixel_std 200
+metric: Pose3DEval
+num_classes: 1
+train_height: &train_height 128
+train_width: &train_width 128
+trainsize: &trainsize [*train_width, *train_height]
+
+#####model
+architecture: TinyPose3DHRHeatmapNet
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/keypoint/tinypose_128x96.pdparams
+
+TinyPose3DHRHeatmapNet:
+  backbone: LiteHRNet
+  post_process: HR3DNetPostProcess
+  num_joints: *num_joints
+  width: &width 40
+  loss: Pose3DLoss
+
+LiteHRNet:
+  network_type: wider_naive
+  freeze_at: -1
+  freeze_norm: false
+  return_idx: [0]
+
+Pose3DLoss:
+  weight_3d: 1.0
+  weight_2d: 0.0
+
+#####optimizer
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    milestones: [17, 21]
+    gamma: 0.1
+  - !LinearWarmup
+    start_factor: 0.01
+    steps: 1000
+
+OptimizerBuilder:
+  optimizer:
+    type: Adam
+  regularizer:
+    factor: 0.0
+    type: L2
+
+
+#####data
+TrainDataset:
+  !Pose3DDataset
+    dataset_dir: dataset/traindata/
+    image_dirs: ["human3.6m"]
+    anno_list:  ['pose3d/Human3.6m_train.json']
+    num_joints: *num_joints
+    test_mode: False
+
+EvalDataset:
+  !Pose3DDataset
+    dataset_dir: dataset/traindata/
+    image_dirs: ["human3.6m"]
+    anno_list:  ['pose3d/Human3.6m_valid.json']
+    num_joints: *num_joints
+    test_mode: True
+
+TestDataset:
+  !ImageFolder
+    anno_path: dataset/coco/keypoint_imagelist.txt
+
+worker_num: 4
+global_mean: &global_mean [0.485, 0.456, 0.406]
+global_std: &global_std [0.229, 0.224, 0.225]
+TrainReader:
+  sample_transforms:
+    - SinglePoseAffine:
+        trainsize: *trainsize
+        rotate: [0.5, 30] #[prob, rotate range]
+        scale: [0.5, 0.25] #[prob, scale range]
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 128
+  shuffle: true
+  drop_last: true
+
+EvalReader:
+  sample_transforms:
+    - SinglePoseAffine:
+        trainsize: *trainsize
+        rotate: [0., 30]
+        scale: [0., 0.25]
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 128
+
+TestReader:
+  inputs_def:
+    image_shape: [3, *train_height, *train_width]
+  sample_transforms:
+    - Decode: {}
+    - TopDownEvalAffine:
+        trainsize: *trainsize
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 1
+  fuse_normalize: false

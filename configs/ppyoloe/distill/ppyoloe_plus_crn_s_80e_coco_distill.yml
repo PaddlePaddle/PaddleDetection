@@ -1,0 +1,39 @@
+_BASE_: [
+  '../ppyoloe_plus_crn_s_80e_coco.yml',
+]
+for_distill: True
+architecture: PPYOLOE
+PPYOLOE:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - RandomDistort: {}
+    - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
+    - RandomCrop: {}
+    - RandomFlip: {}
+  batch_transforms:
+    - BatchRandomResize: {target_size: [640], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+    - PadGT: {}
+  batch_size: 8
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+  collate_batch: True
+
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_crn_s_80e_coco_distill/model_final
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ppyoloe_crn_s_obj365_pretrained.pdparams
+depth_mult: 0.33
+width_mult: 0.50

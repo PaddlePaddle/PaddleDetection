@@ -1,0 +1,46 @@
+architecture: DETR
+# pretrain_weights: # rewrite in SwinTransformer.pretrained in ppdet/modeling/backbones/swin_transformer.py
+hidden_dim: 256
+use_focal_loss: True
+
+DETR:
+  backbone: SwinTransformer
+  transformer: DINOTransformer
+  detr_head: DINOHead
+  post_process: DETRPostProcess
+
+SwinTransformer:
+  arch: 'swin_L_384' # ['swin_T_224', 'swin_S_224', 'swin_B_224', 'swin_L_224', 'swin_B_384', 'swin_L_384']
+  ape: false
+  drop_path_rate: 0.2
+  patch_norm: true
+  out_indices: [1, 2, 3]
+
+DINOTransformer:
+  num_queries: 900
+  position_embed_type: sine
+  num_levels: 4
+  nhead: 8
+  num_encoder_layers: 6
+  num_decoder_layers: 6
+  dim_feedforward: 2048
+  dropout: 0.0
+  activation: relu
+  pe_temperature: 10000
+  pe_offset: -0.5
+  num_denoising: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  learnt_init_query: True
+
+DINOHead:
+  loss:
+    name: DINOLoss
+    loss_coeff: {class: 1, bbox: 5, giou: 2}
+    aux_loss: True
+    matcher:
+      name: HungarianMatcher
+      matcher_coeff: {class: 2, bbox: 5, giou: 2}
+
+DETRPostProcess:
+  num_top_queries: 300

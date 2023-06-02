@@ -1,7 +1,8 @@
+numpy < 1.24
 tqdm
 typeguard
 visualdl>=2.2.0
-opencv-python
+opencv-python <= 4.6.0
 PyYAML
 shapely
 scipy
@@ -10,11 +11,13 @@ Cython
 pycocotools
 setuptools
 
-# for vehicleplate
-pyclipper
-
-# for mot
+# for MOT evaluation and inference
 lap
 motmetrics
 sklearn==0.0
-filterpy
+
+# for vehicleplate in deploy/pipeline/ppvehicle
+pyclipper
+
+# for culane data augumetation
+imgaug>=0.4.0

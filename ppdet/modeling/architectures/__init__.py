@@ -16,6 +16,7 @@ from . import meta_arch
 from . import faster_rcnn
 from . import mask_rcnn
 from . import yolo
+from . import ppyoloe
 from . import cascade_rcnn
 from . import ssd
 from . import fcos
@@ -24,6 +25,7 @@ from . import ttfnet
 from . import s2anet
 from . import keypoint_hrhrnet
 from . import keypoint_hrnet
+from . import keypoint_vitpose
 from . import jde
 from . import deepsort
 from . import fairmot
@@ -38,11 +40,15 @@ from . import bytetrack
 from . import yolox
 from . import yolof
 from . import pose3d_metro
+from . import centertrack
+from . import queryinst
+from . import clrnet
 
 from .meta_arch import *
 from .faster_rcnn import *
 from .mask_rcnn import *
 from .yolo import *
+from .ppyoloe import *
 from .cascade_rcnn import *
 from .ssd import *
 from .fcos import *
@@ -51,6 +57,7 @@ from .ttfnet import *
 from .s2anet import *
 from .keypoint_hrhrnet import *
 from .keypoint_hrnet import *
+from .keypoint_vitpose import *
 from .jde import *
 from .deepsort import *
 from .fairmot import *
@@ -66,3 +73,7 @@ from .bytetrack import *
 from .yolox import *
 from .yolof import *
 from .pose3d_metro import *
+from .centertrack import *
+from .queryinst import *
+from .keypoint_petr import *
+from .clrnet import *

@@ -18,6 +18,8 @@ from __future__ import print_function
 
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
+import paddle
+import paddle.nn.functional as F
 
 __all__ = ['BlazeFace']
 
@@ -74,18 +76,42 @@ class BlazeFace(BaseArch):
                                    self.inputs['gt_class'])
         else:
             preds, anchors = self.blaze_head(neck_feats, self.inputs['image'])
-            bbox, bbox_num = self.post_process(preds, anchors,
-                                               self.inputs['im_shape'],
-                                               self.inputs['scale_factor'])
-            return bbox, bbox_num
+            bbox, bbox_num, nms_keep_idx = self.post_process(
+                preds, anchors, self.inputs['im_shape'],
+                self.inputs['scale_factor'])
+            if self.use_extra_data:
+                extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                """extra_data:{
+                            'scores': predict scores,
+                            'nms_keep_idx': bbox index before nms,
+                           }
+                           """
+                preds_logits = preds[1]  # [[1xNumBBoxNumClass]]
+                extra_data['scores'] = F.softmax(paddle.concat(
+                    preds_logits, axis=1)).transpose([0, 2, 1])
+                extra_data['logits'] = paddle.concat(
+                    preds_logits, axis=1).transpose([0, 2, 1])
+                extra_data['nms_keep_idx'] = nms_keep_idx  # bbox index before nms
+                return bbox, bbox_num, extra_data
+            else:
+                return bbox, bbox_num
 
     def get_loss(self, ):
         return {"loss": self._forward()}
 
     def get_pred(self):
-        bbox_pred, bbox_num = self._forward()
-        output = {
-            "bbox": bbox_pred,
-            "bbox_num": bbox_num,
-        }
+        if self.use_extra_data:
+            bbox_pred, bbox_num, extra_data = self._forward()
+            output = {
+                "bbox": bbox_pred,
+                "bbox_num": bbox_num,
+                "extra_data": extra_data
+            }
+        else:
+            bbox_pred, bbox_num = self._forward()
+            output = {
+                "bbox": bbox_pred,
+                "bbox_num": bbox_num,
+            }
+
         return output

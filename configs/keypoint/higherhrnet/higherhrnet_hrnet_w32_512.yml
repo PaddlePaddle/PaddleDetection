@@ -66,6 +66,9 @@ TrainDataset:
     anno_path: annotations/person_keypoints_train2017.json
     dataset_dir: dataset/coco
     num_joints: *num_joints
+    return_bbox: False
+    return_area: False
+    return_class: False
 
 EvalDataset:
   !KeypointBottomUpCocoDataset
@@ -74,6 +77,9 @@ EvalDataset:
     dataset_dir: dataset/coco
     num_joints: *num_joints
     test_mode: true
+    return_bbox: False
+    return_area: False
+    return_class: False
 
 TestDataset:
   !ImageFolder
@@ -88,7 +94,7 @@ TrainReader:
         max_degree: 30
         scale: [0.75, 1.5]
         max_shift: 0.2
-        trainsize: *input_size
+        trainsize: [*input_size, *input_size]
         hmsize: [*hm_size, *hm_size_2x]
     - KeyPointFlip:
         flip_prob: 0.5

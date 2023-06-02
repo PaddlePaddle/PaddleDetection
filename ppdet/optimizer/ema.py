@@ -19,6 +19,11 @@ from __future__ import print_function
 import math
 import paddle
 import weakref
+from copy import deepcopy
+
+from .utils import get_bn_running_state_names
+
+__all__ = ['ModelEMA', 'SimpleModelEMA']
 
 
 class ModelEMA(object):
@@ -46,7 +51,8 @@ class ModelEMA(object):
                  decay=0.9998,
                  ema_decay_type='threshold',
                  cycle_epoch=-1,
-                 ema_black_list=None):
+                 ema_black_list=None,
+                 ema_filter_no_grad=False):
         self.step = 0
         self.epoch = 0
         self.decay = decay
@@ -54,6 +60,12 @@ class ModelEMA(object):
         self.cycle_epoch = cycle_epoch
         self.ema_black_list = self._match_ema_black_list(
             model.state_dict().keys(), ema_black_list)
+        bn_states_names = get_bn_running_state_names(model)
+        if ema_filter_no_grad:
+            for n, p in model.named_parameters():
+                if p.stop_gradient and n not in bn_states_names:
+                    self.ema_black_list.add(n)
+
         self.state_dict = dict()
         for k, v in model.state_dict().items():
             if k in self.ema_black_list:
@@ -134,3 +146,48 @@ class ModelEMA(object):
                     if key in name:
                         out_list.add(name)
         return out_list
+
+
+class SimpleModelEMA(object):
+    """
+    Model Exponential Moving Average from https://github.com/rwightman/pytorch-image-models
+    Keep a moving average of everything in the model state_dict (parameters and buffers).
+    This is intended to allow functionality like
+    https://www.tensorflow.org/api_docs/python/tf/train/ExponentialMovingAverage
+    A smoothed version of the weights is necessary for some training schemes to perform well.
+    This class is sensitive where it is initialized in the sequence of model init,
+    GPU assignment and distributed training wrappers.
+    """
+
+    def __init__(self, model=None, decay=0.9996):
+        """
+        Args:
+            model (nn.Module): model to apply EMA.
+            decay (float): ema decay reate.
+        """
+        self.model = deepcopy(model)
+        self.decay = decay
+
+    def update(self, model, decay=None):
+        if decay is None:
+            decay = self.decay
+
+        with paddle.no_grad():
+            state = {}
+            msd = model.state_dict()
+            for k, v in self.model.state_dict().items():
+                if paddle.is_floating_point(v):
+                    v *= decay
+                    v += (1.0 - decay) * msd[k].detach()
+                state[k] = v
+            self.model.set_state_dict(state)
+
+    def resume(self, state_dict, step=0):
+        state = {}
+        msd = state_dict
+        for k, v in self.model.state_dict().items():
+            if paddle.is_floating_point(v):
+                v = msd[k].detach()
+            state[k] = v
+        self.model.set_state_dict(state)
+        self.step = step

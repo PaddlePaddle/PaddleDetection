@@ -8,7 +8,7 @@ DETR:
   backbone: ResNet
   transformer: DeformableTransformer
   detr_head: DeformableDETRHead
-  post_process: DETRBBoxPostProcess
+  post_process: DETRPostProcess
 
 
 ResNet:
@@ -40,7 +40,7 @@ DeformableDETRHead:
 
 
 DETRLoss:
-  loss_coeff: {class: 2, bbox: 5, giou: 2, mask: 1, dice: 1}
+  loss_coeff: {class: 2, bbox: 5, giou: 2}
   aux_loss: True
 
 

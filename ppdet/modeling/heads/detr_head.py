@@ -24,7 +24,7 @@ import pycocotools.mask as mask_util
 from ..initializer import linear_init_, constant_
 from ..transformers.utils import inverse_sigmoid
 
-__all__ = ['DETRHead', 'DeformableDETRHead']
+__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead']
 
 
 class MLP(nn.Layer):
@@ -362,3 +362,172 @@ class DeformableDETRHead(nn.Layer):
                              inputs['gt_class'])
         else:
             return (outputs_bbox[-1], outputs_logit[-1], None)
+
+
+@register
+class DINOHead(nn.Layer):
+    __inject__ = ['loss']
+
+    def __init__(self, loss='DINOLoss'):
+        super(DINOHead, self).__init__()
+        self.loss = loss
+
+    def forward(self, out_transformer, body_feats, inputs=None):
+        (dec_out_bboxes, dec_out_logits, enc_topk_bboxes, enc_topk_logits,
+         dn_meta) = out_transformer
+        if self.training:
+            assert inputs is not None
+            assert 'gt_bbox' in inputs and 'gt_class' in inputs
+
+            if dn_meta is not None:
+                if isinstance(dn_meta, list):
+                    dual_groups = len(dn_meta) - 1
+                    dec_out_bboxes = paddle.split(
+                        dec_out_bboxes, dual_groups + 1, axis=2)
+                    dec_out_logits = paddle.split(
+                        dec_out_logits, dual_groups + 1, axis=2)
+                    enc_topk_bboxes = paddle.split(
+                        enc_topk_bboxes, dual_groups + 1, axis=1)
+                    enc_topk_logits = paddle.split(
+                        enc_topk_logits, dual_groups + 1, axis=1)
+
+                    dec_out_bboxes_list = []
+                    dec_out_logits_list = []
+                    dn_out_bboxes_list = []
+                    dn_out_logits_list = []
+                    loss = {}
+                    for g_id in range(dual_groups + 1):
+                        if dn_meta[g_id] is not None:
+                            dn_out_bboxes_gid, dec_out_bboxes_gid = paddle.split(
+                                dec_out_bboxes[g_id],
+                                dn_meta[g_id]['dn_num_split'],
+                                axis=2)
+                            dn_out_logits_gid, dec_out_logits_gid = paddle.split(
+                                dec_out_logits[g_id],
+                                dn_meta[g_id]['dn_num_split'],
+                                axis=2)
+                        else:
+                            dn_out_bboxes_gid, dn_out_logits_gid = None, None
+                            dec_out_bboxes_gid = dec_out_bboxes[g_id]
+                            dec_out_logits_gid = dec_out_logits[g_id]
+                        out_bboxes_gid = paddle.concat([
+                            enc_topk_bboxes[g_id].unsqueeze(0),
+                            dec_out_bboxes_gid
+                        ])
+                        out_logits_gid = paddle.concat([
+                            enc_topk_logits[g_id].unsqueeze(0),
+                            dec_out_logits_gid
+                        ])
+                        loss_gid = self.loss(
+                            out_bboxes_gid,
+                            out_logits_gid,
+                            inputs['gt_bbox'],
+                            inputs['gt_class'],
+                            dn_out_bboxes=dn_out_bboxes_gid,
+                            dn_out_logits=dn_out_logits_gid,
+                            dn_meta=dn_meta[g_id])
+                        # sum loss
+                        for key, value in loss_gid.items():
+                            loss.update({
+                                key: loss.get(key, paddle.zeros([1])) + value
+                            })
+
+                    # average across (dual_groups + 1)
+                    for key, value in loss.items():
+                        loss.update({key: value / (dual_groups + 1)})
+                    return loss
+                else:
+                    dn_out_bboxes, dec_out_bboxes = paddle.split(
+                        dec_out_bboxes, dn_meta['dn_num_split'], axis=2)
+                    dn_out_logits, dec_out_logits = paddle.split(
+                        dec_out_logits, dn_meta['dn_num_split'], axis=2)
+            else:
+                dn_out_bboxes, dn_out_logits = None, None
+
+            out_bboxes = paddle.concat(
+                [enc_topk_bboxes.unsqueeze(0), dec_out_bboxes])
+            out_logits = paddle.concat(
+                [enc_topk_logits.unsqueeze(0), dec_out_logits])
+
+            return self.loss(
+                out_bboxes,
+                out_logits,
+                inputs['gt_bbox'],
+                inputs['gt_class'],
+                dn_out_bboxes=dn_out_bboxes,
+                dn_out_logits=dn_out_logits,
+                dn_meta=dn_meta)
+        else:
+            return (dec_out_bboxes[-1], dec_out_logits[-1], None)
+
+
+@register
+class MaskDINOHead(nn.Layer):
+    __inject__ = ['loss']
+
+    def __init__(self, loss='DINOLoss'):
+        super(MaskDINOHead, self).__init__()
+        self.loss = loss
+
+    def forward(self, out_transformer, body_feats, inputs=None):
+        (dec_out_logits, dec_out_bboxes, dec_out_masks, enc_out, init_out,
+         dn_meta) = out_transformer
+        if self.training:
+            assert inputs is not None
+            assert 'gt_bbox' in inputs and 'gt_class' in inputs
+            assert 'gt_segm' in inputs
+
+            if dn_meta is not None:
+                dn_out_logits, dec_out_logits = paddle.split(
+                    dec_out_logits, dn_meta['dn_num_split'], axis=2)
+                dn_out_bboxes, dec_out_bboxes = paddle.split(
+                    dec_out_bboxes, dn_meta['dn_num_split'], axis=2)
+                dn_out_masks, dec_out_masks = paddle.split(
+                    dec_out_masks, dn_meta['dn_num_split'], axis=2)
+                if init_out is not None:
+                    init_out_logits, init_out_bboxes, init_out_masks = init_out
+                    init_out_logits_dn, init_out_logits = paddle.split(
+                        init_out_logits, dn_meta['dn_num_split'], axis=1)
+                    init_out_bboxes_dn, init_out_bboxes = paddle.split(
+                        init_out_bboxes, dn_meta['dn_num_split'], axis=1)
+                    init_out_masks_dn, init_out_masks = paddle.split(
+                        init_out_masks, dn_meta['dn_num_split'], axis=1)
+
+                    dec_out_logits = paddle.concat(
+                        [init_out_logits.unsqueeze(0), dec_out_logits])
+                    dec_out_bboxes = paddle.concat(
+                        [init_out_bboxes.unsqueeze(0), dec_out_bboxes])
+                    dec_out_masks = paddle.concat(
+                        [init_out_masks.unsqueeze(0), dec_out_masks])
+
+                    dn_out_logits = paddle.concat(
+                        [init_out_logits_dn.unsqueeze(0), dn_out_logits])
+                    dn_out_bboxes = paddle.concat(
+                        [init_out_bboxes_dn.unsqueeze(0), dn_out_bboxes])
+                    dn_out_masks = paddle.concat(
+                        [init_out_masks_dn.unsqueeze(0), dn_out_masks])
+            else:
+                dn_out_bboxes, dn_out_logits = None, None
+                dn_out_masks = None
+
+            enc_out_logits, enc_out_bboxes, enc_out_masks = enc_out
+            out_logits = paddle.concat(
+                [enc_out_logits.unsqueeze(0), dec_out_logits])
+            out_bboxes = paddle.concat(
+                [enc_out_bboxes.unsqueeze(0), dec_out_bboxes])
+            out_masks = paddle.concat(
+                [enc_out_masks.unsqueeze(0), dec_out_masks])
+
+            return self.loss(
+                out_bboxes,
+                out_logits,
+                inputs['gt_bbox'],
+                inputs['gt_class'],
+                masks=out_masks,
+                gt_mask=inputs['gt_segm'],
+                dn_out_logits=dn_out_logits,
+                dn_out_bboxes=dn_out_bboxes,
+                dn_out_masks=dn_out_masks,
+                dn_meta=dn_meta)
+        else:
+            return (dec_out_bboxes[-1], dec_out_logits[-1], dec_out_masks[-1])

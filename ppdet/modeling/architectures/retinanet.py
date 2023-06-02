@@ -19,6 +19,7 @@ from __future__ import print_function
 from ppdet.core.workspace import register, create
 from .meta_arch import BaseArch
 import paddle
+import paddle.nn.functional as F
 
 __all__ = ['RetinaNet']
 
@@ -57,9 +58,24 @@ class RetinaNet(BaseArch):
             return self.head(neck_feats, self.inputs)
         else:
             head_outs = self.head(neck_feats)
-            bbox, bbox_num = self.head.post_process(
+            bbox, bbox_num, nms_keep_idx = self.head.post_process(
                 head_outs, self.inputs['im_shape'], self.inputs['scale_factor'])
-            return {'bbox': bbox, 'bbox_num': bbox_num}
+
+            if self.use_extra_data:
+                extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                """extra_data:{
+                            'scores': predict scores,
+                            'nms_keep_idx': bbox index before nms,
+                           }
+                           """
+                preds_logits = self.head.decode_cls_logits(head_outs[0])
+                preds_scores = F.sigmoid(preds_logits)
+                extra_data['logits'] = preds_logits
+                extra_data['scores'] = preds_scores
+                extra_data['nms_keep_idx'] = nms_keep_idx  # bbox index before nms
+                return {'bbox': bbox, 'bbox_num': bbox_num, "extra_data": extra_data}
+            else:
+                return {'bbox': bbox, 'bbox_num': bbox_num}
 
     def get_loss(self):
         return self._forward()

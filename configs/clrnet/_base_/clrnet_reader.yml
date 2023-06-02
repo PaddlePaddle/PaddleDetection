@@ -1,0 +1,37 @@
+worker_num: 10
+
+img_h: &img_h 320
+img_w: &img_w 800
+ori_img_h: &ori_img_h 590
+ori_img_w: &ori_img_w 1640
+num_points: &num_points 72
+max_lanes: &max_lanes 4
+
+TrainReader:
+  batch_size: 24
+  batch_transforms:
+    - CULaneTrainProcess: {img_h: *img_h, img_w: *img_w}
+    - CULaneDataProcess: {num_points: *num_points, max_lanes: *max_lanes, img_w: *img_w, img_h: *img_h}
+  shuffle: True
+  drop_last: False
+
+
+
+
+EvalReader:
+  batch_size: 24
+  batch_transforms:
+    - CULaneResize: {prob: 1.0, img_h: *img_h, img_w: *img_w}
+    - CULaneDataProcess: {num_points: *num_points, max_lanes: *max_lanes, img_w: *img_w, img_h: *img_h}
+  shuffle: False
+  drop_last: False
+
+
+
+TestReader:
+  batch_size: 24
+  batch_transforms:
+    - CULaneResize: {prob: 1.0, img_h: *img_h, img_w: *img_w}
+    - CULaneDataProcess: {num_points: *num_points, max_lanes: *max_lanes, img_w: *img_w, img_h: *img_h}
+  shuffle: False
+  drop_last: False

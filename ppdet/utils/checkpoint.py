@@ -17,9 +17,7 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import errno
 import os
-import time
 import numpy as np
 import paddle
 import paddle.nn as nn
@@ -40,21 +38,6 @@ def is_url(path):
             or path.startswith('ppdet://')
 
 
-def _get_unique_endpoints(trainer_endpoints):
-    # Sorting is to avoid different environmental variables for each card
-    trainer_endpoints.sort()
-    ips = set()
-    unique_endpoints = set()
-    for endpoint in trainer_endpoints:
-        ip = endpoint.split(":")[0]
-        if ip in ips:
-            continue
-        ips.add(ip)
-        unique_endpoints.add(endpoint)
-    logger.info("unique_endpoints {}".format(unique_endpoints))
-    return unique_endpoints
-
-
 def _strip_postfix(path):
     path, ext = os.path.splitext(path)
     assert ext in ['', '.pdparams', '.pdopt', '.pdmodel'], \
@@ -62,7 +45,7 @@ def _strip_postfix(path):
     return path
 
 
-def load_weight(model, weight, optimizer=None, ema=None):
+def load_weight(model, weight, optimizer=None, ema=None, exchange=True):
     if is_url(weight):
         weight = get_weights_path(weight)
 
@@ -73,35 +56,54 @@ def load_weight(model, weight, optimizer=None, ema=None):
                          "exists.".format(pdparam_path))
 
     if ema is not None and os.path.exists(path + '.pdema'):
-        # Exchange model and ema_model to load
-        ema_state_dict = paddle.load(pdparam_path)
-        param_state_dict = paddle.load(path + '.pdema')
+        if exchange:
+            # Exchange model and ema_model to load
+            logger.info('Exchange model and ema_model to load:')
+            ema_state_dict = paddle.load(pdparam_path)
+            logger.info('Loading ema_model weights from {}'.format(path +
+                                                                   '.pdparams'))
+            param_state_dict = paddle.load(path + '.pdema')
+            logger.info('Loading model weights from {}'.format(path + '.pdema'))
+        else:
+            ema_state_dict = paddle.load(path + '.pdema')
+            logger.info('Loading ema_model weights from {}'.format(path +
+                                                                   '.pdema'))
+            param_state_dict = paddle.load(pdparam_path)
+            logger.info('Loading model weights from {}'.format(path +
+                                                               '.pdparams'))
     else:
         ema_state_dict = None
         param_state_dict = paddle.load(pdparam_path)
 
-    model_dict = model.state_dict()
-    model_weight = {}
-    incorrect_keys = 0
+    if hasattr(model, 'modelTeacher') and hasattr(model, 'modelStudent'):
+        print('Loading pretrain weights for Teacher-Student framework.')
+        print('Loading pretrain weights for Student model.')
+        student_model_dict = model.modelStudent.state_dict()
+        student_param_state_dict = match_state_dict(
+            student_model_dict, param_state_dict, mode='student')
+        model.modelStudent.set_dict(student_param_state_dict)
+        print('Loading pretrain weights for Teacher model.')
+        teacher_model_dict = model.modelTeacher.state_dict()
 
-    for key, value in model_dict.items():
-        if key in param_state_dict.keys():
-            if isinstance(param_state_dict[key], np.ndarray):
-                param_state_dict[key] = paddle.to_tensor(param_state_dict[key])
-            if value.dtype == param_state_dict[key].dtype:
+        teacher_param_state_dict = match_state_dict(
+            teacher_model_dict, param_state_dict, mode='teacher')
+        model.modelTeacher.set_dict(teacher_param_state_dict)
+
+    else:
+        model_dict = model.state_dict()
+        model_weight = {}
+        incorrect_keys = 0
+        for key in model_dict.keys():
+            if key in param_state_dict.keys():
                 model_weight[key] = param_state_dict[key]
             else:
-                model_weight[key] = param_state_dict[key].astype(value.dtype)
-        else:
-            logger.info('Unmatched key: {}'.format(key))
-            incorrect_keys += 1
-
-    assert incorrect_keys == 0, "Load weight {} incorrectly, \
-            {} keys unmatched, please check again.".format(weight,
-                                                           incorrect_keys)
-    logger.info('Finish resuming model weights: {}'.format(pdparam_path))
-
-    model.set_dict(model_weight)
+                logger.info('Unmatched key: {}'.format(key))
+                incorrect_keys += 1
+        assert incorrect_keys == 0, "Load weight {} incorrectly, \
+                {} keys unmatched, please check again.".format(weight,
+                                                               incorrect_keys)
+        logger.info('Finish resuming model weights: {}'.format(pdparam_path))
+        model.set_dict(model_weight)
 
     last_epoch = 0
     if optimizer is not None and os.path.exists(path + '.pdopt'):
@@ -122,7 +124,7 @@ def load_weight(model, weight, optimizer=None, ema=None):
     return last_epoch
 
 
-def match_state_dict(model_state_dict, weight_state_dict):
+def match_state_dict(model_state_dict, weight_state_dict, mode='default'):
     """
     Match between the model state dict and pretrained weight state dict.
     Return the matched state dict.
@@ -140,33 +142,60 @@ def match_state_dict(model_state_dict, weight_state_dict):
     model_keys = sorted(model_state_dict.keys())
     weight_keys = sorted(weight_state_dict.keys())
 
+    def teacher_match(a, b):
+        # skip student params
+        if b.startswith('modelStudent'):
+            return False
+        return a == b or a.endswith("." + b) or b.endswith("." + a)
+
+    def student_match(a, b):
+        # skip teacher params
+        if b.startswith('modelTeacher'):
+            return False
+        return a == b or a.endswith("." + b) or b.endswith("." + a)
+
     def match(a, b):
         if b.startswith('backbone.res5'):
-            # In Faster RCNN, res5 pretrained weights have prefix of backbone,
-            # however, the corresponding model weights have difficult prefix,
-            # bbox_head.
             b = b[9:]
         return a == b or a.endswith("." + b)
+
+    if mode == 'student':
+        match_op = student_match
+    elif mode == 'teacher':
+        match_op = teacher_match
+    else:
+        match_op = match
 
     match_matrix = np.zeros([len(model_keys), len(weight_keys)])
     for i, m_k in enumerate(model_keys):
         for j, w_k in enumerate(weight_keys):
-            if match(m_k, w_k):
+            if match_op(m_k, w_k):
                 match_matrix[i, j] = len(w_k)
     max_id = match_matrix.argmax(1)
     max_len = match_matrix.max(1)
     max_id[max_len == 0] = -1
-
     load_id = set(max_id)
     load_id.discard(-1)
     not_load_weight_name = []
-    for idx in range(len(weight_keys)):
-        if idx not in load_id:
-            not_load_weight_name.append(weight_keys[idx])
+    if weight_keys[0].startswith('modelStudent') or weight_keys[0].startswith(
+            'modelTeacher'):
+        for match_idx in range(len(max_id)):
+            if max_id[match_idx] == -1:
+                not_load_weight_name.append(model_keys[match_idx])
+        if len(not_load_weight_name) > 0:
+            logger.info('{} in model is not matched with pretrained weights, '
+                        'and its will be trained from scratch'.format(
+                            not_load_weight_name))
 
-    if len(not_load_weight_name) > 0:
-        logger.info('{} in pretrained weight is not used in the model, '
-                    'and its will not be loaded'.format(not_load_weight_name))
+    else:
+        for idx in range(len(weight_keys)):
+            if idx not in load_id:
+                not_load_weight_name.append(weight_keys[idx])
+
+        if len(not_load_weight_name) > 0:
+            logger.info('{} in pretrained weight is not used in the model, '
+                        'and its will not be loaded'.format(
+                            not_load_weight_name))
     matched_keys = {}
     result_state_dict = {}
     for model_id, weight_id in enumerate(max_id):
@@ -196,7 +225,7 @@ def match_state_dict(model_state_dict, weight_state_dict):
     return result_state_dict
 
 
-def load_pretrain_weight(model, pretrain_weight):
+def load_pretrain_weight(model, pretrain_weight, ARSL_eval=False):
     if is_url(pretrain_weight):
         pretrain_weight = get_weights_path(pretrain_weight)
 
@@ -207,21 +236,48 @@ def load_pretrain_weight(model, pretrain_weight):
                          "If you don't want to load pretrain model, "
                          "please delete `pretrain_weights` field in "
                          "config file.".format(path))
+    teacher_student_flag = False
+    if not ARSL_eval:
+        if hasattr(model, 'modelTeacher') and hasattr(model, 'modelStudent'):
+            print('Loading pretrain weights for Teacher-Student framework.')
+            print(
+                'Assert Teacher model has the same structure with Student model.'
+            )
+            model_dict = model.modelStudent.state_dict()
+            teacher_student_flag = True
+        else:
+            model_dict = model.state_dict()
 
-    model_dict = model.state_dict()
+        weights_path = path + '.pdparams'
+        param_state_dict = paddle.load(weights_path)
+        param_state_dict = match_state_dict(model_dict, param_state_dict)
+        for k, v in param_state_dict.items():
+            if isinstance(v, np.ndarray):
+                v = paddle.to_tensor(v)
+            if model_dict[k].dtype != v.dtype:
+                param_state_dict[k] = v.astype(model_dict[k].dtype)
 
-    weights_path = path + '.pdparams'
-    param_state_dict = paddle.load(weights_path)
-    param_state_dict = match_state_dict(model_dict, param_state_dict)
+        if teacher_student_flag:
+            model.modelStudent.set_dict(param_state_dict)
+            model.modelTeacher.set_dict(param_state_dict)
+        else:
+            model.set_dict(param_state_dict)
+        logger.info('Finish loading model weights: {}'.format(weights_path))
 
-    for k, v in param_state_dict.items():
-        if isinstance(v, np.ndarray):
-            v = paddle.to_tensor(v)
-        if model_dict[k].dtype != v.dtype:
-            param_state_dict[k] = v.astype(model_dict[k].dtype)
+    else:
+        weights_path = path + '.pdparams'
+        param_state_dict = paddle.load(weights_path)
+        student_model_dict = model.modelStudent.state_dict()
+        student_param_state_dict = match_state_dict(
+            student_model_dict, param_state_dict, mode='student')
+        model.modelStudent.set_dict(student_param_state_dict)
+        print('Loading pretrain weights for Teacher model.')
+        teacher_model_dict = model.modelTeacher.state_dict()
 
-    model.set_dict(param_state_dict)
-    logger.info('Finish loading model weights: {}'.format(weights_path))
+        teacher_param_state_dict = match_state_dict(
+            teacher_model_dict, param_state_dict, mode='teacher')
+        model.modelTeacher.set_dict(teacher_param_state_dict)
+        logger.info('Finish loading model weights: {}'.format(weights_path))
 
 
 def save_model(model,
@@ -244,21 +300,24 @@ def save_model(model,
     """
     if paddle.distributed.get_rank() != 0:
         return
-    assert isinstance(model, dict), ("model is not a instance of dict, "
-                                     "please call model.state_dict() to get.")
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     save_path = os.path.join(save_dir, save_name)
     # save model
-    if ema_model is None:
-        paddle.save(model, save_path + ".pdparams")
+    if isinstance(model, nn.Layer):
+        paddle.save(model.state_dict(), save_path + ".pdparams")
     else:
-        assert isinstance(ema_model,
-                          dict), ("ema_model is not a instance of dict, "
-                                  "please call model.state_dict() to get.")
-        # Exchange model and ema_model to save
-        paddle.save(ema_model, save_path + ".pdparams")
-        paddle.save(model, save_path + ".pdema")
+        assert isinstance(model,
+                          dict), 'model is not a instance of nn.layer or dict'
+        if ema_model is None:
+            paddle.save(model, save_path + ".pdparams")
+        else:
+            assert isinstance(ema_model,
+                              dict), ("ema_model is not a instance of dict, "
+                                      "please call model.state_dict() to get.")
+            # Exchange model and ema_model to save
+            paddle.save(ema_model, save_path + ".pdparams")
+            paddle.save(model, save_path + ".pdema")
     # save optimizer
     state_dict = optimizer.state_dict()
     state_dict['last_epoch'] = last_epoch

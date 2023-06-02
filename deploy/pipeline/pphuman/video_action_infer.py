@@ -21,10 +21,13 @@ import numpy as np
 import math
 import paddle
 import sys
-from collections import Sequence
 import paddle.nn.functional as F
+try:
+    from collections.abc import Sequence
+except Exception:
+    from collections import Sequence
 
-# add deploy path of PadleDetection to sys.path
+# add deploy path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
@@ -44,7 +47,7 @@ class VideoActionRecognizer(object):
     """
     Args:
         model_dir (str): root path of model.pdiparams, model.pdmodel and infer_cfg.yml
-        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU
+        device (str): Choose the device you want to run, it can be: CPU/GPU/XPU/NPU, default is CPU
         run_mode (str): mode of running(paddle/trt_fp32/trt_fp16)
         batch_size (int): size of pre batch in inference
         trt_min_shape (int): min shape for dynamic shape in trt
@@ -102,6 +105,10 @@ class VideoActionRecognizer(object):
 
         if device == "GPU" or device == "gpu":
             self.config.enable_use_gpu(8000, 0)
+        elif device == "XPU" or device == "xpu":
+            self.config.enable_xpu(10 * 1024 * 1024)
+        elif device == "NPU" or device == "npu":
+            self.config.enable_custom_device('npu')
         else:
             self.config.disable_gpu()
         if self.enable_mkldnn:
@@ -305,7 +312,7 @@ if __name__ == '__main__':
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
     FLAGS.device = FLAGS.device.upper()
-    assert FLAGS.device in ['CPU', 'GPU', 'XPU'
-                            ], "device should be CPU, GPU or XPU"
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU'
+                            ], "device should be CPU, GPU, XPU or NPU"
 
     main()

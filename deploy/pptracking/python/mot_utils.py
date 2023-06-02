@@ -64,7 +64,7 @@ def argsparser():
         "--device",
         type=str,
         default='cpu',
-        help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
+        help="Choose the device you want to run, it can be: CPU/GPU/XPU/NPU, default is CPU."
     )
     parser.add_argument(
         "--use_gpu",
@@ -142,6 +142,12 @@ def argsparser():
         type=int,
         default=-1,
         help='Skip frames to speed up the process of getting mot results.')
+    parser.add_argument(
+        '--warmup_frame',
+        type=int,
+        default=50,
+        help='Warmup frames to test speed of the process of getting mot results.'
+    )
     parser.add_argument(
         "--do_entrance_counting",
         action='store_true',
@@ -254,6 +260,40 @@ class Timer(Times):
             qps = 1 / average_latency
         print("average latency time(ms): {:.2f}, QPS: {:2f}".format(
             average_latency * 1000, qps))
+        if self.with_tracker:
+            print(
+                "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}, tracking_time(ms): {:.2f}".
+                format(preprocess_time * 1000, inference_time * 1000,
+                       postprocess_time * 1000, tracking_time * 1000))
+        else:
+            print(
+                "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}".
+                format(preprocess_time * 1000, inference_time * 1000,
+                       postprocess_time * 1000))
+
+    def tracking_info(self, average=True):
+        pre_time = self.preprocess_time_s.value()
+        infer_time = self.inference_time_s.value()
+        post_time = self.postprocess_time_s.value()
+        track_time = self.tracking_time_s.value()
+
+        total_time = pre_time + infer_time + post_time
+        if self.with_tracker:
+            total_time = total_time + track_time
+        total_time = round(total_time, 4)
+        print(
+            "------------------ Tracking Module Time Info ----------------------"
+        )
+
+        preprocess_time = round(pre_time / max(1, self.img_num),
+                                4) if average else pre_time
+        postprocess_time = round(post_time / max(1, self.img_num),
+                                 4) if average else post_time
+        inference_time = round(infer_time / max(1, self.img_num),
+                               4) if average else infer_time
+        tracking_time = round(track_time / max(1, self.img_num),
+                              4) if average else track_time
+
         if self.with_tracker:
             print(
                 "preprocess_time(ms): {:.2f}, inference_time(ms): {:.2f}, postprocess_time(ms): {:.2f}, tracking_time(ms): {:.2f}".

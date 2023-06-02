@@ -80,7 +80,8 @@ class KeypointBottomUpBaseDataset(DetDataset):
         records = copy.deepcopy(self._get_imganno(idx))
         records['image'] = cv2.imread(records['image_file'])
         records['image'] = cv2.cvtColor(records['image'], cv2.COLOR_BGR2RGB)
-        records['mask'] = (records['mask'] + 0).astype('uint8')
+        if 'mask' in records:
+            records['mask'] = (records['mask'] + 0).astype('uint8')
         records = self.transform(records)
         return records
 
@@ -135,24 +136,37 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
                  num_joints,
                  transform=[],
                  shard=[0, 1],
-                 test_mode=False):
+                 test_mode=False,
+                 return_mask=True,
+                 return_bbox=True,
+                 return_area=True,
+                 return_class=True):
         super().__init__(dataset_dir, image_dir, anno_path, num_joints,
                          transform, shard, test_mode)
 
         self.ann_file = os.path.join(dataset_dir, anno_path)
         self.shard = shard
         self.test_mode = test_mode
+        self.return_mask = return_mask
+        self.return_bbox = return_bbox
+        self.return_area = return_area
+        self.return_class = return_class
 
     def parse_dataset(self):
         self.coco = COCO(self.ann_file)
 
         self.img_ids = self.coco.getImgIds()
         if not self.test_mode:
-            self.img_ids = [
-                img_id for img_id in self.img_ids
-                if len(self.coco.getAnnIds(
-                    imgIds=img_id, iscrowd=None)) > 0
-            ]
+            self.img_ids_tmp = []
+            for img_id in self.img_ids:
+                ann_ids = self.coco.getAnnIds(imgIds=img_id)
+                anno = self.coco.loadAnns(ann_ids)
+                anno = [obj for obj in anno if obj['iscrowd'] == 0]
+                if len(anno) == 0:
+                    continue
+                self.img_ids_tmp.append(img_id)
+            self.img_ids = self.img_ids_tmp
+
         blocknum = int(len(self.img_ids) / self.shard[1])
         self.img_ids = self.img_ids[(blocknum * self.shard[0]):(blocknum * (
             self.shard[0] + 1))]
@@ -199,21 +213,31 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
         ann_ids = coco.getAnnIds(imgIds=img_id)
         anno = coco.loadAnns(ann_ids)
 
-        mask = self._get_mask(anno, idx)
         anno = [
             obj for obj in anno
-            if obj['iscrowd'] == 0 or obj['num_keypoints'] > 0
+            if obj['iscrowd'] == 0 and obj['num_keypoints'] > 0
         ]
 
-        joints, orgsize = self._get_joints(anno, idx)
-
         db_rec = {}
+        joints, orgsize = self._get_joints(anno, idx)
+        db_rec['gt_joints'] = joints
+        db_rec['im_shape'] = orgsize
+
+        if self.return_bbox:
+            db_rec['gt_bbox'] = self._get_bboxs(anno, idx)
+
+        if self.return_class:
+            db_rec['gt_class'] = self._get_labels(anno, idx)
+
+        if self.return_area:
+            db_rec['gt_areas'] = self._get_areas(anno, idx)
+
+        if self.return_mask:
+            db_rec['mask'] = self._get_mask(anno, idx)
+
         db_rec['im_id'] = img_id
         db_rec['image_file'] = os.path.join(self.img_prefix,
                                             self.id2name[img_id])
-        db_rec['mask'] = mask
-        db_rec['joints'] = joints
-        db_rec['im_shape'] = orgsize
 
         return db_rec
 
@@ -229,11 +253,40 @@ class KeypointBottomUpCocoDataset(KeypointBottomUpBaseDataset):
                 np.array(obj['keypoints']).reshape([-1, 3])
 
         img_info = self.coco.loadImgs(self.img_ids[idx])[0]
-        joints[..., 0] /= img_info['width']
-        joints[..., 1] /= img_info['height']
-        orgsize = np.array([img_info['height'], img_info['width']])
+        orgsize = np.array([img_info['height'], img_info['width'], 1])
 
         return joints, orgsize
+
+    def _get_bboxs(self, anno, idx):
+        num_people = len(anno)
+        gt_bboxes = np.zeros((num_people, 4), dtype=np.float32)
+
+        for idx, obj in enumerate(anno):
+            if 'bbox' in obj:
+                gt_bboxes[idx, :] = obj['bbox']
+
+        gt_bboxes[:, 2] += gt_bboxes[:, 0]
+        gt_bboxes[:, 3] += gt_bboxes[:, 1]
+        return gt_bboxes
+
+    def _get_labels(self, anno, idx):
+        num_people = len(anno)
+        gt_labels = np.zeros((num_people, 1), dtype=np.float32)
+
+        for idx, obj in enumerate(anno):
+            if 'category_id' in obj:
+                catid = obj['category_id']
+                gt_labels[idx, 0] = self.catid2clsid[catid]
+        return gt_labels
+
+    def _get_areas(self, anno, idx):
+        num_people = len(anno)
+        gt_areas = np.zeros((num_people, ), dtype=np.float32)
+
+        for idx, obj in enumerate(anno):
+            if 'area' in obj:
+                gt_areas[idx, ] = obj['area']
+        return gt_areas
 
     def _get_mask(self, anno, idx):
         """Get ignore masks to mask out losses."""
@@ -438,7 +491,8 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                  bbox_file=None,
                  use_gt_bbox=True,
                  pixel_std=200,
-                 image_thre=0.0):
+                 image_thre=0.0,
+                 center_scale=None):
         super().__init__(dataset_dir, image_dir, anno_path, num_joints,
                          transform)
 
@@ -447,6 +501,7 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
         self.trainsize = trainsize
         self.pixel_std = pixel_std
         self.image_thre = image_thre
+        self.center_scale = center_scale
         self.dataset_name = 'coco'
 
     def parse_dataset(self):
@@ -487,9 +542,9 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                     continue
 
                 joints = np.zeros(
-                    (self.ann_info['num_joints'], 3), dtype=np.float)
+                    (self.ann_info['num_joints'], 3), dtype=np.float32)
                 joints_vis = np.zeros(
-                    (self.ann_info['num_joints'], 3), dtype=np.float)
+                    (self.ann_info['num_joints'], 3), dtype=np.float32)
                 for ipt in range(self.ann_info['num_joints']):
                     joints[ipt, 0] = obj['keypoints'][ipt * 3 + 0]
                     joints[ipt, 1] = obj['keypoints'][ipt * 3 + 1]
@@ -506,7 +561,7 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                     'image_file': os.path.join(self.img_prefix, file_name),
                     'center': center,
                     'scale': scale,
-                    'joints': joints,
+                    'gt_joints': joints,
                     'joints_vis': joints_vis,
                     'im_id': im_id,
                 })
@@ -520,6 +575,9 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
         center[0] = x + w * 0.5
         center[1] = y + h * 0.5
         aspect_ratio = self.trainsize[0] * 1.0 / self.trainsize[1]
+
+        if self.center_scale is not None and np.random.rand() < 0.3:
+            center += self.center_scale * (np.random.rand(2) - 0.5) * [w, h]
 
         if w > aspect_ratio * h:
             h = w * 1.0 / aspect_ratio
@@ -560,20 +618,137 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
                 continue
 
             center, scale = self._box2cs(box)
-            joints = np.zeros((self.ann_info['num_joints'], 3), dtype=np.float)
+            joints = np.zeros(
+                (self.ann_info['num_joints'], 3), dtype=np.float32)
             joints_vis = np.ones(
-                (self.ann_info['num_joints'], 3), dtype=np.float)
+                (self.ann_info['num_joints'], 3), dtype=np.float32)
             kpt_db.append({
                 'image_file': img_name,
                 'im_id': im_id,
                 'center': center,
                 'scale': scale,
                 'score': score,
-                'joints': joints,
+                'gt_joints': joints,
                 'joints_vis': joints_vis,
             })
 
         return kpt_db
+
+
+@register
+@serializable
+class KeypointTopDownCocoWholeBodyHandDataset(KeypointTopDownBaseDataset):
+    """CocoWholeBody dataset for top-down hand pose estimation. 
+
+    The dataset loads raw features and apply specified transforms
+    to return a dict containing the image tensors and other information.
+
+    COCO-WholeBody Hand keypoint indexes:
+
+        0: 'wrist',
+        1: 'thumb1',
+        2: 'thumb2',
+        3: 'thumb3',
+        4: 'thumb4',
+        5: 'forefinger1',
+        6: 'forefinger2',
+        7: 'forefinger3',
+        8: 'forefinger4',
+        9: 'middle_finger1',
+        10: 'middle_finger2',
+        11: 'middle_finger3',
+        12: 'middle_finger4',
+        13: 'ring_finger1',
+        14: 'ring_finger2',
+        15: 'ring_finger3',
+        16: 'ring_finger4',
+        17: 'pinky_finger1',
+        18: 'pinky_finger2',
+        19: 'pinky_finger3',
+        20: 'pinky_finger4'
+
+    Args:
+        dataset_dir (str): Root path to the dataset.
+        image_dir (str): Path to a directory where images are held.
+        anno_path (str): Relative path to the annotation file.
+        num_joints (int): Keypoint numbers
+        trainsize (list):[w, h] Image target size
+        transform (composed(operators)): A sequence of data transforms.
+        pixel_std (int): The pixel std of the scale
+            Default: 200.
+    """
+
+    def __init__(self,
+                 dataset_dir,
+                 image_dir,
+                 anno_path,
+                 num_joints,
+                 trainsize,
+                 transform=[],
+                 pixel_std=200):
+        super().__init__(dataset_dir, image_dir, anno_path, num_joints,
+                         transform)
+
+        self.trainsize = trainsize
+        self.pixel_std = pixel_std
+        self.dataset_name = 'coco_wholebady_hand'
+
+    def _box2cs(self, box):
+        x, y, w, h = box[:4]
+        center = np.zeros((2), dtype=np.float32)
+        center[0] = x + w * 0.5
+        center[1] = y + h * 0.5
+        aspect_ratio = self.trainsize[0] * 1.0 / self.trainsize[1]
+
+        if w > aspect_ratio * h:
+            h = w * 1.0 / aspect_ratio
+        elif w < aspect_ratio * h:
+            w = h * aspect_ratio
+        scale = np.array(
+            [w * 1.0 / self.pixel_std, h * 1.0 / self.pixel_std],
+            dtype=np.float32)
+        if center[0] != -1:
+            scale = scale * 1.25
+
+        return center, scale
+
+    def parse_dataset(self):
+        gt_db = []
+        num_joints = self.ann_info['num_joints']
+        coco = COCO(self.get_anno())
+        img_ids = list(coco.imgs.keys())
+        for img_id in img_ids:
+            im_ann = coco.loadImgs(img_id)[0]
+            image_file = os.path.join(self.img_prefix, im_ann['file_name'])
+            im_id = int(im_ann["id"])
+
+            ann_ids = coco.getAnnIds(imgIds=img_id, iscrowd=False)
+            objs = coco.loadAnns(ann_ids)
+
+            for obj in objs:
+                for type in ['left', 'right']:
+                    if (obj[f'{type}hand_valid'] and
+                            max(obj[f'{type}hand_kpts']) > 0):
+
+                        joints = np.zeros((num_joints, 3), dtype=np.float32)
+                        joints_vis = np.zeros((num_joints, 3), dtype=np.float32)
+
+                        keypoints = np.array(obj[f'{type}hand_kpts'])
+                        keypoints = keypoints.reshape(-1, 3)
+                        joints[:, :2] = keypoints[:, :2]
+                        joints_vis[:, :2] = np.minimum(1, keypoints[:, 2:3])
+
+                        center, scale = self._box2cs(obj[f'{type}hand_box'][:4])
+                        gt_db.append({
+                            'image_file': image_file,
+                            'center': center,
+                            'scale': scale,
+                            'gt_joints': joints,
+                            'joints_vis': joints_vis,
+                            'im_id': im_id,
+                        })
+
+        self.db = gt_db
 
 
 @register
@@ -633,8 +808,8 @@ class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
             im_id = a['image_id'] if 'image_id' in a else int(
                 os.path.splitext(image_name)[0])
 
-            c = np.array(a['center'], dtype=np.float)
-            s = np.array([a['scale'], a['scale']], dtype=np.float)
+            c = np.array(a['center'], dtype=np.float32)
+            s = np.array([a['scale'], a['scale']], dtype=np.float32)
 
             # Adjust center/scale slightly to avoid cropping limbs
             if c[0] != -1:
@@ -642,11 +817,12 @@ class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
                 s = s * 1.25
             c = c - 1
 
-            joints = np.zeros((self.ann_info['num_joints'], 3), dtype=np.float)
+            joints = np.zeros(
+                (self.ann_info['num_joints'], 3), dtype=np.float32)
             joints_vis = np.zeros(
-                (self.ann_info['num_joints'], 3), dtype=np.float)
-            if 'joints' in a:
-                joints_ = np.array(a['joints'])
+                (self.ann_info['num_joints'], 3), dtype=np.float32)
+            if 'gt_joints' in a:
+                joints_ = np.array(a['gt_joints'])
                 joints_[:, 0:2] = joints_[:, 0:2] - 1
                 joints_vis_ = np.array(a['joints_vis'])
                 assert len(joints_) == self.ann_info[
@@ -662,7 +838,7 @@ class KeypointTopDownMPIIDataset(KeypointTopDownBaseDataset):
                 'im_id': im_id,
                 'center': c,
                 'scale': s,
-                'joints': joints,
+                'gt_joints': joints,
                 'joints_vis': joints_vis
             })
         print("number length: {}".format(len(gt_db)))

@@ -183,14 +183,14 @@ fi
 
 
 
-if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]];then
+if [[ ${model_name} =~ "higherhrnet" ]] || [[ ${model_name} =~ "hrnet" ]] || [[ ${model_name} =~ "tinypose" ]] || [[ ${model_name} =~ "ppyoloe_r_crn_s_3x_spine_coco" ]] ;then
     echo "${model_name} run on full coco dataset"
     epoch=$(set_dynamic_epoch $device_num $epoch)
 else
     epoch=1
     repeat=$(set_dynamic_epoch $device_num $repeat)
-    eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/coco_detection.yml"
-    eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/coco_instance.yml"
+    eval "sed -i '10c\  repeat: ${repeat}' configs/datasets/coco_detection.yml"
+    eval "sed -i '10c\  repeat: ${repeat}' configs/datasets/coco_instance.yml"
     eval "sed -i '10c\    repeat: ${repeat}' configs/datasets/mot.yml"
 fi
 
@@ -243,7 +243,7 @@ for batch_size in ${batch_size_list[*]}; do
                         --run_mode ${run_mode} \
                         --fp_item ${precision} \
                         --keyword ips: \
-                        --skip_steps 2 \
+                        --skip_steps 4 \
                         --device_num ${device_num} \
                         --speed_unit images/s \
                         --convergence_key loss: "
@@ -279,7 +279,7 @@ for batch_size in ${batch_size_list[*]}; do
                         --run_mode ${run_mode} \
                         --fp_item ${precision} \
                         --keyword ips: \
-                        --skip_steps 2 \
+                        --skip_steps 4 \
                         --device_num ${device_num} \
                         --speed_unit images/s \
                         --convergence_key loss: "

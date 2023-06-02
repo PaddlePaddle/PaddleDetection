@@ -78,30 +78,25 @@ class CenterNet(BaseArch):
 
     def get_pred(self):
         head_out = self._forward()
+        bbox, bbox_num, bbox_inds, topk_clses, topk_ys, topk_xs = self.post_process(
+            head_out['heatmap'],
+            head_out['size'],
+            head_out['offset'],
+            im_shape=self.inputs['im_shape'],
+            scale_factor=self.inputs['scale_factor'])
+
         if self.for_mot:
-            bbox, bbox_inds, topk_clses = self.post_process(
-                head_out['heatmap'],
-                head_out['size'],
-                head_out['offset'],
-                im_shape=self.inputs['im_shape'],
-                scale_factor=self.inputs['scale_factor'])
-            output = {
-                "bbox": bbox,
-                "bbox_inds": bbox_inds,
-                "topk_clses": topk_clses,
-                "neck_feat": head_out['neck_feat']
-            }
-        else:
-            bbox, bbox_num, _ = self.post_process(
-                head_out['heatmap'],
-                head_out['size'],
-                head_out['offset'],
-                im_shape=self.inputs['im_shape'],
-                scale_factor=self.inputs['scale_factor'])
             output = {
                 "bbox": bbox,
                 "bbox_num": bbox_num,
+                "bbox_inds": bbox_inds,
+                "topk_clses": topk_clses,
+                "topk_ys": topk_ys,
+                "topk_xs": topk_xs,
+                "neck_feat": head_out['neck_feat']
             }
+        else:
+            output = {"bbox": bbox, "bbox_num": bbox_num}
         return output
 
     def get_loss(self):

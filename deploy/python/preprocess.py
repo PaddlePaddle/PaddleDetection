@@ -14,6 +14,7 @@
 
 import cv2
 import numpy as np
+import imgaug.augmenters as iaa
 from keypoint_preprocess import get_affine_transform
 from PIL import Image
 
@@ -450,13 +451,15 @@ class WarpAffine(object):
                  input_h=512,
                  input_w=512,
                  scale=0.4,
-                 shift=0.1):
+                 shift=0.1,
+                 down_ratio=4):
         self.keep_res = keep_res
         self.pad = pad
         self.input_h = input_h
         self.input_w = input_w
         self.scale = scale
         self.shift = shift
+        self.down_ratio = down_ratio
 
     def __call__(self, im, im_info):
         """
@@ -472,12 +475,14 @@ class WarpAffine(object):
         h, w = img.shape[:2]
 
         if self.keep_res:
+            # True in detection eval/infer
             input_h = (h | self.pad) + 1
             input_w = (w | self.pad) + 1
             s = np.array([input_w, input_h], dtype=np.float32)
             c = np.array([w // 2, h // 2], dtype=np.float32)
 
         else:
+            # False in centertrack eval_mot/eval_mot
             s = max(h, w) * 1.0
             input_h, input_w = self.input_h, self.input_w
             c = np.array([w / 2., h / 2.], dtype=np.float32)
@@ -486,7 +491,49 @@ class WarpAffine(object):
         img = cv2.resize(img, (w, h))
         inp = cv2.warpAffine(
             img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
+
+        if not self.keep_res:
+            out_h = input_h // self.down_ratio
+            out_w = input_w // self.down_ratio
+            trans_output = get_affine_transform(c, s, 0, [out_w, out_h])
+
+            im_info.update({
+                'center': c,
+                'scale': s,
+                'out_height': out_h,
+                'out_width': out_w,
+                'inp_height': input_h,
+                'inp_width': input_w,
+                'trans_input': trans_input,
+                'trans_output': trans_output,
+            })
         return inp, im_info
+
+
+class CULaneResize(object):
+    def __init__(self, img_h, img_w, cut_height, prob=0.5):
+        super(CULaneResize, self).__init__()
+        self.img_h = img_h
+        self.img_w = img_w
+        self.cut_height = cut_height
+        self.prob = prob
+
+    def __call__(self, im, im_info):
+        # cut
+        im = im[self.cut_height:, :, :]
+        # resize
+        transform = iaa.Sometimes(self.prob,
+                                  iaa.Resize({
+                                      "height": self.img_h,
+                                      "width": self.img_w
+                                  }))
+        im = transform(image=im.copy().astype(np.uint8))
+
+        im = im.astype(np.float32) / 255.
+        # check transpose is need whether the func decode_image is equal to CULaneDataSet cv.imread
+        im = im.transpose(2, 0, 1)
+
+        return im, im_info
 
 
 def preprocess(im, preprocess_ops):

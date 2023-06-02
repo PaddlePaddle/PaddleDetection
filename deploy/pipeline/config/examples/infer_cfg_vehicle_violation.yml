@@ -1,0 +1,31 @@
+crop_thresh: 0.5
+visual: True
+warmup_frame: 50
+
+DET:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
+  batch_size: 1
+
+MOT:
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/mot_ppyoloe_l_36e_ppvehicle.zip
+  tracker_config: deploy/pipeline/config/tracker_config.yml
+  batch_size: 1
+  skip_frame_num: -1 # preferably no more than 3
+  enable: True
+
+LANE_SEG:
+  lane_seg_config: deploy/pipeline/config/lane_seg_config.yml
+  model_dir: https://bj.bcebos.com/v1/paddledet/models/pipeline/pp_lite_stdc2_bdd100k.zip
+
+VEHICLE_PRESSING:
+  enable: True
+
+VEHICLE_RETROGRADE:
+  frame_len: 8
+  sample_freq: 7
+  enable: True
+  filter_horizontal_flag: True
+  keep_right_flag: True
+  deviation: 45
+  move_scale: 0.01
+  fence_line: [570,  163, 1030,  752]   #[x1,y1,x2,y2] y2>y1.

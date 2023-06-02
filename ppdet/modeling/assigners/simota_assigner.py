@@ -236,7 +236,7 @@ class SimOTAAssigner(object):
         )] = match_fg_mask_inmatrix
 
         assigned_gt_inds[match_fg_mask_inall.astype(
-            np.bool)] = match_gt_inds_to_fg + 1
+            np.bool_)] = match_gt_inds_to_fg + 1
 
         pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds \
             = self.get_sample(assigned_gt_inds, gt_bboxes.numpy())

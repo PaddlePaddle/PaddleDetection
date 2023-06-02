@@ -248,7 +248,7 @@ def parse_args():
         '--nms_thresh',
         type=float,
         default=0.1,
-        help='nms threshold whild merging results')
+        help='nms threshold while merging results')
 
     return parser.parse_args()
 

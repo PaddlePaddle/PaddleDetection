@@ -143,8 +143,8 @@ def delta2bbox_v2(deltas,
         dw = paddle.clip(dw, max=clip_scale)
         dh = paddle.clip(dh, max=clip_scale)
     else:
-        dw = dw.clip(min=-ctr_clip, max=ctr_clip)
-        dh = dh.clip(min=-ctr_clip, max=ctr_clip)
+        dw = dw.clip(min=-clip_scale, max=clip_scale)
+        dh = dh.clip(min=-clip_scale, max=clip_scale)
 
     pred_ctr_x = dx + ctr_x.unsqueeze(1)
     pred_ctr_y = dy + ctr_y.unsqueeze(1)
@@ -365,8 +365,7 @@ def decode_yolo(box, anchor, downsample_ratio):
     x1 = (x + grid[:, :, :, :, 0:1]) / grid_w
     y1 = (y + grid[:, :, :, :, 1:2]) / grid_h
 
-    anchor = paddle.to_tensor(anchor)
-    anchor = paddle.cast(anchor, x.dtype)
+    anchor = paddle.to_tensor(anchor, dtype=x.dtype)
     anchor = anchor.reshape((1, na, 1, 1, 2))
     w1 = paddle.exp(w) * anchor[:, :, :, :, 0:1] / (downsample_ratio * grid_w)
     h1 = paddle.exp(h) * anchor[:, :, :, :, 1:2] / (downsample_ratio * grid_h)

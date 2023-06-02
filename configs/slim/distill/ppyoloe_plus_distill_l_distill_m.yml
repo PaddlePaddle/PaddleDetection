@@ -1,0 +1,53 @@
+# teacher and slim config
+_BASE_: [
+  '../../ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml',
+]
+depth_mult: 1.0
+width_mult: 1.0
+for_distill: True
+architecture: PPYOLOE
+PPYOLOE:
+  backbone: CSPResNet
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/ppyoloe_plus_crn_l_80e_coco.pdparams
+find_unused_parameters: True
+
+worker_num: 4
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - RandomDistort: {}
+    - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
+    - RandomCrop: {}
+    - RandomFlip: {}
+  batch_transforms:
+    - BatchRandomResize: {target_size: [640], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+    - PadGT: {}
+  batch_size: 8
+  shuffle: True
+  drop_last: True
+  use_shared_memory: True
+  collate_batch: True
+
+
+slim: Distill
+slim_method: PPYOLOEDistill
+distill_loss: DistillPPYOLOELoss
+
+DistillPPYOLOELoss: # L -> M
+  loss_weight: {'logits': 4.0, 'feat': 1.0}
+  logits_distill: True
+  logits_loss_weight: {'class': 1.0, 'iou': 2.5, 'dfl': 0.5}
+  logits_ld_distill: True
+  logits_ld_params: {'weight': 20000, 'T': 10}
+  feat_distill: True
+  feat_distiller: 'fgd' # ['cwd', 'fgd', 'pkd', 'mgd', 'mimic']
+  feat_distill_place: 'neck_feats'
+  teacher_width_mult: 1.0  # L
+  student_width_mult: 0.75  # M
+  feat_out_channels: [768, 384, 192]  # The actual channel will multiply width_mult

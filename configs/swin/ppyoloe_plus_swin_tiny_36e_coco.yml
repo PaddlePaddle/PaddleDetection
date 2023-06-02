@@ -1,0 +1,67 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '../ppyoloe/_base_/ppyoloe_plus_crn.yml',
+  '../ppyoloe/_base_/ppyoloe_plus_reader.yml',
+]
+depth_mult: 0.33 # s version
+width_mult: 0.50
+
+log_iter: 50
+snapshot_epoch: 4
+weights: output/ppyoloe_plus_swin_tiny_36e_coco/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/swin_tiny_patch4_window7_224_22kto1k_pretrained.pdparams
+
+
+architecture: PPYOLOE
+norm_type: sync_bn
+use_ema: true
+ema_decay: 0.9998
+ema_black_list: ['proj_conv.weight']
+custom_black_list: ['reduce_mean']
+
+PPYOLOE:
+  backbone: SwinTransformer
+  neck: CustomCSPPAN
+  yolo_head: PPYOLOEHead
+  post_process: ~
+
+SwinTransformer:
+  arch: 'swin_T_224' # ['swin_T_224', 'swin_S_224', 'swin_B_224', 'swin_L_224', 'swin_B_384', 'swin_L_384']
+  ape: false
+  drop_path_rate: 0.1
+  patch_norm: true
+  out_indices: [1, 2, 3]
+
+PPYOLOEHead:
+  static_assigner_epoch: 12
+  nms:
+    nms_top_k: 1000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7
+
+
+TrainReader:
+  batch_size: 8
+
+
+epoch: 36
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [24, 33]
+  - !LinearWarmup
+    start_factor: 0.1
+    steps: 1000
+
+OptimizerBuilder:
+  clip_grad_by_norm: 1.0
+  optimizer:
+    type: AdamW
+    weight_decay: 0.05
+    param_groups:
+      - params: ['absolute_pos_embed', 'relative_position_bias_table', 'norm']
+        weight_decay: 0.0

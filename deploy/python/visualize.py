@@ -442,3 +442,198 @@ def visualize_vehicleplate(im, results, boxes=None):
                 text_scale, (0, 255, 255),
                 thickness=text_thickness)
     return im
+
+
+def draw_press_box_lanes(im, np_boxes, labels, threshold=0.5):
+    """
+    Args:
+        im (PIL.Image.Image): PIL image
+        np_boxes (np.ndarray): shape:[N,6], N: number of box,
+                               matix element:[class, score, x_min, y_min, x_max, y_max]
+        labels (list): labels:['class1', ..., 'classn']
+        threshold (float): threshold of box
+    Returns:
+        im (PIL.Image.Image): visualized image
+    """
+
+    if isinstance(im, str):
+        im = Image.open(im).convert('RGB')
+    elif isinstance(im, np.ndarray):
+        im = Image.fromarray(im)
+
+    draw_thickness = min(im.size) // 320
+    draw = ImageDraw.Draw(im)
+    clsid2color = {}
+    color_list = get_color_map_list(len(labels))
+
+    if np_boxes.shape[1] == 7:
+        np_boxes = np_boxes[:, 1:]
+
+    expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
+    np_boxes = np_boxes[expect_boxes, :]
+
+    for dt in np_boxes:
+        clsid, bbox, score = int(dt[0]), dt[2:], dt[1]
+        if clsid not in clsid2color:
+            clsid2color[clsid] = color_list[clsid]
+        color = tuple(clsid2color[clsid])
+
+        if len(bbox) == 4:
+            xmin, ymin, xmax, ymax = bbox
+            # draw bbox
+            draw.line(
+                [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+                 (xmin, ymin)],
+                width=draw_thickness,
+                fill=(0, 0, 255))
+        elif len(bbox) == 8:
+            x1, y1, x2, y2, x3, y3, x4, y4 = bbox
+            draw.line(
+                [(x1, y1), (x2, y2), (x3, y3), (x4, y4), (x1, y1)],
+                width=2,
+                fill=color)
+            xmin = min(x1, x2, x3, x4)
+            ymin = min(y1, y2, y3, y4)
+
+        # draw label
+        text = "{}".format(labels[clsid])
+        tw, th = draw.textsize(text)
+        draw.rectangle(
+            [(xmin + 1, ymax - th), (xmin + tw + 1, ymax)], fill=color)
+        draw.text((xmin + 1, ymax - th), text, fill=(0, 0, 255))
+    return im
+
+
+def visualize_vehiclepress(im, results, threshold=0.5):
+    results = np.array(results)
+    labels = ['violation']
+    im = draw_press_box_lanes(im, results, labels, threshold=threshold)
+    return im
+
+
+def visualize_lane(im, lanes):
+    if isinstance(im, str):
+        im = Image.open(im).convert('RGB')
+    elif isinstance(im, np.ndarray):
+        im = Image.fromarray(im)
+
+    draw_thickness = min(im.size) // 320
+    draw = ImageDraw.Draw(im)
+
+    if len(lanes) > 0:
+        for lane in lanes:
+            draw.line(
+                [(lane[0], lane[1]), (lane[2], lane[3])],
+                width=draw_thickness,
+                fill=(0, 0, 255))
+
+    return im
+
+
+def visualize_vehicle_retrograde(im, mot_res, vehicle_retrograde_res):
+    if isinstance(im, str):
+        im = Image.open(im).convert('RGB')
+    elif isinstance(im, np.ndarray):
+        im = Image.fromarray(im)
+
+    draw_thickness = min(im.size) // 320
+    draw = ImageDraw.Draw(im)
+
+    lane = vehicle_retrograde_res['fence_line']
+    if lane is not None:
+        draw.line(
+            [(lane[0], lane[1]), (lane[2], lane[3])],
+            width=draw_thickness,
+            fill=(0, 0, 0))
+
+    mot_id = vehicle_retrograde_res['output']
+    if mot_id is None or len(mot_id) == 0:
+        return im
+
+    if mot_res is None:
+        return im
+    np_boxes = mot_res['boxes']
+
+    if np_boxes is not None:
+        for dt in np_boxes:
+            if dt[0] not in mot_id:
+                continue
+            bbox = dt[3:]
+            if len(bbox) == 4:
+                xmin, ymin, xmax, ymax = bbox
+                # draw bbox
+                draw.line(
+                    [(xmin, ymin), (xmin, ymax), (xmax, ymax), (xmax, ymin),
+                     (xmin, ymin)],
+                    width=draw_thickness,
+                    fill=(0, 255, 0))
+
+            # draw label
+            text = "retrograde"
+            tw, th = draw.textsize(text)
+            draw.rectangle(
+                [(xmax + 1, ymin - th), (xmax + tw + 1, ymin)],
+                fill=(0, 255, 0))
+            draw.text((xmax + 1, ymin - th), text, fill=(0, 255, 0))
+
+    return im
+
+
+COLORS = [
+    (255, 0, 0),
+    (0, 255, 0),
+    (0, 0, 255),
+    (255, 255, 0),
+    (255, 0, 255),
+    (0, 255, 255),
+    (128, 255, 0),
+    (255, 128, 0),
+    (128, 0, 255),
+    (255, 0, 128),
+    (0, 128, 255),
+    (0, 255, 128),
+    (128, 255, 255),
+    (255, 128, 255),
+    (255, 255, 128),
+    (60, 180, 0),
+    (180, 60, 0),
+    (0, 60, 180),
+    (0, 180, 60),
+    (60, 0, 180),
+    (180, 0, 60),
+    (255, 0, 0),
+    (0, 255, 0),
+    (0, 0, 255),
+    (255, 255, 0),
+    (255, 0, 255),
+    (0, 255, 255),
+    (128, 255, 0),
+    (255, 128, 0),
+    (128, 0, 255),
+]
+
+
+def imshow_lanes(img, lanes, show=False, out_file=None, width=4):
+    lanes_xys = []
+    for _, lane in enumerate(lanes):
+        xys = []
+        for x, y in lane:
+            if x <= 0 or y <= 0:
+                continue
+            x, y = int(x), int(y)
+            xys.append((x, y))
+        lanes_xys.append(xys)
+    lanes_xys.sort(key=lambda xys: xys[0][0] if len(xys) > 0 else 0)
+
+    for idx, xys in enumerate(lanes_xys):
+        for i in range(1, len(xys)):
+            cv2.line(img, xys[i - 1], xys[i], COLORS[idx], thickness=width)
+
+    if show:
+        cv2.imshow('view', img)
+        cv2.waitKey(0)
+
+    if out_file:
+        if not os.path.exists(os.path.dirname(out_file)):
+            os.makedirs(os.path.dirname(out_file))
+        cv2.imwrite(out_file, img)

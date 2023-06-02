@@ -21,6 +21,8 @@ from .meta_arch import BaseArch
 from ..post_process import JDEBBoxPostProcess
 
 __all__ = ['YOLOv3']
+# YOLOv3,PP-YOLO,PP-YOLOv2,PP-YOLOE,PP-YOLOE+ use the same architecture as YOLOv3
+# PP-YOLOE and PP-YOLOE+ are recommended to use PPYOLOE architecture in ppyoloe.py, especially when use distillation or aux head
 
 
 @register
@@ -99,6 +101,7 @@ class YOLOv3(BaseArch):
             yolo_head_outs = self.yolo_head(neck_feats)
 
             if self.for_mot:
+                # the detection part of JDE MOT model
                 boxes_idx, bbox, bbox_num, nms_keep_idx = self.post_process(
                     yolo_head_outs, self.yolo_head.mask_anchors)
                 output = {
@@ -110,16 +113,33 @@ class YOLOv3(BaseArch):
                 }
             else:
                 if self.return_idx:
-                    _, bbox, bbox_num, _ = self.post_process(
+                    # the detection part of JDE MOT model
+                    _, bbox, bbox_num, nms_keep_idx = self.post_process(
                         yolo_head_outs, self.yolo_head.mask_anchors)
                 elif self.post_process is not None:
-                    bbox, bbox_num = self.post_process(
+                    # anchor based YOLOs: YOLOv3,PP-YOLO,PP-YOLOv2 use mask_anchors
+                    bbox, bbox_num, nms_keep_idx = self.post_process(
                         yolo_head_outs, self.yolo_head.mask_anchors,
                         self.inputs['im_shape'], self.inputs['scale_factor'])
                 else:
-                    bbox, bbox_num = self.yolo_head.post_process(
+                    # anchor free YOLOs: PP-YOLOE, PP-YOLOE+
+                    bbox, bbox_num, nms_keep_idx = self.yolo_head.post_process(
                         yolo_head_outs, self.inputs['scale_factor'])
-                output = {'bbox': bbox, 'bbox_num': bbox_num}
+
+                if self.use_extra_data:
+                    extra_data = {}  # record the bbox output before nms, such like scores and nms_keep_idx
+                    """extra_data:{
+                                'scores': predict scores,
+                                'nms_keep_idx': bbox index before nms,
+                               }
+                    """
+                    extra_data['scores'] = yolo_head_outs[0]  # predict scores (probability)
+                    # Todo: get logits output
+                    extra_data['nms_keep_idx'] = nms_keep_idx
+                    # Todo support for mask_anchors yolo
+                    output = {'bbox': bbox, 'bbox_num': bbox_num, 'extra_data': extra_data}
+                else:
+                    output = {'bbox': bbox, 'bbox_num': bbox_num}
 
             return output
 

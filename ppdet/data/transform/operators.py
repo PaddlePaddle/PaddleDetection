@@ -40,6 +40,7 @@ import pickle
 import threading
 MUTEX = threading.Lock()
 
+import paddle
 from ppdet.core.workspace import serializable
 from ..reader import Compose
 
@@ -282,6 +283,11 @@ class Permute(BaseOperator):
         im = sample['image']
         im = im.transpose((2, 0, 1))
         sample['image'] = im
+
+        if 'pre_image' in sample:
+            pre_im = sample['pre_image']
+            pre_im = pre_im.transpose((2, 0, 1))
+            sample['pre_image'] = pre_im
         return sample
 
 
@@ -304,6 +310,9 @@ class Lighting(BaseOperator):
     def apply(self, sample, context=None):
         alpha = np.random.normal(scale=self.alphastd, size=(3, ))
         sample['image'] += np.dot(self.eigvec, self.eigval * alpha)
+
+        if 'pre_image' in sample:
+            sample['pre_image'] += np.dot(self.eigvec, self.eigval * alpha)
         return sample
 
 
@@ -324,7 +333,7 @@ class RandomErasingImage(BaseOperator):
         self.higher = higher
         self.aspect_ratio = aspect_ratio
 
-    def apply(self, sample):
+    def apply(self, sample, context=None):
         gt_bbox = sample['gt_bbox']
         im = sample['image']
         if not isinstance(im, np.ndarray):
@@ -391,6 +400,7 @@ class NormalizeImage(BaseOperator):
             2.(optional) Each pixel minus mean and is divided by std
         """
         im = sample['image']
+
         im = im.astype(np.float32, copy=False)
         if self.is_scale:
             scale = 1.0 / 255.0
@@ -401,7 +411,23 @@ class NormalizeImage(BaseOperator):
             std = np.array(self.std)[np.newaxis, np.newaxis, :]
             im -= mean
             im /= std
+
         sample['image'] = im
+
+        if 'pre_image' in sample:
+            pre_im = sample['pre_image']
+            pre_im = pre_im.astype(np.float32, copy=False)
+            if self.is_scale:
+                scale = 1.0 / 255.0
+                pre_im *= scale
+
+            if self.norm_type == 'mean_std':
+                mean = np.array(self.mean)[np.newaxis, np.newaxis, :]
+                std = np.array(self.std)[np.newaxis, np.newaxis, :]
+                pre_im -= mean
+                pre_im /= std
+            sample['pre_image'] = pre_im
+
         return sample
 
 
@@ -475,7 +501,8 @@ class RandomDistort(BaseOperator):
                  brightness=[0.5, 1.5, 0.5],
                  random_apply=True,
                  count=4,
-                 random_channel=False):
+                 random_channel=False,
+                 prob=1.0):
         super(RandomDistort, self).__init__()
         self.hue = hue
         self.saturation = saturation
@@ -484,6 +511,7 @@ class RandomDistort(BaseOperator):
         self.random_apply = random_apply
         self.count = count
         self.random_channel = random_channel
+        self.prob = prob
 
     def apply_hue(self, img):
         low, high, prob = self.hue
@@ -537,6 +565,8 @@ class RandomDistort(BaseOperator):
         return img
 
     def apply(self, sample, context=None):
+        if random.random() > self.prob:
+            return sample
         img = sample['image']
         if self.random_apply:
             functions = [
@@ -566,6 +596,108 @@ class RandomDistort(BaseOperator):
                 img = img[..., np.random.permutation(3)]
         sample['image'] = img
         return sample
+
+
+@register_op
+class PhotoMetricDistortion(BaseOperator):
+    """Apply photometric distortion to image sequentially, every transformation
+    is applied with a probability of 0.5. The position of random contrast is in
+    second or second to last.
+
+    1. random brightness
+    2. random contrast (mode 0)
+    3. convert color from BGR to HSV
+    4. random saturation
+    5. random hue
+    6. convert color from HSV to BGR
+    7. random contrast (mode 1)
+    8. randomly swap channels
+
+    Args:
+        brightness_delta (int): delta of brightness.
+        contrast_range (tuple): range of contrast.
+        saturation_range (tuple): range of saturation.
+        hue_delta (int): delta of hue.
+    """
+
+    def __init__(self,
+                 brightness_delta=32,
+                 contrast_range=(0.5, 1.5),
+                 saturation_range=(0.5, 1.5),
+                 hue_delta=18):
+        super(PhotoMetricDistortion, self).__init__()
+        self.brightness_delta = brightness_delta
+        self.contrast_lower, self.contrast_upper = contrast_range
+        self.saturation_lower, self.saturation_upper = saturation_range
+        self.hue_delta = hue_delta
+
+    def apply(self, results, context=None):
+        """Call function to perform photometric distortion on images.
+
+        Args:
+            results (dict): Result dict from loading pipeline.
+
+        Returns:
+            dict: Result dict with images distorted.
+        """
+
+        img = results['image']
+        img = img.astype(np.float32)
+        # random brightness
+        if np.random.randint(2):
+            delta = np.random.uniform(-self.brightness_delta,
+                                      self.brightness_delta)
+            img += delta
+
+        # mode == 0 --> do random contrast first
+        # mode == 1 --> do random contrast last
+        mode = np.random.randint(2)
+        if mode == 1:
+            if np.random.randint(2):
+                alpha = np.random.uniform(self.contrast_lower,
+                                          self.contrast_upper)
+                img *= alpha
+
+        # convert color from BGR to HSV
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+        # random saturation
+        if np.random.randint(2):
+            img[..., 1] *= np.random.uniform(self.saturation_lower,
+                                             self.saturation_upper)
+
+        # random hue
+        if np.random.randint(2):
+            img[..., 0] += np.random.uniform(-self.hue_delta, self.hue_delta)
+            img[..., 0][img[..., 0] > 360] -= 360
+            img[..., 0][img[..., 0] < 0] += 360
+
+        # convert color from HSV to BGR
+        img = cv2.cvtColor(img, cv2.COLOR_HSV2BGR)
+
+        # random contrast
+        if mode == 0:
+            if np.random.randint(2):
+                alpha = np.random.uniform(self.contrast_lower,
+                                          self.contrast_upper)
+                img *= alpha
+
+        # randomly swap channels
+        if np.random.randint(2):
+            img = img[..., np.random.permutation(3)]
+
+        results['image'] = img
+        return results
+
+    def __repr__(self):
+        repr_str = self.__class__.__name__
+        repr_str += f'(\nbrightness_delta={self.brightness_delta},\n'
+        repr_str += 'contrast_range='
+        repr_str += f'{(self.contrast_lower, self.contrast_upper)},\n'
+        repr_str += 'saturation_range='
+        repr_str += f'{(self.saturation_lower, self.saturation_upper)},\n'
+        repr_str += f'hue_delta={self.hue_delta})'
+        return repr_str
 
 
 @register_op
@@ -745,6 +877,19 @@ class Resize(BaseOperator):
         bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h)
         return bbox
 
+    def apply_area(self, area, scale):
+        im_scale_x, im_scale_y = scale
+        return area * im_scale_x * im_scale_y
+
+    def apply_joints(self, joints, scale, size):
+        im_scale_x, im_scale_y = scale
+        resize_w, resize_h = size
+        joints[..., 0] *= im_scale_x
+        joints[..., 1] *= im_scale_y
+        joints[..., 0] = np.clip(joints[..., 0], 0, resize_w)
+        joints[..., 1] = np.clip(joints[..., 1], 0, resize_h)
+        return joints
+
     def apply_segm(self, segms, im_size, scale):
         def _resize_poly(poly, im_scale_x, im_scale_y):
             resized_poly = np.array(poly).astype('float32')
@@ -790,13 +935,14 @@ class Resize(BaseOperator):
         im = sample['image']
         if not isinstance(im, np.ndarray):
             raise TypeError("{}: image type is not numpy.".format(self))
-        if len(im.shape) != 3:
-            raise ImageError('{}: image is not 3-dimensional.'.format(self))
 
         # apply image
-        im_shape = im.shape
-        if self.keep_ratio:
+        if len(im.shape) == 3:
+            im_shape = im.shape
+        else:
+            im_shape = im[0].shape
 
+        if self.keep_ratio:
             im_size_min = np.min(im_shape[0:2])
             im_size_max = np.max(im_shape[0:2])
 
@@ -806,8 +952,8 @@ class Resize(BaseOperator):
             im_scale = min(target_size_min / im_size_min,
                            target_size_max / im_size_max)
 
-            resize_h = im_scale * float(im_shape[0])
-            resize_w = im_scale * float(im_shape[1])
+            resize_h = int(im_scale * float(im_shape[0]) + 0.5)
+            resize_w = int(im_scale * float(im_shape[1]) + 0.5)
 
             im_scale_x = im_scale
             im_scale_y = im_scale
@@ -816,8 +962,25 @@ class Resize(BaseOperator):
             im_scale_y = resize_h / im_shape[0]
             im_scale_x = resize_w / im_shape[1]
 
-        im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
-        sample['image'] = im.astype(np.float32)
+        if len(im.shape) == 3:
+            im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
+            sample['image'] = im.astype(np.float32)
+        else:
+            resized_images = []
+            for one_im in im:
+                applied_im = self.apply_image(one_im, [im_scale_x, im_scale_y])
+                resized_images.append(applied_im)
+
+            sample['image'] = np.array(resized_images)
+
+        # 2d keypoints resize
+        if 'kps2d' in sample.keys():
+            kps2d = sample['kps2d']
+            kps2d[:, :, 0] = kps2d[:, :, 0] * im_scale_x
+            kps2d[:, :, 1] = kps2d[:, :, 1] * im_scale_y
+
+            sample['kps2d'] = kps2d
+
         sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
         if 'scale_factor' in sample:
             scale_factor = sample['scale_factor']
@@ -833,6 +996,11 @@ class Resize(BaseOperator):
             sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'],
                                                 [im_scale_x, im_scale_y],
                                                 [resize_w, resize_h])
+
+        # apply areas
+        if 'gt_areas' in sample:
+            sample['gt_areas'] = self.apply_area(sample['gt_areas'],
+                                                 [im_scale_x, im_scale_y])
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
@@ -866,6 +1034,11 @@ class Resize(BaseOperator):
                 for gt_segm in sample['gt_segm']
             ]
             sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+
+        if 'gt_joints' in sample:
+            sample['gt_joints'] = self.apply_joints(sample['gt_joints'],
+                                                    [im_scale_x, im_scale_y],
+                                                    [resize_w, resize_h])
 
         return sample
 
@@ -926,6 +1099,7 @@ class RandomResize(BaseOperator):
                  target_size,
                  keep_ratio=True,
                  interp=cv2.INTER_LINEAR,
+                 random_range=False,
                  random_size=True,
                  random_interp=False):
         """
@@ -934,6 +1108,8 @@ class RandomResize(BaseOperator):
             target_size (int, list, tuple): image target size, if random size is True, must be list or tuple
             keep_ratio (bool): whether keep_raio or not, default true
             interp (int): the interpolation method
+            random_range (bool): whether random select target size of image, the target_size must be 
+                a [[min_short_edge, long_edge], [max_short_edge, long_edge]]
             random_size (bool): whether random select target size of image
             random_interp (bool): whether random select interpolation method
         """
@@ -949,21 +1125,33 @@ class RandomResize(BaseOperator):
         ]
         assert isinstance(target_size, (
             Integral, Sequence)), "target_size must be Integer, List or Tuple"
-        if random_size and not isinstance(target_size, Sequence):
+        if (random_range or random_size) and not isinstance(target_size,
+                                                            Sequence):
             raise TypeError(
-                "Type of target_size is invalid when random_size is True. Must be List or Tuple, now is {}".
+                "Type of target_size is invalid when random_size or random_range is True. Must be List or Tuple, now is {}".
                 format(type(target_size)))
+        if random_range and not len(target_size) == 2:
+            raise TypeError(
+                "target_size must be two list as [[min_short_edge, long_edge], [max_short_edge, long_edge]] when random_range is True."
+            )
         self.target_size = target_size
+        self.random_range = random_range
         self.random_size = random_size
         self.random_interp = random_interp
 
     def apply(self, sample, context=None):
         """ Resize the image numpy.
         """
-        if self.random_size:
-            target_size = random.choice(self.target_size)
+        if self.random_range:
+            short_edge = np.random.randint(self.target_size[0][0],
+                                           self.target_size[1][0] + 1)
+            long_edge = max(self.target_size[0][1], self.target_size[1][1] + 1)
+            target_size = [short_edge, long_edge]
         else:
-            target_size = self.target_size
+            if self.random_size:
+                target_size = random.choice(self.target_size)
+            else:
+                target_size = self.target_size
 
         if self.random_interp:
             interp = random.choice(self.interps)
@@ -1303,7 +1491,9 @@ class RandomCrop(BaseOperator):
                  num_attempts=50,
                  allow_no_crop=True,
                  cover_all_box=False,
-                 is_mask_crop=False):
+                 is_mask_crop=False,
+                 ioumode="iou",
+                 prob=1.0):
         super(RandomCrop, self).__init__()
         self.aspect_ratio = aspect_ratio
         self.thresholds = thresholds
@@ -1312,6 +1502,8 @@ class RandomCrop(BaseOperator):
         self.allow_no_crop = allow_no_crop
         self.cover_all_box = cover_all_box
         self.is_mask_crop = is_mask_crop
+        self.ioumode = ioumode
+        self.prob = prob
 
     def crop_segms(self, segms, valid_ids, crop, height, width):
         def _crop_poly(segm, crop):
@@ -1382,10 +1574,41 @@ class RandomCrop(BaseOperator):
                 crop_segms.append(_crop_rle(segm, crop, height, width))
         return crop_segms
 
+    def set_fake_bboxes(self, sample):
+        sample['gt_bbox'] = np.array(
+            [
+                [32, 32, 128, 128],
+                [32, 32, 128, 256],
+                [32, 64, 128, 128],
+                [32, 64, 128, 256],
+                [64, 64, 128, 256],
+                [64, 64, 256, 256],
+                [64, 32, 128, 256],
+                [64, 32, 128, 256],
+                [96, 32, 128, 256],
+                [96, 32, 128, 256],
+            ],
+            dtype=np.float32)
+        sample['gt_class'] = np.array(
+            [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]], np.int32)
+        return sample
+
     def apply(self, sample, context=None):
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+        if random.random() > self.prob:
             return sample
 
+        if 'gt_bbox' not in sample:
+            # only used in semi-det as unsup data
+            sample = self.set_fake_bboxes(sample)
+            sample = self.random_crop(sample, fake_bboxes=True)
+            return sample
+
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
+            return sample
+        sample = self.random_crop(sample)
+        return sample
+
+    def random_crop(self, sample, fake_bboxes=False):
         h, w = sample['image'].shape[:2]
         gt_bbox = sample['gt_bbox']
 
@@ -1429,9 +1652,14 @@ class RandomCrop(BaseOperator):
                 crop_y = np.random.randint(0, h - crop_h)
                 crop_x = np.random.randint(0, w - crop_w)
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
-                iou = self._iou_matrix(
-                    gt_bbox, np.array(
-                        [crop_box], dtype=np.float32))
+                if self.ioumode == "iof":
+                    iou = self._gtcropiou_matrix(
+                        gt_bbox, np.array(
+                            [crop_box], dtype=np.float32))
+                elif self.ioumode == "iou":
+                    iou = self._iou_matrix(
+                        gt_bbox, np.array(
+                            [crop_box], dtype=np.float32))
                 if iou.max() < thresh:
                     continue
 
@@ -1477,6 +1705,9 @@ class RandomCrop(BaseOperator):
                         sample['gt_segm'], valid_ids, axis=0)
 
                 sample['image'] = self._crop_image(sample['image'], crop_box)
+                if fake_bboxes == True:
+                    return sample
+
                 sample['gt_bbox'] = np.take(cropped_box, valid_ids, axis=0)
                 sample['gt_class'] = np.take(
                     sample['gt_class'], valid_ids, axis=0)
@@ -1492,6 +1723,10 @@ class RandomCrop(BaseOperator):
                     sample['difficult'] = np.take(
                         sample['difficult'], valid_ids, axis=0)
 
+                if 'gt_joints' in sample:
+                    sample['gt_joints'] = self._crop_joints(sample['gt_joints'],
+                                                            crop_box)
+
                 return sample
 
         return sample
@@ -1505,6 +1740,16 @@ class RandomCrop(BaseOperator):
         area_b = np.prod(b[:, 2:] - b[:, :2], axis=1)
         area_o = (area_a[:, np.newaxis] + area_b - area_i)
         return area_i / (area_o + 1e-10)
+
+    def _gtcropiou_matrix(self, a, b):
+        tl_i = np.maximum(a[:, np.newaxis, :2], b[:, :2])
+        br_i = np.minimum(a[:, np.newaxis, 2:], b[:, 2:])
+
+        area_i = np.prod(br_i - tl_i, axis=2) * (tl_i < br_i).all(axis=2)
+        area_a = np.prod(a[:, 2:] - a[:, :2], axis=1)
+        area_b = np.prod(b[:, 2:] - b[:, :2], axis=1)
+        area_o = (area_a[:, np.newaxis] + area_b - area_i)
+        return area_i / (area_a + 1e-10)
 
     def _crop_box_with_center_constraint(self, box, crop):
         cropped_box = box.copy()
@@ -1530,61 +1775,125 @@ class RandomCrop(BaseOperator):
         x1, y1, x2, y2 = crop
         return segm[:, y1:y2, x1:x2]
 
+    def _crop_joints(self, joints, crop):
+        x1, y1, x2, y2 = crop
+        joints[joints[..., 0] > x2, :] = 0
+        joints[joints[..., 1] > y2, :] = 0
+        joints[joints[..., 0] < x1, :] = 0
+        joints[joints[..., 1] < y1, :] = 0
+        joints[..., 0] -= x1
+        joints[..., 1] -= y1
+        return joints
+
 
 @register_op
 class RandomScaledCrop(BaseOperator):
     """Resize image and bbox based on long side (with optional random scaling),
        then crop or pad image to target size.
     Args:
-        target_dim (int): target size.
+        target_size (int|list): target size, "hw" format.
         scale_range (list): random scale range.
         interp (int): interpolation method, default to `cv2.INTER_LINEAR`.
+        fill_value (float|list|tuple): color value used to fill the canvas,
+            in RGB order.
     """
 
     def __init__(self,
-                 target_dim=512,
+                 target_size=512,
                  scale_range=[.1, 2.],
-                 interp=cv2.INTER_LINEAR):
+                 interp=cv2.INTER_LINEAR,
+                 fill_value=(123.675, 116.28, 103.53)):
         super(RandomScaledCrop, self).__init__()
-        self.target_dim = target_dim
+        assert isinstance(target_size, (
+            Integral, Sequence)), "target_size must be Integer, List or Tuple"
+        if isinstance(target_size, Integral):
+            target_size = [target_size, ] * 2
+
+        self.target_size = target_size
         self.scale_range = scale_range
         self.interp = interp
+        assert isinstance(fill_value, (Number, Sequence)), \
+            "fill value must be either float or sequence"
+        if isinstance(fill_value, Number):
+            fill_value = (fill_value, ) * 3
+        if not isinstance(fill_value, tuple):
+            fill_value = tuple(fill_value)
+        self.fill_value = fill_value
+
+    def apply_image(self, img, output_size, offset_x, offset_y):
+        th, tw = self.target_size
+        rh, rw = output_size
+        img = cv2.resize(
+            img, (rw, rh), interpolation=self.interp).astype(np.float32)
+        canvas = np.ones([th, tw, 3], dtype=np.float32)
+        canvas *= np.array(self.fill_value, dtype=np.float32)
+        canvas[:min(th, rh), :min(tw, rw)] = \
+            img[offset_y:offset_y + th, offset_x:offset_x + tw]
+        return canvas
+
+    def apply_bbox(self, gt_bbox, gt_class, scale, offset_x, offset_y):
+        th, tw = self.target_size
+        shift_array = np.array(
+            [
+                offset_x,
+                offset_y,
+            ] * 2, dtype=np.float32)
+        boxes = gt_bbox * scale - shift_array
+        boxes[:, 0::2] = np.clip(boxes[:, 0::2], 0, tw)
+        boxes[:, 1::2] = np.clip(boxes[:, 1::2], 0, th)
+        # filter boxes with no area
+        area = np.prod(boxes[..., 2:] - boxes[..., :2], axis=1)
+        valid = (area > 1.).nonzero()[0]
+        return boxes[valid], gt_class[valid], valid
+
+    def apply_segm(self, segms, output_size, offset_x, offset_y, valid=None):
+        th, tw = self.target_size
+        rh, rw = output_size
+        out_segms = []
+        for segm in segms:
+            segm = cv2.resize(segm, (rw, rh), interpolation=cv2.INTER_NEAREST)
+            segm = segm.astype(np.float32)
+            canvas = np.zeros([th, tw], dtype=segm.dtype)
+            canvas[:min(th, rh), :min(tw, rw)] = \
+                segm[offset_y:offset_y + th, offset_x:offset_x + tw]
+            out_segms.append(canvas)
+        out_segms = np.stack(out_segms)
+        return out_segms if valid is None else out_segms[valid]
 
     def apply(self, sample, context=None):
         img = sample['image']
         h, w = img.shape[:2]
         random_scale = np.random.uniform(*self.scale_range)
-        dim = self.target_dim
-        random_dim = int(dim * random_scale)
-        dim_max = max(h, w)
-        scale = random_dim / dim_max
-        resize_w = w * scale
-        resize_h = h * scale
-        offset_x = int(max(0, np.random.uniform(0., resize_w - dim)))
-        offset_y = int(max(0, np.random.uniform(0., resize_h - dim)))
+        target_scale_size = [t * random_scale for t in self.target_size]
+        # Compute actual rescaling applied to image.
+        scale = min(target_scale_size[0] / h, target_scale_size[1] / w)
+        output_size = [int(round(h * scale)), int(round(w * scale))]
+        # get offset
+        offset_x = int(
+            max(0, np.random.uniform(0., output_size[1] - self.target_size[1])))
+        offset_y = int(
+            max(0, np.random.uniform(0., output_size[0] - self.target_size[0])))
 
-        img = cv2.resize(img, (resize_w, resize_h), interpolation=self.interp)
-        img = np.array(img)
-        canvas = np.zeros((dim, dim, 3), dtype=img.dtype)
-        canvas[:min(dim, resize_h), :min(dim, resize_w), :] = img[
-            offset_y:offset_y + dim, offset_x:offset_x + dim, :]
-        sample['image'] = canvas
-        sample['im_shape'] = np.asarray([resize_h, resize_w], dtype=np.float32)
-        scale_factor = sample['sacle_factor']
+        # apply to image
+        sample['image'] = self.apply_image(img, output_size, offset_x, offset_y)
+
+        # apply to bbox
+        valid = None
+        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
+            sample['gt_bbox'], sample['gt_class'], valid = self.apply_bbox(
+                sample['gt_bbox'], sample['gt_class'], scale, offset_x,
+                offset_y)
+
+        # apply to segm
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            sample['gt_segm'] = self.apply_segm(sample['gt_segm'], output_size,
+                                                offset_x, offset_y, valid)
+
+        sample['im_shape'] = np.asarray(output_size, dtype=np.float32)
+        scale_factor = sample['scale_factor']
         sample['scale_factor'] = np.asarray(
             [scale_factor[0] * scale, scale_factor[1] * scale],
             dtype=np.float32)
-
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            scale_array = np.array([scale, scale] * 2, dtype=np.float32)
-            shift_array = np.array([offset_x, offset_y] * 2, dtype=np.float32)
-            boxes = sample['gt_bbox'] * scale_array - shift_array
-            boxes = np.clip(boxes, 0, dim - 1)
-            # filter boxes with no area
-            area = np.prod(boxes[..., 2:] - boxes[..., :2], axis=1)
-            valid = (area > 1.).nonzero()[0]
-            sample['gt_bbox'] = boxes[valid]
-            sample['gt_class'] = sample['gt_class'][valid]
 
         return sample
 
@@ -2059,13 +2368,16 @@ class Pad(BaseOperator):
 @register_op
 class Poly2Mask(BaseOperator):
     """
-    gt poly to mask annotations
+    gt poly to mask annotations.
+    Args:
+        del_poly (bool): Whether to delete poly after generating mask. Default: False.
     """
 
-    def __init__(self):
+    def __init__(self, del_poly=False):
         super(Poly2Mask, self).__init__()
         import pycocotools.mask as maskUtils
         self.maskutils = maskUtils
+        self.del_poly = del_poly
 
     def _poly2mask(self, mask_ann, img_h, img_w):
         if isinstance(mask_ann, list):
@@ -2084,13 +2396,15 @@ class Poly2Mask(BaseOperator):
 
     def apply(self, sample, context=None):
         assert 'gt_poly' in sample
-        im_h = sample['h']
-        im_w = sample['w']
+        im_h, im_w = sample['im_shape']
         masks = [
             self._poly2mask(gt_poly, im_h, im_w)
             for gt_poly in sample['gt_poly']
         ]
         sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+        if self.del_poly:
+            del (sample['gt_poly'])
+
         return sample
 
 
@@ -2221,25 +2535,26 @@ class RandomResizeCrop(BaseOperator):
         is_mask_crop(bool): whether crop the segmentation.
     """
 
-    def __init__(
-            self,
-            resizes,
-            cropsizes,
-            prob=0.5,
-            mode='short',
-            keep_ratio=True,
-            interp=cv2.INTER_LINEAR,
-            num_attempts=3,
-            cover_all_box=False,
-            allow_no_crop=False,
-            thresholds=[0.3, 0.5, 0.7],
-            is_mask_crop=False, ):
+    def __init__(self,
+                 resizes,
+                 cropsizes,
+                 prob=0.5,
+                 mode='short',
+                 keep_ratio=True,
+                 interp=cv2.INTER_LINEAR,
+                 num_attempts=3,
+                 cover_all_box=False,
+                 allow_no_crop=False,
+                 thresholds=[0.3, 0.5, 0.7],
+                 is_mask_crop=False,
+                 ioumode="iou"):
         super(RandomResizeCrop, self).__init__()
 
         self.resizes = resizes
         self.cropsizes = cropsizes
         self.prob = prob
         self.mode = mode
+        self.ioumode = ioumode
 
         self.resizer = Resize(0, keep_ratio=keep_ratio, interp=interp)
         self.croper = RandomCrop(
@@ -2294,9 +2609,14 @@ class RandomResizeCrop(BaseOperator):
                 crop_x = random.randint(0, w - crop_w)
 
                 crop_box = [crop_x, crop_y, crop_x + crop_w, crop_y + crop_h]
-                iou = self._iou_matrix(
-                    gt_bbox, np.array(
-                        [crop_box], dtype=np.float32))
+                if self.ioumode == "iof":
+                    iou = self._gtcropiou_matrix(
+                        gt_bbox, np.array(
+                            [crop_box], dtype=np.float32))
+                elif self.ioumode == "iou":
+                    iou = self._iou_matrix(
+                        gt_bbox, np.array(
+                            [crop_box], dtype=np.float32))
                 if iou.max() < thresh:
                     continue
 
@@ -2352,6 +2672,14 @@ class RandomResizeCrop(BaseOperator):
                 if 'is_crowd' in sample:
                     sample['is_crowd'] = np.take(
                         sample['is_crowd'], valid_ids, axis=0)
+
+                if 'gt_areas' in sample:
+                    sample['gt_areas'] = np.take(
+                        sample['gt_areas'], valid_ids, axis=0)
+
+                if 'gt_joints' in sample:
+                    gt_joints = self._crop_joints(sample['gt_joints'], crop_box)
+                    sample['gt_joints'] = gt_joints[valid_ids]
                 return sample
 
         return sample
@@ -2384,8 +2712,8 @@ class RandomResizeCrop(BaseOperator):
                 im_scale = max(target_size_min / im_size_min,
                                target_size_max / im_size_max)
 
-            resize_h = im_scale * float(im_shape[0])
-            resize_w = im_scale * float(im_shape[1])
+            resize_h = int(im_scale * float(im_shape[0]) + 0.5)
+            resize_w = int(im_scale * float(im_shape[1]) + 0.5)
 
             im_scale_x = im_scale
             im_scale_y = im_scale
@@ -2444,6 +2772,11 @@ class RandomResizeCrop(BaseOperator):
                 for gt_segm in sample['gt_segm']
             ]
             sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+
+        if 'gt_joints' in sample:
+            sample['gt_joints'] = self.apply_joints(sample['gt_joints'],
+                                                    [im_scale_x, im_scale_y],
+                                                    [resize_w, resize_h])
 
         return sample
 
@@ -2505,22 +2838,23 @@ class RandomShortSideResize(BaseOperator):
 
     def get_size_with_aspect_ratio(self, image_shape, size, max_size=None):
         h, w = image_shape
+        max_clip = False
         if max_size is not None:
             min_original_size = float(min((w, h)))
             max_original_size = float(max((w, h)))
             if max_original_size / min_original_size * size > max_size:
-                size = int(
-                    round(max_size * min_original_size / max_original_size))
+                size = int(max_size * min_original_size / max_original_size)
+                max_clip = True
 
         if (w <= h and w == size) or (h <= w and h == size):
             return (w, h)
 
         if w < h:
             ow = size
-            oh = int(size * h / w)
+            oh = int(round(size * h / w)) if not max_clip else max_size
         else:
             oh = size
-            ow = int(size * w / h)
+            ow = int(round(size * w / h)) if not max_clip else max_size
 
         return (ow, oh)
 
@@ -2577,6 +2911,16 @@ class RandomShortSideResize(BaseOperator):
                 for gt_segm in sample['gt_segm']
             ]
             sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+
+        if 'gt_joints' in sample:
+            sample['gt_joints'] = self.apply_joints(
+                sample['gt_joints'], [im_scale_x, im_scale_y], target_size)
+
+        # apply areas
+        if 'gt_areas' in sample:
+            sample['gt_areas'] = self.apply_area(sample['gt_areas'],
+                                                 [im_scale_x, im_scale_y])
+
         return sample
 
     def apply_bbox(self, bbox, scale, size):
@@ -2587,6 +2931,23 @@ class RandomShortSideResize(BaseOperator):
         bbox[:, 0::2] = np.clip(bbox[:, 0::2], 0, resize_w)
         bbox[:, 1::2] = np.clip(bbox[:, 1::2], 0, resize_h)
         return bbox.astype('float32')
+
+    def apply_joints(self, joints, scale, size):
+        im_scale_x, im_scale_y = scale
+        resize_w, resize_h = size
+        joints[..., 0] *= im_scale_x
+        joints[..., 1] *= im_scale_y
+        # joints[joints[..., 0] >= resize_w, :] = 0
+        # joints[joints[..., 1] >= resize_h, :] = 0
+        # joints[joints[..., 0] < 0, :] = 0
+        # joints[joints[..., 1] < 0, :] = 0
+        joints[..., 0] = np.clip(joints[..., 0], 0, resize_w)
+        joints[..., 1] = np.clip(joints[..., 1], 0, resize_h)
+        return joints
+
+    def apply_area(self, area, scale):
+        im_scale_x, im_scale_y = scale
+        return area * im_scale_x * im_scale_y
 
     def apply_segm(self, segms, im_size, scale):
         def _resize_poly(poly, im_scale_x, im_scale_y):
@@ -2636,15 +2997,62 @@ class RandomShortSideResize(BaseOperator):
 
 
 @register_op
+class RandomShortSideRangeResize(RandomShortSideResize):
+    def __init__(self, scales, interp=cv2.INTER_LINEAR, random_interp=False):
+        """
+        Resize the image randomly according to the short side. If max_size is not None,
+        the long side is scaled according to max_size. The whole process will be keep ratio.
+        Args:
+            short_side_sizes (list|tuple): Image target short side size.
+            interp (int): The interpolation method.
+            random_interp (bool): Whether random select interpolation method.
+        """
+        super(RandomShortSideRangeResize, self).__init__(scales, None, interp,
+                                                         random_interp)
+
+        assert isinstance(scales,
+                          Sequence), "short_side_sizes must be List or Tuple"
+
+        self.scales = scales
+
+    def random_sample(self, img_scales):
+        img_scale_long = [max(s) for s in img_scales]
+        img_scale_short = [min(s) for s in img_scales]
+        long_edge = np.random.randint(
+            min(img_scale_long), max(img_scale_long) + 1)
+        short_edge = np.random.randint(
+            min(img_scale_short), max(img_scale_short) + 1)
+        img_scale = (long_edge, short_edge)
+        return img_scale
+
+    def apply(self, sample, context=None):
+        long_edge, short_edge = self.random_sample(self.short_side_sizes)
+        # print("target size:{}".format((long_edge, short_edge)))
+        interp = random.choice(
+            self.interps) if self.random_interp else self.interp
+
+        return self.resize(sample, short_edge, long_edge, interp)
+
+
+@register_op
 class RandomSizeCrop(BaseOperator):
     """
     Cut the image randomly according to `min_size` and `max_size`
+    Args:
+        min_size (int): Min size for edges of cropped image.
+        max_size (int): Max size for edges of cropped image. If it
+                        is set to larger than length of the input image,
+                        the output will keep the origin length.
+        keep_empty (bool): Whether to keep the cropped result with no object.
+                           If it is set to False, the no-object result will not
+                           be returned, replaced by the original input.
     """
 
-    def __init__(self, min_size, max_size):
+    def __init__(self, min_size, max_size, keep_empty=True):
         super(RandomSizeCrop, self).__init__()
         self.min_size = min_size
         self.max_size = max_size
+        self.keep_empty = keep_empty
 
         from paddle.vision.transforms.functional import crop as paddle_crop
         self.paddle_crop = paddle_crop
@@ -2674,17 +3082,20 @@ class RandomSizeCrop(BaseOperator):
         return i, j, th, tw
 
     def crop(self, sample, region):
-        image_shape = sample['image'].shape[:2]
-        sample['image'] = self.paddle_crop(sample['image'], *region)
-
         keep_index = None
-        # apply bbox
+        # apply bbox and check whether the cropped result is valid
         if 'gt_bbox' in sample and len(sample['gt_bbox']) > 0:
-            sample['gt_bbox'] = self.apply_bbox(sample['gt_bbox'], region)
-            bbox = sample['gt_bbox'].reshape([-1, 2, 2])
+            croped_bbox = self.apply_bbox(sample['gt_bbox'], region)
+            bbox = croped_bbox.reshape([-1, 2, 2])
             area = (bbox[:, 1, :] - bbox[:, 0, :]).prod(axis=1)
             keep_index = np.where(area > 0)[0]
-            sample['gt_bbox'] = sample['gt_bbox'][keep_index] if len(
+
+            if not self.keep_empty and len(keep_index) == 0:
+                # When keep_empty is set to False, cropped with no-object will
+                # not be used and return the origin content.
+                return sample
+
+            sample['gt_bbox'] = croped_bbox[keep_index] if len(
                 keep_index) > 0 else np.zeros(
                     [0, 4], dtype=np.float32)
             sample['gt_class'] = sample['gt_class'][keep_index] if len(
@@ -2698,19 +3109,35 @@ class RandomSizeCrop(BaseOperator):
                 sample['is_crowd'] = sample['is_crowd'][keep_index] if len(
                     keep_index) > 0 else np.zeros(
                         [0, 1], dtype=np.float32)
+            if 'gt_areas' in sample:
+                sample['gt_areas'] = np.take(
+                    sample['gt_areas'], keep_index, axis=0)
+
+        image_shape = sample['image'].shape[:2]
+        sample['image'] = self.paddle_crop(sample['image'], *region)
+        sample['im_shape'] = np.array(
+            sample['image'].shape[:2], dtype=np.float32)
 
         # apply polygon
         if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
             sample['gt_poly'] = self.apply_segm(sample['gt_poly'], region,
                                                 image_shape)
-            if keep_index is not None:
+            sample['gt_poly'] = np.array(sample['gt_poly'])
+            if keep_index is not None and len(keep_index) > 0:
                 sample['gt_poly'] = sample['gt_poly'][keep_index]
+            sample['gt_poly'] = sample['gt_poly'].tolist()
         # apply gt_segm
         if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
             i, j, h, w = region
             sample['gt_segm'] = sample['gt_segm'][:, i:i + h, j:j + w]
-            if keep_index is not None:
+            if keep_index is not None and len(keep_index) > 0:
                 sample['gt_segm'] = sample['gt_segm'][keep_index]
+
+        if 'gt_joints' in sample:
+            gt_joints = self._crop_joints(sample['gt_joints'], region)
+            sample['gt_joints'] = gt_joints
+            if keep_index is not None:
+                sample['gt_joints'] = sample['gt_joints'][keep_index]
 
         return sample
 
@@ -2721,6 +3148,19 @@ class RandomSizeCrop(BaseOperator):
         crop_bbox = np.minimum(crop_bbox.reshape([-1, 2, 2]), region_size)
         crop_bbox = crop_bbox.clip(min=0)
         return crop_bbox.reshape([-1, 4]).astype('float32')
+
+    def _crop_joints(self, joints, region):
+        y1, x1, h, w = region
+        x2 = x1 + w
+        y2 = y1 + h
+        # x1, y1, x2, y2 = crop
+        joints[..., 0] -= x1
+        joints[..., 1] -= y1
+        joints[joints[..., 0] > w, :] = 0
+        joints[joints[..., 1] > h, :] = 0
+        joints[joints[..., 0] < 0, :] = 0
+        joints[joints[..., 1] < 0, :] = 0
+        return joints
 
     def apply_segm(self, segms, region, image_shape):
         def _crop_poly(segm, crop):
@@ -2810,13 +3250,11 @@ class WarpAffine(BaseOperator):
                  input_h=512,
                  input_w=512,
                  scale=0.4,
-                 shift=0.1):
+                 shift=0.1,
+                 down_ratio=4):
         """WarpAffine
         Warp affine the image
-
         The code is based on https://github.com/xingyizhou/CenterNet/blob/master/src/lib/datasets/sample/ctdet.py
-
-
         """
         super(WarpAffine, self).__init__()
         self.keep_res = keep_res
@@ -2825,22 +3263,22 @@ class WarpAffine(BaseOperator):
         self.input_w = input_w
         self.scale = scale
         self.shift = shift
+        self.down_ratio = down_ratio
 
     def apply(self, sample, context=None):
         img = sample['image']
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-        if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
-            return sample
 
         h, w = img.shape[:2]
 
         if self.keep_res:
+            # True in detection eval/infer
             input_h = (h | self.pad) + 1
             input_w = (w | self.pad) + 1
             s = np.array([input_w, input_h], dtype=np.float32)
             c = np.array([w // 2, h // 2], dtype=np.float32)
-
         else:
+            # False in centertrack eval_mot/eval_mot
             s = max(h, w) * 1.0
             input_h, input_w = self.input_h, self.input_w
             c = np.array([w / 2., h / 2.], dtype=np.float32)
@@ -2850,6 +3288,22 @@ class WarpAffine(BaseOperator):
         inp = cv2.warpAffine(
             img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
         sample['image'] = inp
+
+        if not self.keep_res:
+            out_h = input_h // self.down_ratio
+            out_w = input_w // self.down_ratio
+            trans_output = get_affine_transform(c, s, 0, [out_w, out_h])
+
+            sample.update({
+                'center': c,
+                'scale': s,
+                'out_height': out_h,
+                'out_width': out_w,
+                'inp_height': input_h,
+                'inp_width': input_w,
+                'trans_input': trans_input,
+                'trans_output': trans_output,
+            })
         return sample
 
 
@@ -2865,11 +3319,13 @@ class FlipWarpAffine(BaseOperator):
                  shift=0.1,
                  flip=0.5,
                  is_scale=True,
-                 use_random=True):
+                 use_random=True,
+                 add_pre_img=False):
         """FlipWarpAffine
         1. Random Crop
         2. Flip the image horizontal
-        3. Warp affine the image 
+        3. Warp affine the image
+        4. (Optinal) Add previous image
         """
         super(FlipWarpAffine, self).__init__()
         self.keep_res = keep_res
@@ -2882,22 +3338,30 @@ class FlipWarpAffine(BaseOperator):
         self.flip = flip
         self.is_scale = is_scale
         self.use_random = use_random
+        self.add_pre_img = add_pre_img
 
-    def apply(self, sample, context=None):
+    def __call__(self, samples, context=None):
+        if self.add_pre_img:
+            assert isinstance(samples, Sequence) and len(samples) == 2
+            sample, pre_sample = samples[0], samples[1]
+        else:
+            sample = samples
+
         img = sample['image']
         img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
             return sample
 
         h, w = img.shape[:2]
+        flipped = 0
 
         if self.keep_res:
             input_h = (h | self.pad) + 1
             input_w = (w | self.pad) + 1
             s = np.array([input_w, input_h], dtype=np.float32)
             c = np.array([w // 2, h // 2], dtype=np.float32)
-
         else:
+            # centernet training default
             s = max(h, w) * 1.0
             input_h, input_w = self.input_h, self.input_w
             c = np.array([w / 2., h / 2.], dtype=np.float32)
@@ -2905,6 +3369,7 @@ class FlipWarpAffine(BaseOperator):
         if self.use_random:
             gt_bbox = sample['gt_bbox']
             if not self.not_rand_crop:
+                # centernet default
                 s = s * np.random.choice(np.arange(0.6, 1.4, 0.1))
                 w_border = get_border(128, w)
                 h_border = get_border(128, h)
@@ -2924,18 +3389,50 @@ class FlipWarpAffine(BaseOperator):
                 oldx2 = gt_bbox[:, 2].copy()
                 gt_bbox[:, 0] = w - oldx2 - 1
                 gt_bbox[:, 2] = w - oldx1 - 1
+                flipped = 1
             sample['gt_bbox'] = gt_bbox
 
         trans_input = get_affine_transform(c, s, 0, [input_w, input_h])
-        if not self.use_random:
-            img = cv2.resize(img, (w, h))
         inp = cv2.warpAffine(
             img, trans_input, (input_w, input_h), flags=cv2.INTER_LINEAR)
         if self.is_scale:
             inp = (inp.astype(np.float32) / 255.)
+
         sample['image'] = inp
         sample['center'] = c
         sample['scale'] = s
+
+        if self.add_pre_img:
+            sample['trans_input'] = trans_input
+
+            # previous image, use same aug trans_input as current image
+            pre_img = pre_sample['image']
+            pre_img = cv2.cvtColor(pre_img, cv2.COLOR_RGB2BGR)
+            if flipped:
+                pre_img = pre_img[:, ::-1, :].copy()
+            pre_inp = cv2.warpAffine(
+                pre_img,
+                trans_input, (input_w, input_h),
+                flags=cv2.INTER_LINEAR)
+            if self.is_scale:
+                pre_inp = (pre_inp.astype(np.float32) / 255.)
+            sample['pre_image'] = pre_inp
+
+            # if empty gt_bbox
+            if 'gt_bbox' in pre_sample and len(pre_sample['gt_bbox']) == 0:
+                return sample
+            pre_gt_bbox = pre_sample['gt_bbox']
+            if flipped:
+                pre_oldx1 = pre_gt_bbox[:, 0].copy()
+                pre_oldx2 = pre_gt_bbox[:, 2].copy()
+                pre_gt_bbox[:, 0] = w - pre_oldx1 - 1
+                pre_gt_bbox[:, 2] = w - pre_oldx2 - 1
+            sample['pre_gt_bbox'] = pre_gt_bbox
+
+            sample['pre_gt_class'] = pre_sample['gt_class']
+            sample['pre_gt_track_id'] = pre_sample['gt_track_id']
+            del pre_sample
+
         return sample
 
 
@@ -2977,18 +3474,28 @@ class CenterRandColor(BaseOperator):
         img_mean *= (1 - alpha)
         img += img_mean
 
-    def __call__(self, sample, context=None):
-        img = sample['image']
-        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    def apply(self, sample, context=None):
         functions = [
             self.apply_brightness,
             self.apply_contrast,
             self.apply_saturation,
         ]
+
+        img = sample['image']
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         distortions = np.random.permutation(functions)
         for func in distortions:
             img = func(img, img_gray)
         sample['image'] = img
+
+        if 'pre_image' in sample:
+            pre_img = sample['pre_image']
+            pre_img_gray = cv2.cvtColor(pre_img, cv2.COLOR_BGR2GRAY)
+            pre_distortions = np.random.permutation(functions)
+            for func in pre_distortions:
+                pre_img = func(pre_img, pre_img_gray)
+            sample['pre_image'] = pre_img
+
         return sample
 
 
@@ -3456,4 +3963,166 @@ class RandomShift(BaseOperator):
         sample['image'] = canvas
         sample['gt_bbox'] = gt_bbox
         sample['gt_class'] = gt_class
+        return sample
+
+
+@register_op
+class StrongAugImage(BaseOperator):
+    def __init__(self, transforms):
+        super(StrongAugImage, self).__init__()
+        self.transforms = Compose(transforms)
+
+    def apply(self, sample, context=None):
+        im = sample
+        im['image'] = sample['image'].astype('uint8')
+        results = self.transforms(im)
+        sample['image'] = results['image'].astype('uint8')
+        return sample
+
+
+@register_op
+class RandomColorJitter(BaseOperator):
+    def __init__(self,
+                 prob=0.8,
+                 brightness=0.4,
+                 contrast=0.4,
+                 saturation=0.4,
+                 hue=0.1):
+        super(RandomColorJitter, self).__init__()
+        self.prob = prob
+        self.brightness = brightness
+        self.contrast = contrast
+        self.saturation = saturation
+        self.hue = hue
+
+    def apply(self, sample, context=None):
+        if np.random.uniform(0, 1) < self.prob:
+            from paddle.vision.transforms import ColorJitter
+            transform = ColorJitter(self.brightness, self.contrast,
+                                    self.saturation, self.hue)
+            sample['image'] = transform(sample['image'].astype(np.uint8))
+            sample['image'] = sample['image'].astype(np.float32)
+        return sample
+
+
+@register_op
+class RandomGrayscale(BaseOperator):
+    def __init__(self, prob=0.2):
+        super(RandomGrayscale, self).__init__()
+        self.prob = prob
+
+    def apply(self, sample, context=None):
+        if np.random.uniform(0, 1) < self.prob:
+            from paddle.vision.transforms import Grayscale
+            transform = Grayscale(num_output_channels=3)
+            sample['image'] = transform(sample['image'])
+        return sample
+
+
+@register_op
+class RandomGaussianBlur(BaseOperator):
+    def __init__(self, prob=0.5, sigma=[0.1, 2.0]):
+        super(RandomGaussianBlur, self).__init__()
+        self.prob = prob
+        self.sigma = sigma
+
+    def apply(self, sample, context=None):
+        if np.random.uniform(0, 1) < self.prob:
+            sigma = np.random.uniform(self.sigma[0], self.sigma[1])
+            im = cv2.GaussianBlur(sample['image'], (23, 23), sigma)
+            sample['image'] = im
+        return sample
+
+
+@register_op
+class RandomErasing(BaseOperator):
+    def __init__(self,
+                 prob=0.5,
+                 scale=(0.02, 0.33),
+                 ratio=(0.3, 3.3),
+                 value=0,
+                 inplace=False):
+        super(RandomErasing, self).__init__()
+        assert isinstance(scale,
+                          (tuple, list)), "scale should be a tuple or list"
+        assert (scale[0] >= 0 and scale[1] <= 1 and scale[0] <= scale[1]
+                ), "scale should be of kind (min, max) and in range [0, 1]"
+        assert isinstance(ratio,
+                          (tuple, list)), "ratio should be a tuple or list"
+        assert (ratio[0] >= 0 and
+                ratio[0] <= ratio[1]), "ratio should be of kind (min, max)"
+        assert isinstance(
+            value, (Number, str, tuple,
+                    list)), "value should be a number, tuple, list or str"
+        if isinstance(value, str) and value != "random":
+            raise ValueError("value must be 'random' when type is str")
+        self.prob = prob
+        self.scale = scale
+        self.ratio = ratio
+        self.value = value
+        self.inplace = inplace
+
+    def _erase(self, img, i, j, h, w, v, inplace=False):
+        if not inplace:
+            img = img.copy()
+        img[i:i + h, j:j + w, ...] = v
+        return img
+
+    def _get_param(self, img, scale, ratio, value):
+        shape = np.asarray(img).astype(np.uint8).shape
+        h, w, c = shape[-3], shape[-2], shape[-1]
+        img_area = h * w
+        log_ratio = np.log(ratio)
+        for _ in range(1):
+            erase_area = np.random.uniform(*scale) * img_area
+            aspect_ratio = np.exp(np.random.uniform(*log_ratio))
+            erase_h = int(round(np.sqrt(erase_area * aspect_ratio)))
+            erase_w = int(round(np.sqrt(erase_area / aspect_ratio)))
+            if erase_h >= h or erase_w >= w:
+                continue
+
+            if value is None:
+                v = np.random.normal(size=[erase_h, erase_w, c]) * 255
+            else:
+                v = np.array(value)[None, None, :]
+            top = np.random.randint(0, h - erase_h + 1)
+            left = np.random.randint(0, w - erase_w + 1)
+            return top, left, erase_h, erase_w, v
+        return 0, 0, h, w, img
+
+    def apply(self, sample, context=None):
+        if random.random() < self.prob:
+            if isinstance(self.value, Number):
+                value = [self.value]
+            elif isinstance(self.value, str):
+                value = None
+            else:
+                value = self.value
+            if value is not None and not (len(value) == 1 or len(value) == 3):
+                raise ValueError(
+                    "Value should be a single number or a sequence with length equals to image's channel."
+                )
+            im = sample['image']
+            top, left, erase_h, erase_w, v = self._get_param(im, self.scale,
+                                                             self.ratio, value)
+            im = self._erase(im, top, left, erase_h, erase_w, v, self.inplace)
+            sample['image'] = im
+        return sample
+
+
+@register_op
+class RandomErasingCrop(BaseOperator):
+    def __init__(self):
+        super(RandomErasingCrop, self).__init__()
+        self.transform1 = RandomErasing(
+            prob=0.7, scale=(0.05, 0.2), ratio=(0.3, 3.3), value="random")
+        self.transform2 = RandomErasing(
+            prob=0.5, scale=(0.05, 0.2), ratio=(0.1, 6), value="random")
+        self.transform3 = RandomErasing(
+            prob=0.3, scale=(0.05, 0.2), ratio=(0.05, 8), value="random")
+
+    def apply(self, sample, context=None):
+        sample = self.transform1(sample)
+        sample = self.transform2(sample)
+        sample = self.transform3(sample)
         return sample

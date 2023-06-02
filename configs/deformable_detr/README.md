@@ -8,9 +8,9 @@ Deformable DETR is an object detection model based on DETR. We reproduced the mo
 
 ## Model Zoo
 
-| Backbone | Model | Images/GPU  | Inf time (fps) | Box AP | Config | Download |
-|:------:|:--------:|:--------:|:--------------:|:------:|:------:|:--------:|
-| R-50 | Deformable DETR  | 2 | --- | 44.1 | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/deformable_detr/deformable_detr_r50_1x_coco.yml) | [model](https://paddledet.bj.bcebos.com/models/deformable_detr_r50_1x_coco.pdparams) |
+| Backbone |      Model      | Images/GPU | Epochs | Box AP |                                                             Config                                                             |                                         Log                                         |                                       Download                                       |
+|:--------:|:---------------:|:----------:|:------:|:------:|:------------------------------------------------------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------:|
+|   R-50   | Deformable DETR |     2      |   50   |  44.5  | [config](https://github.com/PaddlePaddle/PaddleDetection/blob/develop/configs/deformable_detr/deformable_detr_r50_1x_coco.yml) | [log](https://bj.bcebos.com/v1/paddledet/logs/deformable_detr_r50_1x_coco_44.5.log) | [model](https://paddledet.bj.bcebos.com/models/deformable_detr_r50_1x_coco.pdparams) |
 
 **Notes:**
 

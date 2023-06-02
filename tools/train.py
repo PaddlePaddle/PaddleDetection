@@ -19,7 +19,7 @@ from __future__ import print_function
 import os
 import sys
 
-# add python path of PadleDetection to sys.path
+# add python path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
 
@@ -30,7 +30,10 @@ warnings.filterwarnings('ignore')
 import paddle
 
 from ppdet.core.workspace import load_config, merge_config
-from ppdet.engine import Trainer, init_parallel_env, set_random_seed, init_fleet_env
+
+from ppdet.engine import Trainer, TrainerCot, init_parallel_env, set_random_seed, init_fleet_env
+from ppdet.engine.trainer_ssod import Trainer_DenseTeacher, Trainer_ARSL
+
 from ppdet.slim import build_slim_model
 
 from ppdet.utils.cli import ArgsParser, merge_args
@@ -125,7 +128,20 @@ def run(FLAGS, cfg):
         set_random_seed(0)
 
     # build trainer
-    trainer = Trainer(cfg, mode='train')
+    ssod_method = cfg.get('ssod_method', None)
+    if ssod_method is not None:
+        if ssod_method == 'DenseTeacher':
+            trainer = Trainer_DenseTeacher(cfg, mode='train')
+        elif ssod_method == 'ARSL':
+            trainer = Trainer_ARSL(cfg, mode='train')
+        else:
+            raise ValueError(
+                "Semi-Supervised Object Detection only support DenseTeacher and ARSL now."
+            )
+    elif cfg.get('use_cot', False):
+        trainer = TrainerCot(cfg, mode='train')
+    else:
+        trainer = Trainer(cfg, mode='train')
 
     # load weights
     if FLAGS.resume is not None:

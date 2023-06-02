@@ -1,0 +1,21 @@
+_BASE_: [
+  '../../datasets/objects365_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer_60e.yml',
+  '../_base_/ppyoloe_plus_crn.yml',
+  '../_base_/ppyoloe_plus_reader.yml',
+]
+
+log_iter: 100
+snapshot_epoch: 5
+weights: output/ppyoloe_plus_crn_m_60e_objects365/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/CSPResNetb_m_pretrained.pdparams
+
+CSPResNet:
+  use_alpha: False
+
+PPYOLOEHead:
+  static_assigner_epoch: 20
+
+depth_mult: 0.67
+width_mult: 0.75

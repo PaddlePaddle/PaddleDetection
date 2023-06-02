@@ -64,7 +64,7 @@ def argsparser():
         "--device",
         type=str,
         default='cpu',
-        help="Choose the device you want to run, it can be: CPU/GPU/XPU, default is CPU."
+        help="Choose the device you want to run, it can be: CPU/GPU/XPU/NPU, default is CPU."
     )
     parser.add_argument(
         "--use_gpu",
@@ -201,6 +201,16 @@ def argsparser():
         type=str,
         default='ios',
         help="Combine method matching metric, choose in ['iou', 'ios'].")
+    parser.add_argument(
+        "--collect_trt_shape_info",
+        action='store_true',
+        default=False,
+        help="Whether to collect dynamic shape before using tensorrt.")
+    parser.add_argument(
+        "--tuned_trt_shape_file",
+        type=str,
+        default="shape_range_info.pbtxt",
+        help="Path of a dynamic shape file for tensorrt.")
     return parser
 
 
@@ -357,7 +367,7 @@ def nms(dets, match_threshold=0.6, match_metric='iou'):
     order = scores.argsort()[::-1]
 
     ndets = dets.shape[0]
-    suppressed = np.zeros((ndets), dtype=np.int)
+    suppressed = np.zeros((ndets), dtype=np.int32)
 
     for _i in range(ndets):
         i = order[_i]
@@ -476,3 +486,59 @@ coco_clsid2catid = {
     78: 89,
     79: 90
 }
+
+
+def gaussian_radius(bbox_size, min_overlap):
+    height, width = bbox_size
+
+    a1 = 1
+    b1 = (height + width)
+    c1 = width * height * (1 - min_overlap) / (1 + min_overlap)
+    sq1 = np.sqrt(b1**2 - 4 * a1 * c1)
+    radius1 = (b1 + sq1) / (2 * a1)
+
+    a2 = 4
+    b2 = 2 * (height + width)
+    c2 = (1 - min_overlap) * width * height
+    sq2 = np.sqrt(b2**2 - 4 * a2 * c2)
+    radius2 = (b2 + sq2) / 2
+
+    a3 = 4 * min_overlap
+    b3 = -2 * min_overlap * (height + width)
+    c3 = (min_overlap - 1) * width * height
+    sq3 = np.sqrt(b3**2 - 4 * a3 * c3)
+    radius3 = (b3 + sq3) / 2
+    return min(radius1, radius2, radius3)
+
+
+def gaussian2D(shape, sigma_x=1, sigma_y=1):
+    m, n = [(ss - 1.) / 2. for ss in shape]
+    y, x = np.ogrid[-m:m + 1, -n:n + 1]
+
+    h = np.exp(-(x * x / (2 * sigma_x * sigma_x) + y * y / (2 * sigma_y *
+                                                            sigma_y)))
+    h[h < np.finfo(h.dtype).eps * h.max()] = 0
+    return h
+
+
+def draw_umich_gaussian(heatmap, center, radius, k=1):
+    """
+    draw_umich_gaussian, refer to https://github.com/xingyizhou/CenterNet/blob/master/src/lib/utils/image.py#L126
+    """
+    diameter = 2 * radius + 1
+    gaussian = gaussian2D(
+        (diameter, diameter), sigma_x=diameter / 6, sigma_y=diameter / 6)
+
+    x, y = int(center[0]), int(center[1])
+
+    height, width = heatmap.shape[0:2]
+
+    left, right = min(x, radius), min(width - x, radius + 1)
+    top, bottom = min(y, radius), min(height - y, radius + 1)
+
+    masked_heatmap = heatmap[y - top:y + bottom, x - left:x + right]
+    masked_gaussian = gaussian[radius - top:radius + bottom, radius - left:
+                               radius + right]
+    if min(masked_gaussian.shape) > 0 and min(masked_heatmap.shape) > 0:
+        np.maximum(masked_heatmap, masked_gaussian * k, out=masked_heatmap)
+    return heatmap

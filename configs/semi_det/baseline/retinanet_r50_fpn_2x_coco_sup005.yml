@@ -1,0 +1,26 @@
+_BASE_: [
+  '../../retinanet/retinanet_r50_fpn_2x_coco.yml',
+]
+log_iter: 50
+snapshot_epoch: 2
+weights: output/retinanet_r50_fpn_2x_coco_sup005/model_final
+
+
+TrainDataset:
+  !COCODataSet
+    image_dir: train2017
+    anno_path: semi_annotations/instances_train2017.1@5.json
+    dataset_dir: dataset/coco
+    data_fields: ['image', 'gt_bbox', 'gt_class']
+
+
+epoch: 24
+LearningRate:
+  base_lr: 0.01
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [16, 22]
+  - !LinearWarmup
+    start_factor: 0.001
+    epochs: 1

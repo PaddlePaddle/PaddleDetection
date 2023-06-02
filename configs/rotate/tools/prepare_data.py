@@ -74,7 +74,7 @@ def parse_args():
         nargs='+',
         type=float,
         default=[1.],
-        help='scales for multi-sclace training')
+        help='scales for multi-slice training')
 
     parser.add_argument(
         '--nproc', type=int, default=8, help='the processor number')

@@ -1,0 +1,171 @@
+use_gpu: true
+log_iter: 50
+save_dir: output
+snapshot_epoch: 10
+weights: output/vitpose_base_simple_coco_256x192/model_final
+epoch: 210
+num_joints: &num_joints 17
+pixel_std: &pixel_std 200
+metric: KeyPointTopDownCOCOEval
+num_classes: 1
+train_height: &train_height 256
+train_width: &train_width 192
+trainsize: &trainsize [*train_width, *train_height]
+hmsize: &hmsize [48, 64]
+flip_perm: &flip_perm [[1, 2], [3, 4], [5, 6], [7, 8], [9, 10], [11, 12], [13, 14], [15, 16]]
+
+
+#####model
+architecture: VitPose_TopDown
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/keypoint/mae_pretrain_vit_base.pdparams
+VitPose_TopDown:
+  backbone: ViT
+  head: TopdownHeatmapSimpleHead
+  post_process: VitPosePostProcess
+  loss: KeyPointMSELoss
+  flip_test: True
+
+ViT:
+  img_size: [256, 192]
+  patch_size: 16
+  embed_dim: 768
+  depth: 12
+  num_heads: 12
+  ratio: 1
+  mlp_ratio: 4
+  qkv_bias: True
+  drop_path_rate: 0.3
+  epsilon: 0.000001
+
+
+TopdownHeatmapSimpleHead:
+  in_channels: 768
+  num_deconv_layers: 2
+  num_deconv_filters: [256,256]
+  num_deconv_kernels: [4,4]
+  out_channels: 17
+  shift_heatmap: False
+  flip_pairs: *flip_perm
+  extra: {final_conv_kernel: 1}
+
+VitPosePostProcess:
+  use_dark: True
+
+KeyPointMSELoss:
+  use_target_weight: true
+  loss_scale: 1.0
+
+####optimizer
+LearningRate:
+  base_lr: 0.0005
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [170, 200]
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 500
+
+OptimizerBuilder:
+  clip_grad_by_norm: 1.0
+  optimizer:
+    type: AdamWDL
+    betas: [0.9, 0.999]
+    weight_decay: 0.1
+    num_layers: 12
+    layer_decay: 0.75
+    filter_bias_and_bn: True
+    skip_decay_names: ['pos_embed','norm']
+    set_param_lr_func: 'layerwise_lr_decay'
+
+
+
+
+#####data
+TrainDataset:
+  !KeypointTopDownCocoDataset
+    image_dir: train2017
+    anno_path: annotations/person_keypoints_train2017.json
+    dataset_dir: dataset/coco
+    num_joints: *num_joints
+    trainsize: *trainsize
+    pixel_std: *pixel_std
+    center_scale: 0.4
+
+
+
+
+EvalDataset:
+  !KeypointTopDownCocoDataset
+    image_dir: val2017
+    anno_path: annotations/person_keypoints_val2017.json
+    dataset_dir: dataset/coco
+    num_joints: *num_joints
+    trainsize: *trainsize
+    pixel_std: *pixel_std
+    image_thre: 0.0
+    use_gt_bbox: True
+
+TestDataset:
+  !ImageFolder
+    anno_path: dataset/coco/keypoint_imagelist.txt
+
+worker_num: 4
+global_mean: &global_mean [0.485, 0.456, 0.406]
+global_std: &global_std [0.229, 0.224, 0.225]
+TrainReader:
+  sample_transforms:
+    - RandomFlipHalfBodyTransform:
+        scale: 0.5
+        rot: 40
+        num_joints_half_body: 8
+        prob_half_body: 0.3
+        pixel_std: *pixel_std
+        trainsize: *trainsize
+        upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        flip_pairs: *flip_perm
+
+    - TopDownAffine:
+        trainsize: *trainsize
+        use_udp: true
+    - ToHeatmapsTopDown_UDP:
+        hmsize: *hmsize
+        sigma: 2
+
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 64
+  shuffle: True
+  drop_last: True
+
+EvalReader:
+  sample_transforms:
+    - TopDownAffine:
+        trainsize: *trainsize
+        use_udp: true
+  batch_transforms:
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 64
+
+TestReader:
+  inputs_def:
+    image_shape: [3, *train_height, *train_width]
+  sample_transforms:
+    - Decode: {}
+    - TopDownEvalAffine:
+        trainsize: *trainsize
+    - NormalizeImage:
+        mean: *global_mean
+        std: *global_std
+        is_scale: true
+    - Permute: {}
+  batch_size: 1
+  fuse_normalize: false

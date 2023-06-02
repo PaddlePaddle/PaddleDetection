@@ -99,12 +99,13 @@ DATASETS = {
     'spine_coco': ([(
         'https://paddledet.bj.bcebos.com/data/spine.tar',
         '8a3a353c2c54a2284ad7d2780b65f6a6', ), ], ['annotations', 'images']),
-    'mot': (),
-    'objects365': (),
     'coco_ce': ([(
         'https://paddledet.bj.bcebos.com/data/coco_ce.tar',
-        'eadd1b79bc2f069f2744b1dd4e0c0329', ), ], [])
+        'eadd1b79bc2f069f2744b1dd4e0c0329', ), ], []),
+    'culane': ([('https://bj.bcebos.com/v1/paddledet/data/culane.tar', None, ), ], [])
 }
+
+DOWNLOAD_DATASETS_LIST = DATASETS.keys()
 
 DOWNLOAD_RETRY_LIMIT = 3
 
@@ -185,30 +186,21 @@ def get_dataset_path(path, annotation, image_dir):
     if _dataset_exists(path, annotation, image_dir):
         return path
 
-    logger.info("Dataset {} is not valid for reason above, try searching {} or "
-                "downloading dataset...".format(
-                    osp.realpath(path), DATASET_HOME))
-
     data_name = os.path.split(path.strip().lower())[-1]
+    if data_name not in DOWNLOAD_DATASETS_LIST:
+        raise ValueError(
+            "Dataset {} is not valid for reason above, please check again.".
+            format(osp.realpath(path)))
+    else:
+        logger.warning(
+            "Dataset {} is not valid for reason above, try searching {} or "
+            "downloading dataset...".format(osp.realpath(path), DATASET_HOME))
+
     for name, dataset in DATASETS.items():
         if data_name == name:
             logger.debug("Parse dataset_dir {} as dataset "
                          "{}".format(path, name))
-            if name == 'objects365':
-                raise NotImplementedError(
-                    "Dataset {} is not valid for download automatically. "
-                    "Please apply and download the dataset from "
-                    "https://www.objects365.org/download.html".format(name))
             data_dir = osp.join(DATASET_HOME, name)
-
-            if name == 'mot':
-                if osp.exists(path) or osp.exists(data_dir):
-                    return data_dir
-                else:
-                    raise NotImplementedError(
-                        "Dataset {} is not valid for download automatically. "
-                        "Please apply and download the dataset following docs/tutorials/PrepareMOTDataSet.md".
-                        format(name))
 
             if name == "spine_coco":
                 if _dataset_exists(data_dir, annotation, image_dir):
@@ -236,12 +228,7 @@ def get_dataset_path(path, annotation, image_dir):
                 create_voc_list(data_dir)
             return data_dir
 
-    # not match any dataset in DATASETS
-    raise ValueError(
-        "Dataset {} is not valid and cannot parse dataset type "
-        "'{}' for automaticly downloading, which only supports "
-        "'voc' , 'coco', 'wider_face', 'fruit', 'roadsign_voc' and 'mot' currently".
-        format(path, osp.split(path)[-1]))
+    raise ValueError("Dataset automaticly downloading Error.")
 
 
 def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):

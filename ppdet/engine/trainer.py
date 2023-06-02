@@ -38,14 +38,15 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
-from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
+from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 from ppdet.utils.fuse_utils import fuse_conv_bn
 from ppdet.utils import profiler
 from ppdet.modeling.post_process import multiclass_nms
+from ppdet.modeling.lane_utils import imshow_lanes
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
 from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
@@ -57,12 +58,12 @@ logger = setup_logger('ppdet.engine')
 
 __all__ = ['Trainer']
 
-MOT_ARCH = ['DeepSORT', 'JDE', 'FairMOT', 'ByteTrack']
+MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
 
 
 class Trainer(object):
     def __init__(self, cfg, mode='train'):
-        self.cfg = cfg
+        self.cfg = cfg.copy()
         assert mode.lower() in ['train', 'eval', 'test'], \
                 "mode should be 'train', 'eval' or 'test'"
         self.mode = mode.lower()
@@ -72,10 +73,14 @@ class Trainer(object):
         self.amp_level = self.cfg.get('amp_level', 'O1')
         self.custom_white_list = self.cfg.get('custom_white_list', None)
         self.custom_black_list = self.cfg.get('custom_black_list', None)
+        if 'slim' in cfg and cfg['slim_type'] == 'PTQ':
+            self.cfg['TestDataset'] = create('TestDataset')()
 
         # build data loader
         capital_mode = self.mode.capitalize()
-        if cfg.architecture in MOT_ARCH and self.mode in ['eval', 'test']:
+        if cfg.architecture in MOT_ARCH and self.mode in [
+                'eval', 'test'
+        ] and cfg.metric not in ['COCO', 'VOC']:
             self.dataset = self.cfg['{}MOTDataset'.format(
                 capital_mode)] = create('{}MOTDataset'.format(capital_mode))()
         else:
@@ -95,12 +100,12 @@ class Trainer(object):
                 self.dataset, cfg.worker_num)
 
         if cfg.architecture == 'JDE' and self.mode == 'train':
-            cfg['JDEEmbeddingHead'][
+            self.cfg['JDEEmbeddingHead'][
                 'num_identities'] = self.dataset.num_identities_dict[0]
             # JDE only support single class MOT now.
 
         if cfg.architecture == 'FairMOT' and self.mode == 'train':
-            cfg['FairMOTEmbeddingHead'][
+            self.cfg['FairMOTEmbeddingHead'][
                 'num_identities_dict'] = self.dataset.num_identities_dict
             # FairMOT support single class and multi-class MOT now.
 
@@ -145,7 +150,7 @@ class Trainer(object):
                 reader_name = '{}Reader'.format(self.mode.capitalize())
                 # If metric is VOC, need to be set collate_batch=False.
                 if cfg.metric == 'VOC':
-                    cfg[reader_name]['collate_batch'] = False
+                    self.cfg[reader_name]['collate_batch'] = False
                 self.loader = create(reader_name)(self.dataset, cfg.worker_num,
                                                   self._eval_batch_sampler)
         # TestDataset build after user set images, skip loader creation here
@@ -155,9 +160,10 @@ class Trainer(object):
         if print_params:
             params = sum([
                 p.numel() for n, p in self.model.named_parameters()
-                if all([x not in n for x in ['_mean', '_variance']])
+                if all([x not in n for x in ['_mean', '_variance', 'aux_']])
             ])  # exclude BatchNorm running status
-            logger.info('Params: ', params / 1e6)
+            logger.info('Model Params : {} M.'.format((params / 1e6).numpy()[
+                0]))
 
         # build optimizer in train mode
         if self.mode == 'train':
@@ -184,12 +190,14 @@ class Trainer(object):
             ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
             cycle_epoch = self.cfg.get('cycle_epoch', -1)
             ema_black_list = self.cfg.get('ema_black_list', None)
+            ema_filter_no_grad = self.cfg.get('ema_filter_no_grad', False)
             self.ema = ModelEMA(
                 self.model,
                 decay=ema_decay,
                 ema_decay_type=ema_decay_type,
                 cycle_epoch=cycle_epoch,
-                ema_black_list=ema_black_list)
+                ema_black_list=ema_black_list,
+                ema_filter_no_grad=ema_filter_no_grad)
 
         self._nranks = dist.get_world_size()
         self._local_rank = dist.get_rank()
@@ -341,6 +349,19 @@ class Trainer(object):
                     self.cfg.save_dir,
                     save_prediction_only=save_prediction_only)
             ]
+        elif self.cfg.metric == 'KeyPointTopDownCOCOWholeBadyHandEval':
+            eval_dataset = self.cfg['EvalDataset']
+            eval_dataset.check_or_download_dataset()
+            anno_file = eval_dataset.get_anno()
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+            self._metrics = [
+                KeyPointTopDownCOCOWholeBadyHandEval(
+                    anno_file,
+                    len(eval_dataset),
+                    self.cfg.num_joints,
+                    self.cfg.save_dir,
+                    save_prediction_only=save_prediction_only)
+            ]
         elif self.cfg.metric == 'KeyPointTopDownMPIIEval':
             eval_dataset = self.cfg['EvalDataset']
             eval_dataset.check_or_download_dataset()
@@ -363,6 +384,15 @@ class Trainer(object):
             ]
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
+        elif self.cfg.metric == 'CULaneMetric':
+            output_eval = self.cfg.get('output_eval', None)
+            self._metrics = [
+                CULaneMetric(
+                    cfg=self.cfg,
+                    output_eval=output_eval,
+                    split=self.dataset.split,
+                    dataset_dir=self.cfg.dataset_dir)
+            ]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -387,17 +417,18 @@ class Trainer(object):
                     "metrics shoule be instances of subclass of Metric"
         self._metrics.extend(metrics)
 
-    def load_weights(self, weights):
+    def load_weights(self, weights, ARSL_eval=False):
         if self.is_loaded_weights:
             return
         self.start_epoch = 0
-        load_pretrain_weight(self.model, weights)
+        load_pretrain_weight(self.model, weights, ARSL_eval)
         logger.debug("Load weights {} to start training".format(weights))
 
     def load_weights_sde(self, det_weights, reid_weights):
         if self.model.detector:
             load_weight(self.model.detector, det_weights)
-            load_weight(self.model.reid, reid_weights)
+            if self.model.reid:
+                load_weight(self.model.reid, reid_weights)
         else:
             load_weight(self.model.reid, reid_weights)
 
@@ -477,6 +508,9 @@ class Trainer(object):
                 profiler.add_profiler_step(profiler_options)
                 self._compose_callback.on_step_begin(self.status)
                 data['epoch_id'] = epoch_id
+                if self.cfg.get('to_static',
+                                False) and 'image_file' in data.keys():
+                    data.pop('image_file')
 
                 if self.use_amp:
                     if isinstance(
@@ -484,7 +518,8 @@ class Trainer(object):
                             DataParallel) and use_fused_allreduce_gradients:
                         with model.no_sync():
                             with paddle.amp.auto_cast(
-                                    enable=self.cfg.use_gpu or self.cfg.use_mlu,
+                                    enable=self.cfg.use_gpu or
+                                    self.cfg.use_npu or self.cfg.use_mlu,
                                     custom_white_list=self.custom_white_list,
                                     custom_black_list=self.custom_black_list,
                                     level=self.amp_level):
@@ -498,7 +533,8 @@ class Trainer(object):
                             list(model.parameters()), None)
                     else:
                         with paddle.amp.auto_cast(
-                                enable=self.cfg.use_gpu or self.cfg.use_mlu,
+                                enable=self.cfg.use_gpu or self.cfg.use_npu or
+                                self.cfg.use_mlu,
                                 custom_white_list=self.custom_white_list,
                                 custom_black_list=self.custom_black_list,
                                 level=self.amp_level):
@@ -612,7 +648,8 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu or self.cfg.use_mlu,
+                        enable=self.cfg.use_gpu or self.cfg.use_npu or
+                        self.cfg.use_mlu,
                         custom_white_list=self.custom_white_list,
                         custom_black_list=self.custom_black_list,
                         level=self.amp_level):
@@ -679,7 +716,8 @@ class Trainer(object):
             # forward
             if self.use_amp:
                 with paddle.amp.auto_cast(
-                        enable=self.cfg.use_gpu or self.cfg.use_mlu,
+                        enable=self.cfg.use_gpu or self.cfg.use_npu or
+                        self.cfg.use_mlu,
                         custom_white_list=self.custom_white_list,
                         custom_black_list=self.custom_black_list,
                         level=self.amp_level):
@@ -764,6 +802,44 @@ class Trainer(object):
         loader = create('TestReader')(self.dataset, 0)
         imid2path = self.dataset.get_imid2path()
 
+        def setup_metrics_for_loader():
+            # mem
+            metrics = copy.deepcopy(self._metrics)
+            mode = self.mode
+            save_prediction_only = self.cfg[
+                'save_prediction_only'] if 'save_prediction_only' in self.cfg else None
+            output_eval = self.cfg[
+                'output_eval'] if 'output_eval' in self.cfg else None
+
+            # modify
+            self.mode = '_test'
+            self.cfg['save_prediction_only'] = True
+            self.cfg['output_eval'] = output_dir
+            self.cfg['imid2path'] = imid2path
+            self._init_metrics()
+
+            # restore
+            self.mode = mode
+            self.cfg.pop('save_prediction_only')
+            if save_prediction_only is not None:
+                self.cfg['save_prediction_only'] = save_prediction_only
+
+            self.cfg.pop('output_eval')
+            if output_eval is not None:
+                self.cfg['output_eval'] = output_eval
+
+            self.cfg.pop('imid2path')
+
+            _metrics = copy.deepcopy(self._metrics)
+            self._metrics = metrics
+
+            return _metrics
+
+        if save_results:
+            metrics = setup_metrics_for_loader()
+        else:
+            metrics = []
+
         anno_file = self.dataset.get_anno()
         clsid2catid, catid2name = get_categories(
             self.cfg.metric, anno_file=anno_file)
@@ -809,6 +885,9 @@ class Trainer(object):
                 merged_bboxs = []
                 data['im_id'] = data['ori_im_id']
 
+                for _m in metrics:
+                    _m.update(data, merged_results)
+
                 for key in ['im_shape', 'scale_factor', 'im_id']:
                     if isinstance(data, typing.Sequence):
                         merged_results[key] = data[0][key]
@@ -819,31 +898,36 @@ class Trainer(object):
                         merged_results[key] = value.numpy()
                 results.append(merged_results)
 
+        for _m in metrics:
+            _m.accumulate()
+            _m.reset()
+
         if visualize:
             for outs in results:
                 batch_res = get_infer_results(outs, clsid2catid)
                 bbox_num = outs['bbox_num']
+
                 start = 0
                 for i, im_id in enumerate(outs['im_id']):
                     image_path = imid2path[int(im_id)]
                     image = Image.open(image_path).convert('RGB')
                     image = ImageOps.exif_transpose(image)
                     self.status['original_image'] = np.array(image.copy())
+
                     end = start + bbox_num[i]
                     bbox_res = batch_res['bbox'][start:end] \
                             if 'bbox' in batch_res else None
-
+                    mask_res = batch_res['mask'][start:end] \
+                            if 'mask' in batch_res else None
+                    segm_res = batch_res['segm'][start:end] \
+                            if 'segm' in batch_res else None
+                    keypoint_res = batch_res['keypoint'][start:end] \
+                            if 'keypoint' in batch_res else None
+                    pose3d_res = batch_res['pose3d'][start:end] \
+                            if 'pose3d' in batch_res else None
                     image = visualize_results(
-                        image,
-                        bbox_res,
-                        mask_res=None,
-                        segm_res=None,
-                        keypoint_res=None,
-                        pose3d_res=None,
-                        im_id=int(im_id),
-                        catid2name=catid2name,
-                        threshold=draw_threshold)
-
+                        image, bbox_res, mask_res, segm_res, keypoint_res,
+                        pose3d_res, int(im_id), catid2name, draw_threshold)
                     self.status['result_image'] = np.array(image.copy())
                     if self._compose_callback:
                         self._compose_callback.on_step_end(self.status)
@@ -853,6 +937,7 @@ class Trainer(object):
                     logger.info("Detection bbox results save in {}".format(
                         save_name))
                     image.save(save_name, quality=95)
+
                     start = end
 
     def predict(self,
@@ -921,8 +1006,10 @@ class Trainer(object):
         for step_id, data in enumerate(tqdm(loader)):
             self.status['step_id'] = step_id
             # forward
-            outs = self.model(data)
-
+            if hasattr(self.model, 'modelTeacher'):
+                outs = self.model.modelTeacher(data)
+            else:
+                outs = self.model(data)
             for _m in metrics:
                 _m.update(data, outs)
 
@@ -982,6 +1069,7 @@ class Trainer(object):
                     image.save(save_name, quality=95)
 
                     start = end
+        return results
 
     def _get_save_image_name(self, output_dir, image_path):
         """
@@ -1061,6 +1149,12 @@ class Trainer(object):
                 "crops": InputSpec(
                     shape=[None, 3, 192, 64], name='crops')
             })
+
+        if self.cfg.architecture == 'CLRNet':
+            input_spec[0].update({
+                "full_img_path": str,
+                "img_name": str,
+            })
         if prune_input:
             static_model = paddle.jit.to_static(
                 self.model, input_spec=input_spec)
@@ -1096,6 +1190,10 @@ class Trainer(object):
         return static_model, pruned_input_spec
 
     def export(self, output_dir='output_inference'):
+        if hasattr(self.model, 'aux_neck'):
+            self.model.__delattr__('aux_neck')
+        if hasattr(self.model, 'aux_head'):
+            self.model.__delattr__('aux_head')
         self.model.eval()
 
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
@@ -1142,6 +1240,10 @@ class Trainer(object):
         logger.info("Export Post-Quant model and saved in {}".format(save_dir))
 
     def _flops(self, loader):
+        if hasattr(self.model, 'aux_neck'):
+            self.model.__delattr__('aux_neck')
+        if hasattr(self.model, 'aux_head'):
+            self.model.__delattr__('aux_head')
         self.model.eval()
         try:
             import paddleslim
@@ -1191,3 +1293,107 @@ class Trainer(object):
             logger.info("Found {} inference images in total.".format(
                 len(images)))
         return all_images
+
+    def predict_culane(self,
+                       images,
+                       output_dir='output',
+                       save_results=False,
+                       visualize=True):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        self.dataset.set_images(images)
+        loader = create('TestReader')(self.dataset, 0)
+
+        imid2path = self.dataset.get_imid2path()
+
+        def setup_metrics_for_loader():
+            # mem
+            metrics = copy.deepcopy(self._metrics)
+            mode = self.mode
+            save_prediction_only = self.cfg[
+                'save_prediction_only'] if 'save_prediction_only' in self.cfg else None
+            output_eval = self.cfg[
+                'output_eval'] if 'output_eval' in self.cfg else None
+
+            # modify
+            self.mode = '_test'
+            self.cfg['save_prediction_only'] = True
+            self.cfg['output_eval'] = output_dir
+            self.cfg['imid2path'] = imid2path
+            self._init_metrics()
+
+            # restore
+            self.mode = mode
+            self.cfg.pop('save_prediction_only')
+            if save_prediction_only is not None:
+                self.cfg['save_prediction_only'] = save_prediction_only
+
+            self.cfg.pop('output_eval')
+            if output_eval is not None:
+                self.cfg['output_eval'] = output_eval
+
+            self.cfg.pop('imid2path')
+
+            _metrics = copy.deepcopy(self._metrics)
+            self._metrics = metrics
+
+            return _metrics
+
+        if save_results:
+            metrics = setup_metrics_for_loader()
+        else:
+            metrics = []
+
+        # Run Infer 
+        self.status['mode'] = 'test'
+        self.model.eval()
+        if self.cfg.get('print_flops', False):
+            flops_loader = create('TestReader')(self.dataset, 0)
+            self._flops(flops_loader)
+        results = []
+        for step_id, data in enumerate(tqdm(loader)):
+            self.status['step_id'] = step_id
+            # forward
+            outs = self.model(data)
+
+            for _m in metrics:
+                _m.update(data, outs)
+
+            for key in ['im_shape', 'scale_factor', 'im_id']:
+                if isinstance(data, typing.Sequence):
+                    outs[key] = data[0][key]
+                else:
+                    outs[key] = data[key]
+            for key, value in outs.items():
+                if hasattr(value, 'numpy'):
+                    outs[key] = value.numpy()
+            results.append(outs)
+
+        for _m in metrics:
+            _m.accumulate()
+            _m.reset()
+
+        if visualize:
+            import cv2
+
+            for outs in results:
+                for i in range(len(outs['img_path'])):
+                    lanes = outs['lanes'][i]
+                    img_path = outs['img_path'][i]
+                    img = cv2.imread(img_path)
+                    out_file = os.path.join(output_dir,
+                                            os.path.basename(img_path))
+                    lanes = [
+                        lane.to_array(
+                            sample_y_range=[
+                                self.cfg['sample_y']['start'],
+                                self.cfg['sample_y']['end'],
+                                self.cfg['sample_y']['step']
+                            ],
+                            img_w=self.cfg.ori_img_w,
+                            img_h=self.cfg.ori_img_h) for lane in lanes
+                    ]
+                    imshow_lanes(img, lanes, out_file=out_file)
+
+        return results

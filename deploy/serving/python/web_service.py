@@ -30,9 +30,9 @@ import yaml
 
 # Global dictionary
 SUPPORT_MODELS = {
-    'YOLO', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet', 'S2ANet', 'JDE',
-    'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet', 'TOOD', 'RetinaNet',
-    'StrongBaseline', 'STGCN', 'YOLOX', 'HRNet'
+    'YOLO', 'PPYOLOE', 'RCNN', 'SSD', 'Face', 'FCOS', 'SOLOv2', 'TTFNet',
+    'S2ANet', 'JDE', 'FairMOT', 'DeepSORT', 'GFL', 'PicoDet', 'CenterNet',
+    'TOOD', 'RetinaNet', 'StrongBaseline', 'STGCN', 'YOLOX', 'HRNet'
 }
 
 GLOBAL_VAR = {}
@@ -62,7 +62,6 @@ class ArgsParser(ArgumentParser):
         assert args.config is not None, \
             "Please specify --config=configure_file_path."
         args.service_config = self._parse_opt(args.opt, args.config)
-        print("args config:", args.service_config)
         args.model_config = PredictConfig(args.model_dir)
         return args
 
@@ -202,6 +201,8 @@ class DetectorOp(Op):
                         result.append(
                             f"{int(line[0])} {line[1]} "
                             f"{line[2]} {line[3]} {line[4]} {line[5]}")
+                if len(result) == 0:
+                    result = 'No object detected!'
                 results[img_name] = result
             idx += num
         return results
@@ -252,6 +253,7 @@ if __name__ == '__main__':
     GLOBAL_VAR['fetch_vars'] = fetch_vars
     GLOBAL_VAR['preprocess_ops'] = FLAGS.model_config.preprocess_infos
     GLOBAL_VAR['model_config'] = FLAGS.model_config
+    print(FLAGS)
     # define the service
     uci_service = DetectorService(name="ppdet")
     uci_service.prepare_pipeline_config(yml_dict=FLAGS.service_config)

@@ -1,0 +1,66 @@
+_BASE_: [
+  '_base_/optimizer_70e.yml',
+  '_base_/centertrack_dla34.yml',
+  '_base_/centertrack_reader.yml',
+  '../../runtime.yml',
+]
+log_iter: 20
+snapshot_epoch: 5
+weights: output/centertrack_dla34_70e_mot17/model_final
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/crowdhuman_centertrack.pdparams
+
+
+### for Detection eval.py/infer.py
+# mot_metric: False
+# metric: COCO
+
+### for MOT eval_mot.py/infer_mot_mot.py
+mot_metric: True
+metric: MOT
+
+
+worker_num: 4
+TrainReader:
+  batch_size: 16 # total 32 for 2 GPUs
+
+EvalReader:
+  batch_size: 1
+
+EvalMOTReader:
+  batch_size: 1
+
+
+# COCO style dataset for training
+num_classes: 1
+TrainDataset:
+  !COCODataSet
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/train.json
+    image_dir: images/train
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd', 'gt_track_id']
+    # add 'gt_track_id', the boxes annotations of json file should have 'gt_track_id'
+
+EvalDataset:
+  !COCODataSet
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/val_half.json
+    image_dir: images/train
+
+TestDataset:
+  !ImageFolder
+    dataset_dir: dataset/mot/MOT17
+    anno_path: annotations/val_half.json
+
+# for MOT evaluation
+# If you want to change the MOT evaluation dataset, please modify 'data_root'
+EvalMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot/MOT17
+    data_root: images/train # set 'images/test' for MOTChallenge test
+    keep_ori_im: True # set True if save visualization images or video, or used in SDE MOT
+
+# for MOT video inference
+TestMOTDataset:
+  !MOTImageFolder
+    dataset_dir: dataset/mot/MOT17
+    keep_ori_im: True # set True if save visualization images or video
