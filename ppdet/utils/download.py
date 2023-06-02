@@ -113,6 +113,7 @@ DATASETS = {
             'http://images.cocodataset.org/zips/val2017.zip',
             '442b8da7639aecaf257c1dceb8ba8c80', ),
     ], ["annotations", "train2017", "val2017"])
+    'culane': ([('https://bj.bcebos.com/v1/paddledet/data/culane.tar', None, ), ], [])
 }
 
 DOWNLOAD_DATASETS_LIST = DATASETS.keys()
