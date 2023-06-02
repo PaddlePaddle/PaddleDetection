@@ -1,4 +1,4 @@
-# Copyright (c) 2021 PaddlePaddle Authors. All Rights Reserved.
+# copyright (c) 2021 PaddlePaddle Authors. All Rights Reserve.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ class ProfilerOptions(object):
 
     ProfilerOptions supports following key-value pair:
       batch_range      - a integer list, e.g. [100, 110].
-      state            - a string, the optional values are 'CPU', 'GPU' or 'All'.
+      state            - a string, the optional values are 'CPU', 'GPU' or 'All'. 
       sorted_key       - a string, the optional values are 'calls', 'total',
                          'max', 'min' or 'ave.
       tracer_option    - a string, the optional values are 'Default', 'OpDetail',
@@ -76,6 +76,7 @@ class ProfilerOptions(object):
                 self._options[key] = value
             elif key == 'timer_only':
                 self._options[key] = value
+
     def __getitem__(self, name):
         if self._options.get(name, None) is None:
             raise ValueError(
