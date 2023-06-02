@@ -2,8 +2,9 @@
 
 ## 最新动态
 
+- 发布RT-DETR-Swin和RT-DETR-FocalNet模型
 - 发布RT-DETR-R50和RT-DETR-R101的代码和预训练模型
-- 发布RT-DETR-L和RT-DETR-X的代码和预训练模型
+- **发布RT-DETR-L和RT-DETR-X的代码和预训练模型**
 - 发布RT-DETR-R50-m模型（scale模型的范例）
 - 发布RT-DETR-R34模型
 - 发布RT-DETR-R18模型
@@ -17,7 +18,7 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
   <img src="https://github.com/PaddlePaddle/PaddleDetection/assets/17582080/3184a08e-aa4d-49cf-9079-f3695c4cc1c3" width=500 />
 </div>
 
-## 模型
+## 基础模型
 
 | Model | Epoch | backbone  | input shape | $AP^{val}$ | $AP^{val}_{50}$| Params(M) | FLOPs(G) |  T4 TensorRT FP16(FPS) | Pretrained Model | config |
 |:--------------:|:-----:|:----------:| :-------:|:--------------------------:|:---------------------------:|:---------:|:--------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
@@ -29,10 +30,17 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
 | RT-DETR-L | 6x |  HGNetv2 | 640 | 53.0 | 71.6 | 32 | 110 | 114 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](rtdetr_hgnetv2_l_6x_coco.yml)
 | RT-DETR-X | 6x |  HGNetv2 | 640 | 54.8 | 73.1 | 67 | 234 | 74 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_hgnetv2_x_6x_coco.pdparams) | [config](rtdetr_hgnetv2_x_6x_coco.yml)
 
+## 高精度模型
+
+| Model | Epoch | backbone  | input shape | $AP^{val}$ | $AP^{val}_{50}$ | Pretrained Model | config |
+|:-----:|:-----:|:---------:| :---------:|:-----------:|:---------------:|:----------------:|:------:|
+| RT-DETR-Swin | 3x |  Swin_L_384 | 640 | 56.2 | 73.5 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_swin_L_384_3x_coco.pdparams) | [config](./rtdetr_swin_L_384_3x_coco.yml)
+| RT-DETR-FocalNet | 3x |  FocalNet_L_384  | 640 | 56.9 | 74.3 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_focalnet_L_384_3x_coco.pdparams) | [config](./rtdetr_focalnet_L_384_3x_coco.yml)
 
 **注意事项:**
-- RT-DETR 使用4个GPU训练。
+- RT-DETR 基础模型均使用4个GPU训练。
 - RT-DETR 在COCO train2017上训练，并在val2017上评估。
+- 高精度模型RT-DETR-Swin和RT-DETR-FocalNet使用8个GPU训练，显存需求较高。
 
 ## 快速开始
 
