@@ -21,7 +21,6 @@ from ..backbones.hrnet import ConvNormLayer
 from ..shape_spec import ShapeSpec
 from ..initializer import xavier_uniform_, constant_
 
-
 __all__ = ['ChannelMapper', 'DETRChannelMapper']
 
 
@@ -122,17 +121,18 @@ class ChannelMapper(nn.Layer):
                 if hasattr(p, 'bias') and p.bias is not None:
                     constant_(p.bais)
 
+
 @register
 class DETRChannelMapper(nn.Layer):
     __shared__ = ['hidden_dim']
 
-    def __init__(self,
-                 backbone_num_channels=[512, 1024, 2048],
-                 hidden_dim=256,
-                 num_feature_levels=4,
-                 weight_attr=None,
-                 bias_attr=None,
-                 ):
+    def __init__(
+            self,
+            backbone_num_channels=[512, 1024, 2048],
+            hidden_dim=256,
+            num_feature_levels=4,
+            weight_attr=None,
+            bias_attr=None, ):
         super(DETRChannelMapper, self).__init__()
         assert len(backbone_num_channels) <= num_feature_levels
         self.num_feature_levels = num_feature_levels

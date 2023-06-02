@@ -218,9 +218,8 @@ class OVDETR(DETR):
         if sum(len(a) for a in self.inputs["gt_class"]) > 0:
             uniq_labels = paddle.concat(self.inputs["gt_class"])
             uniq_labels = paddle.unique(uniq_labels)
-            uniq_labels = uniq_labels[paddle.to_tensor(
-                list(range(len(uniq_labels))))][:self.max_len]
-            # uniq_labels = uniq_labels[paddle.randperm(len(uniq_labels))][: self.max_len]
+            uniq_labels = uniq_labels[paddle.randperm(len(
+                uniq_labels))][:self.max_len]
         else:
             uniq_labels = paddle.to_tensor([])
         select_id = uniq_labels.tolist()
@@ -229,9 +228,8 @@ class OVDETR(DETR):
             pad_len = self.max_pad_len - len(uniq_labels)
             extra_list = [i for i in self.all_ids if i not in uniq_labels]
             extra_list = paddle.to_tensor(extra_list)
-            # extra_labels = extra_list[paddle.randperm(len(extra_list))][:pad_len].squeeze(1)
-            extra_labels = extra_list[paddle.to_tensor(
-                list(range(len(extra_list))))][:pad_len].squeeze(1)
+            extra_labels = extra_list[paddle.randperm(len(
+                extra_list))][:pad_len].squeeze(1)
 
             select_id += extra_labels.tolist()
         select_id_tensor = paddle.to_tensor(select_id)
@@ -240,9 +238,7 @@ class OVDETR(DETR):
 
         img_query = []
         for cat_id in select_id:
-            # index = paddle.randperm(len(self.clip_feat[cat_id]))[0:1]
-            index = paddle.to_tensor(list(range(len(self.clip_feat[cat_id]))))[
-                0:1]
+            index = paddle.randperm(len(self.clip_feat[cat_id]))[0:1]
             img_query.append(
                 paddle.to_tensor(self.clip_feat[cat_id]).index_select(index))
         img_query = paddle.concat(img_query)

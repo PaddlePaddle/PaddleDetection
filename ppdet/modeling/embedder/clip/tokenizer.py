@@ -173,6 +173,7 @@ class SimpleTokenizer(object):
             'utf-8', errors="replace").replace('</w>', ' ')
         return text
 
+
 def tokenize(texts, context_length=77, bpe_path=default_bpe()):
     """
     Returns the tokenized representation of given input string(s)
@@ -191,17 +192,17 @@ def tokenize(texts, context_length=77, bpe_path=default_bpe()):
 
     tokenizer = build_tokenizer(bpe_path)
 
-
     sot_token = tokenizer.encoder["<|startoftext|>"]
     eot_token = tokenizer.encoder["<|endoftext|>"]
-    all_tokens = [[sot_token] +
-                  tokenizer.encode(text) + [eot_token] for text in texts]
+    all_tokens = [[sot_token] + tokenizer.encode(text) + [eot_token]
+                  for text in texts]
     result = paddle.zeros((len(all_tokens), context_length), dtype='int64')
 
     for i, tokens in enumerate(all_tokens):
         if len(tokens) > context_length:
             raise RuntimeError(
-                f"Input {texts[i]} is too long for context length {context_length}")
+                f"Input {texts[i]} is too long for context length {context_length}"
+            )
         result[i, :len(tokens)] += paddle.to_tensor(tokens)
     return result
 
@@ -209,10 +210,11 @@ def tokenize(texts, context_length=77, bpe_path=default_bpe()):
 @functools.lru_cache(maxsize=1)
 def build_tokenizer(bpe_path=default_bpe()):
     url = 'https://bj.bcebos.com/v1/paddledet/models/clip/bpe_simple_vocab_16e6.txt.gz'
-    if not os.path.isfile(bpe_path):
+    if not os.path.exists(bpe_path):
         logger.warning(
             "bpe_simple_vocab_16e6 {} is not exist for reason above, try searching {} or "
-            "downloading...".format(bpe_path, os.path.expanduser(default_bpe())))
+            "downloading...".format(bpe_path, os.path.expanduser(default_bpe(
+            ))))
         bpe_path = os.path.expanduser(default_bpe())
         if not os.path.exists(bpe_path):
             wget.download(url, out=bpe_path)

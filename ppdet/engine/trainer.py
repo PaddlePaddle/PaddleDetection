@@ -41,7 +41,6 @@ from ppdet.utils.visualizer import visualize_results, save_result
 
 from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, Zeroshot_COCOMetric
-
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats

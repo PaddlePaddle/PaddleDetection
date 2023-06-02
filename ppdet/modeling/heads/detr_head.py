@@ -25,7 +25,10 @@ from ..initializer import linear_init_, constant_, xavier_uniform_, bias_init_wi
 from ..transformers.utils import inverse_sigmoid
 
 import copy
-__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead', 'OVDeformableDETRHead']
+__all__ = [
+    'DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead',
+    'OVDeformableDETRHead'
+]
 
 
 class MLP(nn.Layer):
@@ -577,9 +580,12 @@ class OVDeformableDETRHead(nn.Layer):
             constant_(self.bbox_head[0].layers[-1].bias[2:], -2.0)
         else:
             constant_(self.bbox_head.layers[-1].bias[2:], -2.0)
-            self.score_head = nn.LayerList([self.score_head for _ in range(self.num_pred)])
-            self.bbox_head = nn.LayerList([self.bbox_head for _ in range(self.num_pred)])
-            self.feature_align = nn.LayerList([self.feature_align for _ in range(self.num_pred)])
+            self.score_head = nn.LayerList(
+                [self.score_head for _ in range(self.num_pred)])
+            self.bbox_head = nn.LayerList(
+                [self.bbox_head for _ in range(self.num_pred)])
+            self.feature_align = nn.LayerList(
+                [self.feature_align for _ in range(self.num_pred)])
         if two_stage:
             # hack implementation for two-stage
             for box_embed in self.bbox_head:
@@ -596,15 +602,15 @@ class OVDeformableDETRHead(nn.Layer):
         xavier_uniform_(self.feature_align.weight)
         constant_(self.feature_align.bias)
 
-
     @classmethod
     def from_config(cls, cfg, hidden_dim, nhead, input_shape, two_stage):
-        return {'hidden_dim': hidden_dim, 'nhead': nhead, 'two_stage': two_stage}
+        return {
+            'hidden_dim': hidden_dim,
+            'nhead': nhead,
+            'two_stage': two_stage
+        }
 
-    def forward(self,
-                head_inputs_dict,
-                body_feats,
-                inputs=None):
+    def forward(self, head_inputs_dict, body_feats, inputs=None):
         r"""
         Args:
             head_inputs_dict (dict): (feats(Tensor): [num_levels, batch_size,
@@ -637,11 +643,7 @@ class OVDeformableDETRHead(nn.Layer):
             else:
                 assert reference.shape[-1] == 2
                 tmp = paddle.concat(
-                    [
-                        tmp[:, :, :, :2] + reference,
-                        tmp[:, :, :, 2:]
-                    ],
-                    axis=-1)
+                    [tmp[:, :, :, :2] + reference, tmp[:, :, :, 2:]], axis=-1)
             outputs_coord = F.sigmoid(tmp)
 
             outputs_classes.append(outputs_class)
@@ -688,8 +690,10 @@ class OVDeformableDETRHead(nn.Layer):
         # this is a workaround to make torchscript happy, as torchscript
         # doesn't support dictionary with non-homogeneous values, such
         # as a dict having both a Tensor and a list.
-        return [{'pred_logits': a, 'pred_boxes': b}
-                for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
+        return [{
+            'pred_logits': a,
+            'pred_boxes': b
+        } for a, b in zip(outputs_class[:-1], outputs_coord[:-1])]
 
 
 def _get_clones(module, N):

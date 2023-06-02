@@ -154,7 +154,7 @@ def cocoapi_eval(jsonfile,
         results_flatten = list(itertools.chain(*results_per_category))
         headers = ['category', 'AP'] * (num_columns // 2)
         results_2d = itertools.zip_longest(
-            * [results_flatten[i::num_columns] for i in range(num_columns)])
+            *[results_flatten[i::num_columns] for i in range(num_columns)])
         table_data = [headers]
         table_data += [result for result in results_2d]
         table = AsciiTable(table_data)
@@ -187,14 +187,15 @@ def json_eval_results(metric, json_directory, dataset):
         else:
             logger.info("{} not exists!".format(v_json))
 
+
 def zeroshot_cocoapi_eval(jsonfile,
-                 style,
-                 coco_gt=None,
-                 anno_file=None,
-                 max_dets=(100, 300, 1000),
-                 classwise=False,
-                 sigmas=None,
-                 use_area=True):
+                          style,
+                          coco_gt=None,
+                          anno_file=None,
+                          max_dets=(100, 300, 1000),
+                          classwise=False,
+                          sigmas=None,
+                          use_area=True):
     """
     Args:
         jsonfile (str): Evaluation json file, eg: bbox.json, mask.json.
@@ -217,8 +218,9 @@ def zeroshot_cocoapi_eval(jsonfile,
         from pycocotools.coco import COCO
         from pycocotools.cocoeval import COCOeval
 
-    unseen_list = [4, 5, 11, 12, 15, 16, 21, 23, 27, 29, 32, 34, 45, 47, 54,
-                   58, 63]
+    unseen_list = [
+        4, 5, 11, 12, 15, 16, 21, 23, 27, 29, 32, 34, 45, 47, 54, 58, 63
+    ]
     if coco_gt == None:
         coco_gt = COCO(anno_file)
     logger.info("Start evaluate...")

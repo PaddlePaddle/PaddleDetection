@@ -594,7 +594,8 @@ class OVDETRBBoxPostProcess(nn.Layer):
         # prob = out_logits.sigmoid()
         # scores, topk_indexes = torch.topk(prob.view(out_logits.shape[0], -1), 300, dim=1)
         prob = F.sigmoid(out_logits)
-        topk_values, topk_indexes = paddle.topk(prob.reshape((out_logits.shape[0], -1)), 100, axis=1)
+        topk_values, topk_indexes = paddle.topk(
+            prob.reshape((out_logits.shape[0], -1)), 100, axis=1)
         scores = topk_values
 
         topk_boxes = topk_indexes // out_logits.shape[2]
@@ -603,13 +604,14 @@ class OVDETRBBoxPostProcess(nn.Layer):
         # print('init_labels', labels)
         num_queries = self.num_queries
         for ind, c in enumerate(select_id):
-            labels[:, ind * num_queries : (ind + 1) * num_queries] = c
+            labels[:, ind * num_queries:(ind + 1) * num_queries] = c
 
         labels = paddle.take_along_axis(labels, topk_boxes, 1)
 
         bbox_pred = bbox_cxcywh_to_xyxy(bboxes)
 
-        bbox_pred = paddle.take_along_axis(bbox_pred, paddle.tile(topk_boxes.unsqueeze(-1), (1, 1, 4)), 1)
+        bbox_pred = paddle.take_along_axis(
+            bbox_pred, paddle.tile(topk_boxes.unsqueeze(-1), (1, 1, 4)), 1)
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
         img_h, img_w = paddle.split(origin_shape, 2, axis=-1)
         origin_shape = paddle.concat(

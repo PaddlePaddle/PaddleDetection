@@ -20,17 +20,13 @@ from __future__ import print_function
 
 from collections import OrderedDict
 import numpy as np
-
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 
 
 class MultiHeadAttention(nn.MultiHeadAttention):
-    def __init__(self,
-                 embed_dim,
-                 num_heads,
-                 output_dim=None):
+    def __init__(self, embed_dim, num_heads, output_dim=None):
         super(MultiHeadAttention, self).__init__(embed_dim, num_heads)
         self.out_proj = nn.Linear(embed_dim, output_dim or embed_dim)
 
@@ -92,19 +88,16 @@ class AttentionPool2D(nn.Layer):
     def __init__(self, spacial_dim, embed_dim, num_heads, output_dim=None):
         super().__init__()
         positional_embedding = self.create_parameter(
-            shape=(spacial_dim ** 2 + 1, embed_dim),
+            shape=(spacial_dim**2 + 1, embed_dim),
             default_initializer=Assign(
-                paddle.randn((spacial_dim ** 2 + 1, embed_dim)) /
-                embed_dim ** 0.5
-            )
-        )
+                paddle.randn((spacial_dim**2 + 1, embed_dim)) / embed_dim**0.5))
         self.add_parameter("positional_embedding", positional_embedding)
 
         self.attn = MultiHeadAttention(embed_dim, num_heads, output_dim)
 
     def forward(self, x):
-        x = x.reshape((x.shape[0], x.shape[1], x.shape[2] *
-                       x.shape[3])).transpose((2, 0, 1))
+        x = x.reshape((x.shape[0], x.shape[1],
+                       x.shape[2] * x.shape[3])).transpose((2, 0, 1))
         x = paddle.concat([x.mean(axis=0, keepdim=True), x], axis=0)
         x = x + self.positional_embedding.unsqueeze(1)
         x = x.transpose((1, 0, 2))

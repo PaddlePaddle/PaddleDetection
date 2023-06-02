@@ -6,7 +6,6 @@ import pickle
 from .clip import *
 from ppdet.utils.download import get_weights_path
 
-
 COCO_CATEGORIES = {
     1: "person",
     2: "bicycle",
@@ -100,6 +99,7 @@ COCO_CATEGORIES = {
     90: "toothbrush",
     91: "hair brush",
 }
+
 
 def article(name):
     return "an" if name[0] in "aeiou" else "a"
@@ -218,7 +218,8 @@ class TextEncoder(nn.Layer):
 
     @paddle.no_grad()
     def forward(self, text):
-        x = self.token_embedding(text).astype('float32')  # [batch_size, n_ctx, d_model]
+        x = self.token_embedding(text).astype(
+            'float32')  # [batch_size, n_ctx, d_model]
         x = x + self.positional_embedding.astype('float32')
         x = self.transformer(x)
         x = self.ln_final(x).astype('float32')
@@ -228,10 +229,10 @@ class TextEncoder(nn.Layer):
         seq_idx = text.argmax(axis=-1)
         gather_idx = paddle.stack([batch_idx, seq_idx], axis=1)
         x = paddle.gather_nd(x, gather_idx)
-        x = x @ self.text_projection
-
+        x = x @self.text_projection
 
         return x
+
 
 def build_text_embedding_coco(bpe_path, clip_path):
     categories = COCO_CATEGORIES
@@ -247,26 +248,35 @@ def build_text_embedding_coco(bpe_path, clip_path):
         zeroshot_weights = []
         for _, category in categories.items():
             texts = [
-                template.format(processed_name(category, rm_dot=True), article=article(category))
-                for template in templates
+                template.format(
+                    processed_name(
+                        category, rm_dot=True),
+                    article=article(category)) for template in templates
             ]
             texts = [
-                "This is " + text if text.startswith("a") or text.startswith("the") else text
+                "This is " + text
+                if text.startswith("a") or text.startswith("the") else text
                 for text in texts
             ]
             texts = tokenize(texts, bpe_path=bpe_path)  # tokenize
             if run_on_gpu:
                 texts = texts.cuda()
             text_embeddings = text_model(texts)
-            text_embeddings /= paddle.linalg.norm(text_embeddings, axis = -1, keepdim = True)
-            text_embedding = paddle.mean(text_embeddings, axis = 0)
+            text_embeddings /= paddle.linalg.norm(
+                text_embeddings, axis=-1, keepdim=True)
+            text_embedding = paddle.mean(text_embeddings, axis=0)
             text_embedding /= paddle.linalg.norm(text_embedding)
             zeroshot_weights.append(text_embedding)
         zeroshot_weights = paddle.stack(zeroshot_weights, axis=1)
         if run_on_gpu:
             zeroshot_weights = zeroshot_weights.cuda()
     zeroshot_weights = zeroshot_weights.t().numpy()
-    all_ids = [1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27, 28, 31, 32, 33, 34, 35, 36, 38, 41, 42, 44, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 65, 70, 72, 73, 74, 75, 76, 78, 79, 80, 81, 82, 84, 85, 86, 87, 90]  # noqa
+    all_ids = [
+        1, 2, 3, 4, 5, 6, 7, 8, 9, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25,
+        27, 28, 31, 32, 33, 34, 35, 36, 38, 41, 42, 44, 47, 48, 49, 50, 51, 52,
+        53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 65, 70, 72, 73, 74, 75, 76, 78,
+        79, 80, 81, 82, 84, 85, 86, 87, 90
+    ]  # noqa
     all_ids = [i - 1 for i in all_ids]
 
     return paddle.to_tensor(zeroshot_weights[all_ids])
@@ -274,7 +284,7 @@ def build_text_embedding_coco(bpe_path, clip_path):
 
 def read_clip_feat(clip_feat_path):
     url = 'https://bj.bcebos.com/v1/paddledet/data/coco/clip_feat_coco_pickle_label.pkl'
-    if not os.path.isfile(clip_feat_path):
+    if not os.path.exists(clip_feat_path):
         path = os.path.expanduser("~/.cache/paddle/weights")
         # path = get_weights_path(url)
         clip_feat_path = os.path.join(path, url.split('/')[-1])
@@ -284,5 +294,3 @@ def read_clip_feat(clip_feat_path):
     with open(clip_feat_path, 'rb') as f:
         clip_feat = pickle.load(f)
         return clip_feat
-
-

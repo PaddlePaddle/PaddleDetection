@@ -31,9 +31,7 @@ from ..layers import MultiHeadAttention
 from .position_encoding import PositionEmbedding
 from .utils import _get_clones, get_valid_ratio
 from ..initializer import linear_init_, constant_, xavier_uniform_, normal_
-
 from .deformable_transformer import MSDeformableAttention
-
 
 __all__ = ['OVDeformableTransformer']
 
@@ -224,9 +222,11 @@ class DeformableTransformerDecoderLayer(nn.Layer):
 
 
 class OVDeformableTransformerDecoder(nn.Layer):
-    def __init__(self, decoder_layer, num_layers,
-                 return_intermediate=False,
-                 ):
+    def __init__(
+            self,
+            decoder_layer,
+            num_layers,
+            return_intermediate=False, ):
         super(OVDeformableTransformerDecoder, self).__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
         self.num_layers = num_layers
@@ -254,21 +254,30 @@ class OVDeformableTransformerDecoder(nn.Layer):
                                          * paddle.concat([memory_valid_ratios, memory_valid_ratios], -1)[:, None]
             else:
                 assert reference_points.shape[-1] == 2
-                reference_points_input = reference_points.unsqueeze(2) * src_valid_ratios.unsqueeze(1)
-            output = layer(output, reference_points_input, memory,
-                           memory_spatial_shapes, memory_level_start_index,
-                           memory_mask, query_pos_embed, tgt_mask=tgt_mask)
+                reference_points_input = reference_points.unsqueeze(
+                    2) * src_valid_ratios.unsqueeze(1)
+            output = layer(
+                output,
+                reference_points_input,
+                memory,
+                memory_spatial_shapes,
+                memory_level_start_index,
+                memory_mask,
+                query_pos_embed,
+                tgt_mask=tgt_mask)
 
             # hack implementation for iterative bounding box refinement
             if self.bbox_head is not None:
                 tmp = self.bbox_head[lid](output)
                 if reference_points.shape[-1] == 4:
-                    new_reference_points = tmp + inverse_sigmoid(reference_points)
+                    new_reference_points = tmp + inverse_sigmoid(
+                        reference_points)
                     new_reference_points = F.sigmoid(new_reference_points)
                 else:
                     assert reference_points.shape[-1] == 2
                     new_reference_points = tmp
-                    new_reference_points[..., :2] = tmp[..., :2] + inverse_sigmoid(reference_points)
+                    new_reference_points[..., :2] = tmp[
+                        ..., :2] + inverse_sigmoid(reference_points)
                     new_reference_points = F.sigmoid(new_reference_points)
                 reference_points = new_reference_points.detach()
 
@@ -277,7 +286,8 @@ class OVDeformableTransformerDecoder(nn.Layer):
                 intermediate_reference_points.append(reference_points)
 
         if self.return_intermediate:
-            return paddle.stack(intermediate), paddle.stack(intermediate_reference_points)
+            return paddle.stack(intermediate), paddle.stack(
+                intermediate_reference_points)
 
         return output.unsqueeze(0)
 
@@ -318,15 +328,18 @@ class OVDeformableTransformer(nn.Layer):
 
         encoder_layer = DeformableTransformerEncoderLayer(
             hidden_dim, nhead, dim_feedforward, dropout, activation,
-            num_feature_levels, num_encoder_points, lr_mult, weight_attr, bias_attr)
+            num_feature_levels, num_encoder_points, lr_mult, weight_attr,
+            bias_attr)
         self.encoder = OVDeformableTransformerEncoder(encoder_layer,
                                                       num_encoder_layers)
 
         decoder_layer = DeformableTransformerDecoderLayer(
             hidden_dim, nhead, dim_feedforward, dropout, activation,
-            num_feature_levels, num_decoder_points, lr_mult, weight_attr, bias_attr)
+            num_feature_levels, num_decoder_points, lr_mult, weight_attr,
+            bias_attr)
         self.decoder = OVDeformableTransformerDecoder(
-            decoder_layer, num_decoder_layers,
+            decoder_layer,
+            num_decoder_layers,
             return_intermediate=return_intermediate_dec)
 
         self.level_embed = nn.Embedding(num_feature_levels, hidden_dim)
@@ -334,7 +347,8 @@ class OVDeformableTransformer(nn.Layer):
         if two_stage:
             self.enc_output = nn.Linear(hidden_dim, hidden_dim, bias_attr=True)
             self.enc_output_norm = nn.LayerNorm(hidden_dim)
-            self.pos_trans = nn.Linear(hidden_dim * 2, hidden_dim * 2, bias_attr=True)
+            self.pos_trans = nn.Linear(
+                hidden_dim * 2, hidden_dim * 2, bias_attr=True)
             self.pos_trans_norm = nn.LayerNorm(hidden_dim * 2)
         else:
             self.query_embed = nn.Embedding(num_queries, hidden_dim * 2)
@@ -368,56 +382,76 @@ class OVDeformableTransformer(nn.Layer):
         scale = 2 * math.pi
         with paddle.no_grad():
             dim_t = paddle.arange(num_pos_feats)
-        dim_t = temperature ** (2 * (dim_t // 2) / num_pos_feats).astype('float32')
+        dim_t = temperature**(2 * (dim_t // 2) /
+                              num_pos_feats).astype('float32')
         # N, L, 4
         proposals = F.sigmoid(proposals) * scale
         # N, L, 4, 128
         pos = proposals[:, :, :, None] / dim_t
         # N, L, 4, 64, 2
-        pos = paddle.stack((pos[:, :, :, 0::2].sin(), pos[:, :, :, 1::2].cos()), axis=4).flatten(2)
+        pos = paddle.stack(
+            (pos[:, :, :, 0::2].sin(), pos[:, :, :, 1::2].cos()),
+            axis=4).flatten(2)
         return pos
 
-    def gen_encoder_output_proposals(self, memory, memory_padding_mask, spatial_shapes):
+    def gen_encoder_output_proposals(self, memory, memory_padding_mask,
+                                     spatial_shapes):
         N_, S_, C_ = memory.shape
         proposals = []
         _cur = 0
         memory_padding_mask = memory_padding_mask.astype('bool')
         for lvl, (H_, W_) in enumerate(spatial_shapes):
-            mask_flatten_ = memory_padding_mask[:, _cur:(_cur + H_ * W_)].reshape((N_, H_, W_, 1))
+            mask_flatten_ = memory_padding_mask[:, _cur:(
+                _cur + H_ * W_)].reshape((N_, H_, W_, 1))
             valid_H = paddle.sum(mask_flatten_[:, :, 0, 0], 1)
             valid_W = paddle.sum(mask_flatten_[:, 0, :, 0], 1)
 
-            grid_y, grid_x = paddle.meshgrid(paddle.linspace(0, H_ - 1, H_, 'float32'),
-                                             paddle.linspace(0, W_ - 1, W_, 'float32'))
-            grid = paddle.concat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)], -1)
+            grid_y, grid_x = paddle.meshgrid(
+                paddle.linspace(0, H_ - 1, H_, 'float32'),
+                paddle.linspace(0, W_ - 1, W_, 'float32'))
+            grid = paddle.concat([grid_x.unsqueeze(-1), grid_y.unsqueeze(-1)],
+                                 -1)
 
-            scale = paddle.concat([valid_W.unsqueeze(-1), valid_H.unsqueeze(-1)], 1).reshape((N_, 1, 1, 2))
-            grid = (paddle.expand(grid.unsqueeze(0), [N_, -1, -1, -1]) + 0.5) / scale
+            scale = paddle.concat(
+                [valid_W.unsqueeze(-1), valid_H.unsqueeze(-1)], 1).reshape(
+                    (N_, 1, 1, 2))
+            grid = (paddle.expand(grid.unsqueeze(0), [N_, -1, -1, -1]) + 0.5
+                    ) / scale
 
-            wh = paddle.ones_like(grid) * 0.05 * (2.0 ** lvl)
+            wh = paddle.ones_like(grid) * 0.05 * (2.0**lvl)
             proposal = paddle.concat((grid, wh), -1).reshape((N_, -1, 4))
             proposals.append(proposal)
             _cur += (H_ * W_)
 
         output_proposals = paddle.concat(proposals, 1)
-        output_proposals_valid = ((output_proposals > 0.01) & (output_proposals < 0.99)).all(-1, keepdim=True)
+        output_proposals_valid = (
+            (output_proposals > 0.01) &
+            (output_proposals < 0.99)).all(-1, keepdim=True)
         output_proposals = paddle.log(output_proposals / (1 - output_proposals))
-        output_proposals = masked_fill(output_proposals, ~memory_padding_mask.unsqueeze(-1), float('inf'))
-        output_proposals = masked_fill(output_proposals, ~output_proposals_valid, float('inf'))
+        output_proposals = masked_fill(output_proposals,
+                                       ~memory_padding_mask.unsqueeze(-1),
+                                       float('inf'))
+        output_proposals = masked_fill(output_proposals,
+                                       ~output_proposals_valid, float('inf'))
 
         output_memory = memory
-        output_memory = masked_fill(output_memory, ~memory_padding_mask.unsqueeze(-1), float(0))
-        output_memory = masked_fill(output_memory, ~output_proposals_valid, float(0))
+        output_memory = masked_fill(output_memory,
+                                    ~memory_padding_mask.unsqueeze(-1),
+                                    float(0))
+        output_memory = masked_fill(output_memory, ~output_proposals_valid,
+                                    float(0))
         output_memory = self.enc_output_norm(self.enc_output(output_memory))
         return output_memory, output_proposals
 
-    def forward(self, src_feats,
+    def forward(self,
+                src_feats,
                 src_mask=None,
                 inputs=None,
                 query_embed=None,
                 text_query=None,
                 cache=None,
-                *args, **kwargs):
+                *args,
+                **kwargs):
         src_flatten = []
         mask_flatten = []
         lvl_pos_embed_flatten = []
@@ -455,8 +489,9 @@ class OVDeformableTransformer(nn.Layer):
 
         # encoder
         if cache is None:
-            memory = self.encoder(src_flatten, spatial_shapes, level_start_index,
-                                  mask_flatten, lvl_pos_embed_flatten, valid_ratios)
+            memory = self.encoder(src_flatten, spatial_shapes,
+                                  level_start_index, mask_flatten,
+                                  lvl_pos_embed_flatten, valid_ratios)
             if not self.training:
                 cache = memory
         else:
@@ -470,18 +505,22 @@ class OVDeformableTransformer(nn.Layer):
 
             # hack implementation for two-stage Deformable DETR
             enc_outputs_class = self.decoder.score_head[-1](output_memory)
-            enc_outputs_coord_unact = self.decoder.bbox_head[-1](output_memory) + output_proposals
+            enc_outputs_coord_unact = self.decoder.bbox_head[-1](
+                output_memory) + output_proposals
             topk = self.two_stage_num_proposals
-            topk_proposals = paddle.topk(enc_outputs_class[..., 0], topk, axis=1)[1]
+            topk_proposals = paddle.topk(
+                enc_outputs_class[..., 0], topk, axis=1)[1]
 
-            topk_coords_unact = paddle.take_along_axis(enc_outputs_coord_unact,
-                                                       paddle.tile(topk_proposals.unsqueeze(-1), (1, 1, 4)), 1)
+            topk_coords_unact = paddle.take_along_axis(
+                enc_outputs_coord_unact,
+                paddle.tile(topk_proposals.unsqueeze(-1), (1, 1, 4)), 1)
             topk_coords_unact = topk_coords_unact.detach()
             reference_points = F.sigmoid(topk_coords_unact)
             init_reference_out = reference_points
             pos_trans_out = self.pos_trans_norm(
                 self.pos_trans(self.get_proposal_pos_embed(topk_coords_unact)))
-            query_embed, tgt = paddle.split(pos_trans_out, int(pos_trans_out.shape[-1] / c), axis=2)
+            query_embed, tgt = paddle.split(
+                pos_trans_out, int(pos_trans_out.shape[-1] / c), axis=2)
 
             num_queries = query_embed.shape[1]
             num_patch = len(text_query)
@@ -492,9 +531,11 @@ class OVDeformableTransformer(nn.Layer):
             text_query = paddle.expand(text_query.unsqueeze(0), (bs, -1, -1))
             tgt = tgt + text_query
             reference_points = paddle.tile(reference_points, (1, num_patch, 1))
-            init_reference_out = paddle.tile(init_reference_out, (1, num_patch, 1))
+            init_reference_out = paddle.tile(init_reference_out,
+                                             (1, num_patch, 1))
         else:
-            query_embed, tgt = paddle.split(query_embed, int(query_embed.shape[-1] / c), axis=1)
+            query_embed, tgt = paddle.split(
+                query_embed, int(query_embed.shape[-1] / c), axis=1)
             num_queries = len(query_embed)
             num_patch = len(text_query)
             query_embed = paddle.tile(query_embed, (num_patch, 1))
@@ -508,18 +549,16 @@ class OVDeformableTransformer(nn.Layer):
             init_reference_out = reference_points
 
         decoder_mask = (
-                paddle.ones([num_queries * num_patch, num_queries * num_patch])
-                * float("-inf")
-        )
+            paddle.ones([num_queries * num_patch, num_queries * num_patch]) *
+            float("-inf"))
         for i in range(num_patch):
-            decoder_mask[
-            i * num_queries: (i + 1) * num_queries,
-            i * num_queries: (i + 1) * num_queries,
-            ] = 0
+            decoder_mask[i * num_queries:(i + 1) * num_queries, i * num_queries:
+                         (i + 1) * num_queries, ] = 0
 
         # decoder
-        hs, inter_references = self.decoder(tgt, reference_points, memory, spatial_shapes,
-                                            level_start_index, valid_ratios, mask_flatten, query_embed, decoder_mask)
+        hs, inter_references = self.decoder(
+            tgt, reference_points, memory, spatial_shapes, level_start_index,
+            valid_ratios, mask_flatten, query_embed, decoder_mask)
 
         memory_features = []
         spatial_index = 0
@@ -527,8 +566,9 @@ class OVDeformableTransformer(nn.Layer):
             h, w = spatial_shapes[lvl]
             memory_lvl = (paddle.transpose(
                 paddle.reshape(
-                    memory[:, spatial_index: spatial_index + h * w, :],
-                    (bs, h, w, c)), perm=(0, 3, 1, 2)))
+                    memory[:, spatial_index:spatial_index + h * w, :],
+                    (bs, h, w, c)),
+                perm=(0, 3, 1, 2)))
             memory_features.append(memory_lvl)
             spatial_index += h * w
 
@@ -538,11 +578,11 @@ class OVDeformableTransformer(nn.Layer):
             feats=hs,
             reference=references,
             enc_outputs_class=enc_outputs_class,
-            enc_outputs_coord_unact=enc_outputs_coord_unact,
-        )
+            enc_outputs_coord_unact=enc_outputs_coord_unact, )
         if self.two_stage:
             return head_inputs_dict
-        return (hs, init_reference_out, inter_references_out, None, None), memory_features
+        return (hs, init_reference_out, inter_references_out, None,
+                None), memory_features
 
 
 def masked_fill(tensor, mask, value):

@@ -105,7 +105,7 @@ DATASETS = {
     'zeroshot_coco': ([
         (
             'https://bj.bcebos.com/v1/paddledet/data/coco/ov_detr_zero-shot.zip',
-            '71556c457e05c5b60f03a1e6fd865d67',),
+            '71556c457e05c5b60f03a1e6fd865d67', ),
         (
             'http://images.cocodataset.org/zips/train2017.zip',
             'cced6f7f71b7629ddf16f17bbcfab6b2', ),

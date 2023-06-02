@@ -20,7 +20,6 @@ from __future__ import print_function
 
 from collections import OrderedDict
 import numpy as np
-
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -135,11 +134,9 @@ class ClipViT(nn.Layer):
         self.ln_post = LayerNorm(width)
 
         proj = self.create_parameter(
-            shape=(width,),
-            default_initializer=Assign(
-                scale * paddle.randn(((width, output_dim)))
-            )
-        )
+            shape=(width, ),
+            default_initializer=Assign(scale * paddle.randn((
+                (width, output_dim)))))
         self.add_parameter("proj", proj)
 
     def forward(self, x):
@@ -152,8 +149,8 @@ class ClipViT(nn.Layer):
         x = x + self.positional_embedding.cast(x.dtype)
         x = self.ln_pre(x)
         x = feature = self.transformer(x)
-        x =self.ln_post(x[:, 0, :])
+        x = self.ln_post(x[:, 0, :])
         if self.proj is not None:
-            x = x @ self.proj
+            x = x @self.proj
 
         return x, feature

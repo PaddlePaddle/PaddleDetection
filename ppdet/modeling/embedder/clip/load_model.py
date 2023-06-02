@@ -15,14 +15,14 @@ import os
 import wget
 import paddle
 from paddle.vision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
-
 from .clip_models import CLIP
 from ppdet.utils.checkpoint import match_state_dict
 
 
 def get_transforms(image_resolution):
     transforms = Compose([
-        Resize(image_resolution, interpolation='bicubic'),
+        Resize(
+            image_resolution, interpolation='bicubic'),
         CenterCrop(image_resolution),
         lambda image: image.convert("RGB"),
         ToTensor(),
@@ -43,8 +43,7 @@ def clip_rn50():
         vocab_size=49408,
         transformer_width=512,
         transformer_heads=8,
-        transformer_layers=12
-    )
+        transformer_layers=12)
     return model, get_transforms(224)
 
 
@@ -59,8 +58,7 @@ def clip_rn101():
         vocab_size=49408,
         transformer_width=512,
         transformer_heads=8,
-        transformer_layers=12
-    )
+        transformer_layers=12)
     return model, get_transforms(224)
 
 
@@ -75,8 +73,7 @@ def clip_rn50x4():
         vocab_size=49408,
         transformer_width=640,
         transformer_heads=10,
-        transformer_layers=12
-    )
+        transformer_layers=12)
     return model, get_transforms(288)
 
 
@@ -91,16 +88,29 @@ def clip_vit_b_32():
         vocab_size=49408,
         transformer_width=512,
         transformer_heads=8,
-        transformer_layers=12
-    )
+        transformer_layers=12)
     return model, get_transforms(224)
 
 
 model_dict = {
-    'RN50': [clip_rn50, r'https://bj.bcebos.com/v1/paddledet/models/clip/RN50_clip.pdparams', 'RN50_clip.pdparams'],
-    'RN50x4': [clip_rn50x4, r'https://bj.bcebos.com/v1/paddledet/models/clip/RN50x4_clip.pdparams', 'RN50x4_clip.pdparams'],
-    'RN101': [clip_rn101, r'https://bj.bcebos.com/v1/paddledet/models/clip/RN101_clip.pdparams', 'RN101_clip.pdparams'],
-    'ViT_B_32': [clip_vit_b_32, r'https://bj.bcebos.com/v1/paddledet/models/clip/ViT-B-32_clip.pdparams', 'ViT-B-32_clip.pdparams']
+    'RN50': [
+        clip_rn50,
+        r'https://bj.bcebos.com/v1/paddledet/models/clip/RN50_clip.pdparams',
+        'RN50_clip.pdparams'
+    ],
+    'RN50x4': [
+        clip_rn50x4,
+        r'https://bj.bcebos.com/v1/paddledet/models/clip/RN50x4_clip.pdparams',
+        'RN50x4_clip.pdparams'
+    ],
+    'RN101': [
+        clip_rn101,
+        r'https://bj.bcebos.com/v1/paddledet/models/clip/RN101_clip.pdparams',
+        'RN101_clip.pdparams'
+    ],
+    'ViT_B_32': [
+        clip_vit_b_32,
+        r'https://bj.bcebos.com/v1/paddledet/models/clip/ViT-B-32_clip.pdparams',
+        'ViT-B-32_clip.pdparams'
+    ]
 }
-
-
