@@ -16,8 +16,90 @@ import numpy as np
 import paddle
 import paddle.nn as nn
 from scipy.special import softmax
-from ppdet.modeling.lane_utils import Lane
-from ppdet.modeling.losses import line_iou
+from scipy.interpolate import InterpolatedUnivariateSpline
+
+
+def line_iou(pred, target, img_w, length=15, aligned=True):
+    '''
+    Calculate the line iou value between predictions and targets
+    Args:
+        pred: lane predictions, shape: (num_pred, 72)
+        target: ground truth, shape: (num_target, 72)
+        img_w: image width
+        length: extended radius
+        aligned: True for iou loss calculation, False for pair-wise ious in assign
+    '''
+    px1 = pred - length
+    px2 = pred + length
+    tx1 = target - length
+    tx2 = target + length
+
+    if aligned:
+        invalid_mask = target
+        ovr = paddle.minimum(px2, tx2) - paddle.maximum(px1, tx1)
+        union = paddle.maximum(px2, tx2) - paddle.minimum(px1, tx1)
+    else:
+        num_pred = pred.shape[0]
+        invalid_mask = target.tile([num_pred, 1, 1])
+
+        ovr = (paddle.minimum(px2[:, None, :], tx2[None, ...]) - paddle.maximum(
+            px1[:, None, :], tx1[None, ...]))
+        union = (paddle.maximum(px2[:, None, :], tx2[None, ...]) -
+                 paddle.minimum(px1[:, None, :], tx1[None, ...]))
+
+    invalid_masks = (invalid_mask < 0) | (invalid_mask >= img_w)
+
+    ovr[invalid_masks] = 0.
+    union[invalid_masks] = 0.
+    iou = ovr.sum(axis=-1) / (union.sum(axis=-1) + 1e-9)
+    return iou
+
+
+class Lane:
+    def __init__(self, points=None, invalid_value=-2., metadata=None):
+        super(Lane, self).__init__()
+        self.curr_iter = 0
+        self.points = points
+        self.invalid_value = invalid_value
+        self.function = InterpolatedUnivariateSpline(
+            points[:, 1], points[:, 0], k=min(3, len(points) - 1))
+        self.min_y = points[:, 1].min() - 0.01
+        self.max_y = points[:, 1].max() + 0.01
+        self.metadata = metadata or {}
+
+    def __repr__(self):
+        return '[Lane]\n' + str(self.points) + '\n[/Lane]'
+
+    def __call__(self, lane_ys):
+        lane_xs = self.function(lane_ys)
+
+        lane_xs[(lane_ys < self.min_y) | (lane_ys > self.max_y
+                                          )] = self.invalid_value
+        return lane_xs
+
+    def to_array(self, sample_y_range, img_w, img_h):
+        self.sample_y = range(sample_y_range[0], sample_y_range[1],
+                              sample_y_range[2])
+        sample_y = self.sample_y
+        img_w, img_h = img_w, img_h
+        ys = np.array(sample_y) / float(img_h)
+        xs = self(ys)
+        valid_mask = (xs >= 0) & (xs < 1)
+        lane_xs = xs[valid_mask] * img_w
+        lane_ys = ys[valid_mask] * img_h
+        lane = np.concatenate(
+            (lane_xs.reshape(-1, 1), lane_ys.reshape(-1, 1)), axis=1)
+        return lane
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.curr_iter < len(self.points):
+            self.curr_iter += 1
+            return self.points[self.curr_iter - 1]
+        self.curr_iter = 0
+        raise StopIteration
 
 
 class CLRNetPostProcess(object):
