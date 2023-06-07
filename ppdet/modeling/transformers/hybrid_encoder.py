@@ -43,7 +43,7 @@ class CSPRepLayer(nn.Layer):
             in_channels, hidden_channels, ksize=1, stride=1, bias=bias, act=act)
         self.conv2 = BaseConv(
             in_channels, hidden_channels, ksize=1, stride=1, bias=bias, act=act)
-        self.bottlenecks = nn.Sequential(*[
+        self.bottlenecks = nn.Sequential(* [
             RepVggBlock(
                 hidden_channels, hidden_channels, act=act)
             for _ in range(num_blocks)
@@ -237,8 +237,7 @@ class HybridEncoder(nn.Layer):
             ],
             axis=1)[None, :, :]
 
-
-    def forward(self, feats, for_mot=False,is_teacher=False):
+    def forward(self, feats, for_mot=False, is_teacher=False):
         assert len(feats) == len(self.in_channels)
         # get projection features
         proj_feats = [self.input_proj[i](feat) for i, feat in enumerate(feats)]

@@ -362,6 +362,8 @@ class DropBlock(nn.Layer):
                 padding=self.block_size // 2,
                 data_format=self.data_format)
             mask = 1. - mask_inv
+            mask = mask.astype('float32')
+            x = x.astype('float32')
             y = x * mask * (mask.numel() / mask.sum())
             return y
 

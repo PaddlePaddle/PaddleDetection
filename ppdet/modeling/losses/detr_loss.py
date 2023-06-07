@@ -99,30 +99,33 @@ class DETRLoss(nn.Layer):
             target_label = F.one_hot(target_label,
                                      self.num_classes + 1)[..., :-1]
             if iou_score is not None and self.use_vfl:
-                    if gt_score is not None:
-                        target_score = paddle.zeros([bs, num_query_objects])
-                        target_score = paddle.scatter(
-                            target_score.reshape([-1, 1]), index, gt_score)
-                        target_score = target_score.reshape(
-                            [bs, num_query_objects, 1]) * target_label
-                        
-                        target_score_iou = paddle.zeros([bs, num_query_objects])
-                        target_score_iou = paddle.scatter(
-                            target_score_iou.reshape([-1, 1]), index, iou_score)
-                        target_score_iou = target_score_iou.reshape(
-                            [bs, num_query_objects, 1]) * target_label
-                        target_score=paddle.multiply(target_score,target_score_iou)
-                        loss_ = self.loss_coeff['class'] * varifocal_loss_with_logits(
+                if gt_score is not None:
+                    target_score = paddle.zeros([bs, num_query_objects])
+                    target_score = paddle.scatter(
+                        target_score.reshape([-1, 1]), index, gt_score)
+                    target_score = target_score.reshape(
+                        [bs, num_query_objects, 1]) * target_label
+
+                    target_score_iou = paddle.zeros([bs, num_query_objects])
+                    target_score_iou = paddle.scatter(
+                        target_score_iou.reshape([-1, 1]), index, iou_score)
+                    target_score_iou = target_score_iou.reshape(
+                        [bs, num_query_objects, 1]) * target_label
+                    target_score = paddle.multiply(target_score,
+                                                   target_score_iou)
+                    loss_ = self.loss_coeff[
+                        'class'] * varifocal_loss_with_logits(
                             logits, target_score, target_label,
-                            num_gts / num_query_objects)     
-                    else:
-                        target_score = paddle.zeros([bs, num_query_objects])
-                        if num_gt > 0:
-                            target_score = paddle.scatter(
-                                target_score.reshape([-1, 1]), index, iou_score)
-                        target_score = target_score.reshape(
-                            [bs, num_query_objects, 1]) * target_label
-                        loss_ = self.loss_coeff['class'] * varifocal_loss_with_logits(
+                            num_gts / num_query_objects)
+                else:
+                    target_score = paddle.zeros([bs, num_query_objects])
+                    if num_gt > 0:
+                        target_score = paddle.scatter(
+                            target_score.reshape([-1, 1]), index, iou_score)
+                    target_score = target_score.reshape(
+                        [bs, num_query_objects, 1]) * target_label
+                    loss_ = self.loss_coeff[
+                        'class'] * varifocal_loss_with_logits(
                             logits, target_score, target_label,
                             num_gts / num_query_objects)
             else:
@@ -232,18 +235,25 @@ class DETRLoss(nn.Layer):
                         aux_boxes.detach(), gt_bbox, match_indices)
                     iou_score = bbox_iou(
                         bbox_cxcywh_to_xyxy(src_bbox).split(4, -1),
-                        bbox_cxcywh_to_xyxy(target_bbox).split(4, -1))                
+                        bbox_cxcywh_to_xyxy(target_bbox).split(4, -1))
                 else:
                     iou_score = None
-                if  gt_score is not None:
+                if gt_score is not None:
                     _, target_score = self._get_src_target_assign(
                         logits[-1].detach(), gt_score, match_indices)
             else:
                 iou_score = None
             loss_class.append(
-                self._get_loss_class(aux_logits, gt_class, match_indices,
-                                     bg_index, num_gts, postfix, iou_score,gt_score=target_score if gt_score is not None else None)[
-                                         'loss_class' + postfix])
+                self._get_loss_class(
+                    aux_logits,
+                    gt_class,
+                    match_indices,
+                    bg_index,
+                    num_gts,
+                    postfix,
+                    iou_score,
+                    gt_score=target_score
+                    if gt_score is not None else None)['loss_class' + postfix])
             loss_ = self._get_loss_bbox(aux_boxes, gt_bbox, match_indices,
                                         num_gts, postfix)
             loss_bbox.append(loss_['loss_bbox' + postfix])
@@ -321,7 +331,7 @@ class DETRLoss(nn.Layer):
                 iou_score = bbox_iou(
                     bbox_cxcywh_to_xyxy(src_bbox).split(4, -1),
                     bbox_cxcywh_to_xyxy(target_bbox).split(4, -1))
-            if  gt_score is not None:#ssod
+            if gt_score is not None:  #ssod
                 _, target_score = self._get_src_target_assign(
                     logits[-1].detach(), gt_score, match_indices)
             else:
@@ -331,8 +341,15 @@ class DETRLoss(nn.Layer):
 
         loss = dict()
         loss.update(
-            self._get_loss_class(logits, gt_class, match_indices,
-                                 self.num_classes, num_gts, postfix, iou_score,gt_score=target_score if gt_score is not None else None))
+            self._get_loss_class(
+                logits,
+                gt_class,
+                match_indices,
+                self.num_classes,
+                num_gts,
+                postfix,
+                iou_score,
+                gt_score=target_score if gt_score is not None else None))
         loss.update(
             self._get_loss_bbox(boxes, gt_bbox, match_indices, num_gts,
                                 postfix))
@@ -415,7 +432,12 @@ class DINOLoss(DETRLoss):
                 **kwargs):
         num_gts = self._get_num_gts(gt_class)
         total_loss = super(DINOLoss, self).forward(
-            boxes, logits, gt_bbox, gt_class, num_gts=num_gts,gt_score=gt_score)
+            boxes,
+            logits,
+            gt_bbox,
+            gt_class,
+            num_gts=num_gts,
+            gt_score=gt_score)
 
         if dn_meta is not None:
             dn_positive_idx, dn_num_group = \

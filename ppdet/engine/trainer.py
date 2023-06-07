@@ -73,6 +73,7 @@ class Trainer(object):
         self.amp_level = self.cfg.get('amp_level', 'O1')
         self.custom_white_list = self.cfg.get('custom_white_list', None)
         self.custom_black_list = self.cfg.get('custom_black_list', None)
+        self.use_master_grad = self.cfg.get('master_grad', False)
         if 'slim' in cfg and cfg['slim_type'] == 'PTQ':
             self.cfg['TestDataset'] = create('TestDataset')()
 
@@ -180,10 +181,19 @@ class Trainer(object):
                 self.pruner = create('UnstructuredPruner')(self.model,
                                                            steps_per_epoch)
         if self.use_amp and self.amp_level == 'O2':
-            self.model, self.optimizer = paddle.amp.decorate(
-                models=self.model,
-                optimizers=self.optimizer,
-                level=self.amp_level)
+            paddle_version = paddle.__version__[:3]
+            # paddle version >= 2.5.0 or develop
+            if paddle_version in ["2.5", "0.0"]:
+                self.model, self.optimizer = paddle.amp.decorate(
+                    models=self.model,
+                    optimizers=self.optimizer,
+                    level=self.amp_level,
+                    master_grad=self.use_master_grad)
+            else:
+                self.model, self.optimizer = paddle.amp.decorate(
+                    models=self.model,
+                    optimizers=self.optimizer,
+                    level=self.amp_level)
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)

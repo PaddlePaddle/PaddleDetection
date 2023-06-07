@@ -201,13 +201,13 @@ class TransformerDecoderLayer(nn.Layer):
 
 
 class TransformerDecoder(nn.Layer):
-    def __init__(self, hidden_dim, decoder_layer, num_layers,eval_idx=-1):
+    def __init__(self, hidden_dim, decoder_layer, num_layers, eval_idx=-1):
         super(TransformerDecoder, self).__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         self.eval_idx = eval_idx if eval_idx >= 0 else num_layers + eval_idx
-        
+
     def forward(self,
                 tgt,
                 ref_points_unact,
@@ -305,7 +305,7 @@ class RTDETRTransformer(nn.Layer):
             hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
             num_decoder_points)
         self.decoder = TransformerDecoder(hidden_dim, decoder_layer,
-                                          num_decoder_layers,eval_idx)
+                                          num_decoder_layers, eval_idx)
 
         # denoising part
         self.denoising_class_embed = nn.Embedding(
@@ -432,7 +432,7 @@ class RTDETRTransformer(nn.Layer):
         level_start_index.pop()
         return (feat_flatten, spatial_shapes, level_start_index)
 
-    def forward(self, feats, pad_mask=None, gt_meta=None,is_teacher=False):
+    def forward(self, feats, pad_mask=None, gt_meta=None, is_teacher=False):
         # input projection and embedding
         (memory, spatial_shapes,
          level_start_index) = self._get_encoder_input(feats)

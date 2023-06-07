@@ -190,8 +190,9 @@ class YOLOv3Loss(nn.Layer):
         self.distill_pairs.clear()
         for x, t, anchor, downsample in zip(inputs, gt_targets, anchors,
                                             self.downsample):
-            yolo_loss = self.yolov3_loss(x, t, gt_box, anchor, downsample,
-                                         self.scale_x_y)
+            yolo_loss = self.yolov3_loss(
+                x.astype('float32'), t, gt_box, anchor, downsample,
+                self.scale_x_y)
             for k, v in yolo_loss.items():
                 if k in yolo_losses:
                     yolo_losses[k] += v
