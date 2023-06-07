@@ -237,6 +237,7 @@ class HybridEncoder(nn.Layer):
             ],
             axis=1)[None, :, :]
 
+
     def forward(self, feats, for_mot=False,is_teacher=False):
         assert len(feats) == len(self.in_channels)
         # get projection features

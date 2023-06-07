@@ -38,14 +38,15 @@ from ppdet.optimizer import ModelEMA
 from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
 from ppdet.utils.visualizer import visualize_results, save_result
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownMPIIEval, Pose3DEval
-from ppdet.metrics import RBoxMetric, JDEDetMetric, SNIPERCOCOMetric
+from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
 from ppdet.utils.fuse_utils import fuse_conv_bn
 from ppdet.utils import profiler
 from ppdet.modeling.post_process import multiclass_nms
+from ppdet.modeling.lane_utils import imshow_lanes
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback, SemiCheckpointer, SemiLogPrinter
 from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
@@ -215,7 +216,9 @@ class Trainer(object):
 
     def _init_callbacks(self):
         if self.mode == 'train':
-            if self.cfg.get('ssod_method', False):
+            if self.cfg.get(
+                    'ssod_method',
+                    False) and self.cfg['ssod_method'] == 'Trainer_Semi_detr':
                 self._callbacks = [SemiLogPrinter(self), SemiCheckpointer(self)]
             else:
                 self._callbacks = [LogPrinter(self), Checkpointer(self)]
@@ -351,6 +354,19 @@ class Trainer(object):
                     self.cfg.save_dir,
                     save_prediction_only=save_prediction_only)
             ]
+        elif self.cfg.metric == 'KeyPointTopDownCOCOWholeBadyHandEval':
+            eval_dataset = self.cfg['EvalDataset']
+            eval_dataset.check_or_download_dataset()
+            anno_file = eval_dataset.get_anno()
+            save_prediction_only = self.cfg.get('save_prediction_only', False)
+            self._metrics = [
+                KeyPointTopDownCOCOWholeBadyHandEval(
+                    anno_file,
+                    len(eval_dataset),
+                    self.cfg.num_joints,
+                    self.cfg.save_dir,
+                    save_prediction_only=save_prediction_only)
+            ]
         elif self.cfg.metric == 'KeyPointTopDownMPIIEval':
             eval_dataset = self.cfg['EvalDataset']
             eval_dataset.check_or_download_dataset()
@@ -373,6 +389,15 @@ class Trainer(object):
             ]
         elif self.cfg.metric == 'MOTDet':
             self._metrics = [JDEDetMetric(), ]
+        elif self.cfg.metric == 'CULaneMetric':
+            output_eval = self.cfg.get('output_eval', None)
+            self._metrics = [
+                CULaneMetric(
+                    cfg=self.cfg,
+                    output_eval=output_eval,
+                    split=self.dataset.split,
+                    dataset_dir=self.cfg.dataset_dir)
+            ]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -432,10 +457,8 @@ class Trainer(object):
         model = self.model
         if self.cfg.get('to_static', False):
             model = apply_to_static(self.cfg, model)
-        sync_bn = (
-            getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
-            (self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu) and
-            self._nranks > 1)
+        sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
+                   (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
@@ -1131,6 +1154,12 @@ class Trainer(object):
                 "crops": InputSpec(
                     shape=[None, 3, 192, 64], name='crops')
             })
+
+        if self.cfg.architecture == 'CLRNet':
+            input_spec[0].update({
+                "full_img_path": str,
+                "img_name": str,
+            })
         if prune_input:
             static_model = paddle.jit.to_static(
                 self.model, input_spec=input_spec)
@@ -1269,3 +1298,107 @@ class Trainer(object):
             logger.info("Found {} inference images in total.".format(
                 len(images)))
         return all_images
+
+    def predict_culane(self,
+                       images,
+                       output_dir='output',
+                       save_results=False,
+                       visualize=True):
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        self.dataset.set_images(images)
+        loader = create('TestReader')(self.dataset, 0)
+
+        imid2path = self.dataset.get_imid2path()
+
+        def setup_metrics_for_loader():
+            # mem
+            metrics = copy.deepcopy(self._metrics)
+            mode = self.mode
+            save_prediction_only = self.cfg[
+                'save_prediction_only'] if 'save_prediction_only' in self.cfg else None
+            output_eval = self.cfg[
+                'output_eval'] if 'output_eval' in self.cfg else None
+
+            # modify
+            self.mode = '_test'
+            self.cfg['save_prediction_only'] = True
+            self.cfg['output_eval'] = output_dir
+            self.cfg['imid2path'] = imid2path
+            self._init_metrics()
+
+            # restore
+            self.mode = mode
+            self.cfg.pop('save_prediction_only')
+            if save_prediction_only is not None:
+                self.cfg['save_prediction_only'] = save_prediction_only
+
+            self.cfg.pop('output_eval')
+            if output_eval is not None:
+                self.cfg['output_eval'] = output_eval
+
+            self.cfg.pop('imid2path')
+
+            _metrics = copy.deepcopy(self._metrics)
+            self._metrics = metrics
+
+            return _metrics
+
+        if save_results:
+            metrics = setup_metrics_for_loader()
+        else:
+            metrics = []
+
+        # Run Infer 
+        self.status['mode'] = 'test'
+        self.model.eval()
+        if self.cfg.get('print_flops', False):
+            flops_loader = create('TestReader')(self.dataset, 0)
+            self._flops(flops_loader)
+        results = []
+        for step_id, data in enumerate(tqdm(loader)):
+            self.status['step_id'] = step_id
+            # forward
+            outs = self.model(data)
+
+            for _m in metrics:
+                _m.update(data, outs)
+
+            for key in ['im_shape', 'scale_factor', 'im_id']:
+                if isinstance(data, typing.Sequence):
+                    outs[key] = data[0][key]
+                else:
+                    outs[key] = data[key]
+            for key, value in outs.items():
+                if hasattr(value, 'numpy'):
+                    outs[key] = value.numpy()
+            results.append(outs)
+
+        for _m in metrics:
+            _m.accumulate()
+            _m.reset()
+
+        if visualize:
+            import cv2
+
+            for outs in results:
+                for i in range(len(outs['img_path'])):
+                    lanes = outs['lanes'][i]
+                    img_path = outs['img_path'][i]
+                    img = cv2.imread(img_path)
+                    out_file = os.path.join(output_dir,
+                                            os.path.basename(img_path))
+                    lanes = [
+                        lane.to_array(
+                            sample_y_range=[
+                                self.cfg['sample_y']['start'],
+                                self.cfg['sample_y']['end'],
+                                self.cfg['sample_y']['step']
+                            ],
+                            img_w=self.cfg.ori_img_w,
+                            img_h=self.cfg.ori_img_h) for lane in lanes
+                    ]
+                    imshow_lanes(img, lanes, out_file=out_file)
+
+        return results

@@ -1,0 +1,24 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/rtdetr_r50vd.yml',
+  '_base_/rtdetr_reader.yml',
+]
+
+weights: output/rtdetr_hgnetv2_l_6x_coco/model_final
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/PPHGNetV2_L_ssld_pretrained.pdparams
+find_unused_parameters: True
+log_iter: 200
+
+
+DETR:
+  backbone: PPHGNetV2
+
+PPHGNetV2:
+  arch: 'L'
+  return_idx: [1, 2, 3]
+  freeze_stem_only: True
+  freeze_at: 0
+  freeze_norm: True
+  lr_mult_list: [0., 0.05, 0.05, 0.05, 0.05]
