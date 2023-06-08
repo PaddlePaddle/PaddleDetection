@@ -170,14 +170,14 @@ num_classes: 80
 TrainDataset:
   !SemiCOCODataSet
     image_dir: train2017
-    anno_path: semi_annotations/instances_train2017.1@5.json
+    anno_path: semi_annotations/instances_train2017.1@10.json
     dataset_dir: dataset/coco
     data_fields: ['image', 'gt_bbox', 'gt_class', 'is_crowd']
 # partial unlabeled COCO, use `SemiCOCODataSet` rather than `COCODataSet`
 UnsupTrainDataset:
   !SemiCOCODataSet
     image_dir: train2017
-    anno_path: semi_annotations/instances_train2017.1@5-unlabeled.json
+    anno_path: semi_annotations/instances_train2017.1@10-unlabeled.json
     dataset_dir: dataset/coco
     data_fields: ['image']
     supervised: False
