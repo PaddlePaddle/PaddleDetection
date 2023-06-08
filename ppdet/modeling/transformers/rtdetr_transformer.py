@@ -432,7 +432,7 @@ class RTDETRTransformer(nn.Layer):
         level_start_index.pop()
         return (feat_flatten, spatial_shapes, level_start_index)
 
-    def forward(self, feats, pad_mask=None, gt_meta=None):
+    def forward(self, feats, pad_mask=None, gt_meta=None, is_teacher=False):
         # input projection and embedding
         (memory, spatial_shapes,
          level_start_index) = self._get_encoder_input(feats)
@@ -452,7 +452,7 @@ class RTDETRTransformer(nn.Layer):
 
         target, init_ref_points_unact, enc_topk_bboxes, enc_topk_logits = \
             self._get_decoder_input(
-            memory, spatial_shapes, denoising_class, denoising_bbox_unact)
+            memory, spatial_shapes, denoising_class, denoising_bbox_unact,is_teacher)
 
         # decoder
         out_bboxes, out_logits = self.decoder(
@@ -504,10 +504,11 @@ class RTDETRTransformer(nn.Layer):
                            memory,
                            spatial_shapes,
                            denoising_class=None,
-                           denoising_bbox_unact=None):
+                           denoising_bbox_unact=None,
+                           is_teacher=False):
         bs, _, _ = memory.shape
         # prepare input for decoder
-        if self.training or self.eval_size is None:
+        if self.training or self.eval_size is None or is_teacher:
             anchors, valid_mask = self._generate_anchors(spatial_shapes)
         else:
             anchors, valid_mask = self.anchors, self.valid_mask
