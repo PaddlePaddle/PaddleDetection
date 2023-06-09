@@ -226,9 +226,8 @@ class Trainer(object):
 
     def _init_callbacks(self):
         if self.mode == 'train':
-            if self.cfg.get(
-                    'ssod_method',
-                    False) and self.cfg['ssod_method'] == 'Trainer_Semi_detr':
+            if self.cfg.get('ssod_method',
+                            False) and self.cfg['ssod_method'] == 'Semi_RTDETR':
                 self._callbacks = [SemiLogPrinter(self), SemiCheckpointer(self)]
             else:
                 self._callbacks = [LogPrinter(self), Checkpointer(self)]

@@ -126,7 +126,6 @@ class DETR_SSOD(MultiSteamDetector):
                 'loss': paddle.add_n(
                     [v for k, v in unsup_loss.items() if 'log' not in k])
             })
-            # print(unsup_loss)
             unsup_loss = {"unsup_" + k: v for k, v in unsup_loss.items()}
             unsup_loss.update({
                 'loss': paddle.add_n(
@@ -197,7 +196,6 @@ class DETR_SSOD(MultiSteamDetector):
             paddle.to_tensor(
                 p, place=self.place) for p in proposal_label_list
         ]
-        # print(bbox[:,1].max())
         # filter invalid box roughly
         if isinstance(self.train_cfg['pseudo_label_initial_score_thr'], float):
             thr = self.train_cfg['pseudo_label_initial_score_thr']
@@ -205,7 +203,6 @@ class DETR_SSOD(MultiSteamDetector):
             # TODO: use dynamic threshold
             raise NotImplementedError(
                 "Dynamic Threshold is not implemented yet.")
-        # print("thr0.5 :",sum([len(bbox) for bbox in proposal_list]), "\tscore:",[proposal[:, -1] for proposal in proposal_list])
         proposal_bbox_list, proposal_label_list, proposal_score_list = list(
             zip(* [
                 filter_invalid(
@@ -244,19 +241,14 @@ class DETR_SSOD(MultiSteamDetector):
                 pseudo_labels[i], dtype=paddle.int32, place=self.place)
             pseudo_bboxes[i] = paddle.to_tensor(
                 pseudo_bboxes[i], dtype=paddle.float32, place=self.place)
-        # print(pseudo_bboxes[0].shape[0])
         student_unsup.update({
             'gt_bbox': pseudo_bboxes,
             'gt_class': pseudo_labels
         })
-        # student_data.update(gt_bbox=pseudo_bboxes,gt_class=pseudo_labels)
         pseudo_sum = 0
-        # self.id+=1
         for i in range(len(pseudo_bboxes)):
             pseudo_sum += pseudo_bboxes[i].sum()
-        # print(self.id)
-        if pseudo_sum == 0:
-            # print('pseudo_sum=0')
+        if pseudo_sum == 0:  #input fake data when there are no pseudo labels
             pseudo_bboxes[0] = paddle.ones([1, 4]) - 0.5
             pseudo_labels[0] = paddle.ones([1, 1]).astype('int32')
             student_unsup.update({
@@ -270,19 +262,8 @@ class DETR_SSOD(MultiSteamDetector):
                                                        student_unsup)
             losses = self.student.detr_head(out_transformer, body_feats,
                                             student_unsup)
-
-            losses['loss_class'] *= 0
-            losses['loss_bbox'] *= 0
-            losses['loss_giou'] *= 0
-            losses['loss_class_aux'] *= 0
-            losses['loss_bbox_aux'] *= 0
-            losses['loss_giou_aux'] *= 0
-            losses['loss_class_dn'] *= 0
-            losses['loss_bbox_dn'] *= 0
-            losses['loss_giou_dn'] *= 0
-            losses['loss_class_aux_dn'] *= 0
-            losses['loss_bbox_aux_dn'] *= 0
-            losses['loss_giou_aux_dn'] *= 0
+            for n, v in losses.items():
+                losses[n] = v * 0
         else:
             gt_bbox = []
             gt_class = []

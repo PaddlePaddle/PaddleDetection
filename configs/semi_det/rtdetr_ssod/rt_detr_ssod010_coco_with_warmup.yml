@@ -11,7 +11,7 @@ weights: output/rt_detr_ssod/model_final
 find_unused_parameters: True
 save_dir: output
 log_iter: 50
-ssod_method: Trainer_Semi_detr
+ssod_method: Semi_RTDETR
 ### global config
 use_simple_ema: True
 ema_decay: 0.9996
@@ -37,13 +37,13 @@ SemiTrainReader:
         RandomGrayscale: {prob: 0.2},
       ]}
   sup_batch_transforms:
-    - BatchRandomResize_semi_detr: {target_size: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
+    - BatchRandomResizeForSSOD: {target_size: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
     - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
     - NormalizeBox: {}
     - BboxXYXY2XYWH: {}
     - Permute: {}
   unsup_batch_transforms:
-    - BatchRandomResize_semi_detr: {target_size: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
+    - BatchRandomResizeForSSOD: {target_size: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
     - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
     - NormalizeBox: {}
     - BboxXYXY2XYWH: {}

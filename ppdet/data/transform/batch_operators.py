@@ -41,7 +41,7 @@ __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
     'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseTarget', 'PadMaskBatch',
     'Gt2GFLTarget', 'Gt2CenterNetTarget', 'Gt2CenterTrackTarget', 'PadGT',
-    'PadRGT', 'BatchRandomResize_semi_detr'
+    'PadRGT', 'BatchRandomResizeForSSOD'
 ]
 
 
@@ -1478,7 +1478,7 @@ class Gt2CenterTrackTarget(BaseOperator):
 
 
 @register_op
-class BatchRandomResize_semi_detr(BaseOperator):
+class BatchRandomResizeForSSOD(BaseOperator):
     """
     Resize image to target size randomly. random target_size and interpolation method
     Args:
@@ -1495,7 +1495,7 @@ class BatchRandomResize_semi_detr(BaseOperator):
                  interp=cv2.INTER_NEAREST,
                  random_size=True,
                  random_interp=False):
-        super(BatchRandomResize_semi_detr, self).__init__()
+        super(BatchRandomResizeForSSOD, self).__init__()
         self.keep_ratio = keep_ratio
         self.interps = [
             cv2.INTER_NEAREST,

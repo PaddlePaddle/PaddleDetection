@@ -40,7 +40,7 @@ MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
 
 logger = setup_logger('ppdet.engine')
 
-__all__ = ['Trainer_DenseTeacher', 'Trainer_ARSL', 'Trainer_Semi_detr']
+__all__ = ['Trainer_DenseTeacher', 'Trainer_ARSL', 'Trainer_Semi_RTDETR']
 
 
 class Trainer_DenseTeacher(Trainer):
@@ -858,7 +858,7 @@ class EnsembleTSModel(nn.Layer):
         self.modelStudent = modelStudent
 
 
-class Trainer_Semi_detr(Trainer):
+class Trainer_Semi_RTDETR(Trainer):
     def __init__(self, cfg, mode='train'):
         self.cfg = cfg
         assert mode.lower() in ['train', 'eval', 'test'], \
