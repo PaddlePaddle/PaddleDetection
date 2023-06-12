@@ -90,12 +90,12 @@ class KeyPointDetector(Detector):
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn,
             output_dir=output_dir,
-            threshold=threshold, )
+            threshold=threshold, 
+            use_fd_format=use_fd_format)
         self.use_dark = use_dark
-        self.use_fd_format = use_fd_format
 
-    def set_config(self, model_dir):
-        return PredictConfig_KeyPoint(model_dir, use_fd_format=self.use_fd_format)
+    def set_config(self, model_dir, use_fd_format):
+        return PredictConfig_KeyPoint(model_dir, use_fd_format=use_fd_format)
 
     def get_person_from_rect(self, image, results):
         # crop the person result from image

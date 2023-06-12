@@ -103,7 +103,7 @@ class Detector(object):
                  threshold=0.5,
                  delete_shuffle_pass=False,
                  use_fd_format=False):
-        self.pred_config = self.set_config(model_dir)
+        self.pred_config = self.set_config(model_dir, use_fd_format=use_fd_format)
         self.predictor, self.config = load_predictor(
             model_dir,
             self.pred_config.arch,
@@ -125,10 +125,9 @@ class Detector(object):
         self.batch_size = batch_size
         self.output_dir = output_dir
         self.threshold = threshold
-        self.use_fd_format = use_fd_format
 
-    def set_config(self, model_dir):
-        return PredictConfig(model_dir, use_fd_format=self.use_fd_format)
+    def set_config(self, model_dir, use_fd_format):
+        return PredictConfig(model_dir, use_fd_format=use_fd_format)
 
     def preprocess(self, image_list):
         preprocess_ops = []
@@ -562,7 +561,8 @@ class DetectorSOLOv2(Detector):
             enable_mkldnn=False,
             enable_mkldnn_bfloat16=False,
             output_dir='./',
-            threshold=0.5, ):
+            threshold=0.5, 
+            use_fd_format=False):
         super(DetectorSOLOv2, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -576,7 +576,8 @@ class DetectorSOLOv2(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, )
+            threshold=threshold, 
+            use_fd_format=use_fd_format)
 
     def predict(self, repeats=1, run_benchmark=False):
         '''
@@ -652,7 +653,8 @@ class DetectorPicoDet(Detector):
             enable_mkldnn=False,
             enable_mkldnn_bfloat16=False,
             output_dir='./',
-            threshold=0.5, ):
+            threshold=0.5, 
+            use_fd_format=False):
         super(DetectorPicoDet, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -666,7 +668,8 @@ class DetectorPicoDet(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, )
+            threshold=threshold, 
+            use_fd_format=use_fd_format)
 
     def postprocess(self, inputs, result):
         # postprocess output of predictor
@@ -747,7 +750,8 @@ class DetectorCLRNet(Detector):
             enable_mkldnn=False,
             enable_mkldnn_bfloat16=False,
             output_dir='./',
-            threshold=0.5, ):
+            threshold=0.5, 
+            use_fd_format=False):
         super(DetectorCLRNet, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -761,7 +765,8 @@ class DetectorCLRNet(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, )
+            threshold=threshold, 
+            use_fd_format=use_fd_format)
 
         deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
         with open(deploy_file) as f:
