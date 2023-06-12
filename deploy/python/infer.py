@@ -101,7 +101,8 @@ class Detector(object):
                  enable_mkldnn_bfloat16=False,
                  output_dir='output',
                  threshold=0.5,
-                 delete_shuffle_pass=False):
+                 delete_shuffle_pass=False,
+                 use_fd_format=False):
         self.pred_config = self.set_config(model_dir)
         self.predictor, self.config = load_predictor(
             model_dir,
@@ -124,9 +125,10 @@ class Detector(object):
         self.batch_size = batch_size
         self.output_dir = output_dir
         self.threshold = threshold
+        self.use_fd_format = use_fd_format
 
     def set_config(self, model_dir):
-        return PredictConfig(model_dir)
+        return PredictConfig(model_dir, use_fd_format=self.use_fd_format)
 
     def preprocess(self, image_list):
         preprocess_ops = []
@@ -867,9 +869,12 @@ class PredictConfig():
         model_dir (str): root path of model.yml
     """
 
-    def __init__(self, model_dir):
+    def __init__(self, model_dir, use_fd_format):
         # parsing Yaml config for Preprocess
-        deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
+        if use_fd_format:
+            deploy_file = os.path.join(model_dir, 'inference.yml')
+        else:
+            deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
         with open(deploy_file) as f:
             yml_conf = yaml.safe_load(f)
         self.check_model(yml_conf)
@@ -972,7 +977,7 @@ def load_predictor(model_dir,
     elif device == 'NPU':
         if config.lite_engine_enabled():
             config.enable_lite_engine()
-        config.enable_custom_device('npu')
+        config.enable_npu()
     else:
         config.disable_gpu()
         config.set_cpu_math_library_num_threads(cpu_threads)
@@ -1121,7 +1126,10 @@ def print_arguments(args):
 
 
 def main():
-    deploy_file = os.path.join(FLAGS.model_dir, 'infer_cfg.yml')
+    if FLAGS.use_fd_format:
+        deploy_file = os.path.join(FLAGS.model_dir, 'inference.yml')
+    else:
+        deploy_file = os.path.join(FLAGS.model_dir, 'infer_cfg.yml')
     with open(deploy_file) as f:
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
@@ -1146,7 +1154,8 @@ def main():
         enable_mkldnn=FLAGS.enable_mkldnn,
         enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16,
         threshold=FLAGS.threshold,
-        output_dir=FLAGS.output_dir)
+        output_dir=FLAGS.output_dir,
+        use_fd_format=FLAGS.use_fd_format)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

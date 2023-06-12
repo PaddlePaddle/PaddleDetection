@@ -211,6 +211,7 @@ def argsparser():
         type=str,
         default="shape_range_info.pbtxt",
         help="Path of a dynamic shape file for tensorrt.")
+    parser.add_argument("--use_fd_format", action="store_true")
     return parser
 
 

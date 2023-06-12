@@ -325,7 +325,7 @@ def visualize_pose(imgfile,
     if returnimg:
         return canvas
     save_name = os.path.join(
-        save_dir, os.path.splitext(os.path.basename(imgfile))[0] + '_vis.jpg')
+        save_dir, os.path.splitext(os.path.basename(imgfile))[0] + '.jpg')
     plt.imsave(save_name, canvas[:, :, ::-1])
     print("keypoint visualize image saved to: " + save_name)
     plt.close()

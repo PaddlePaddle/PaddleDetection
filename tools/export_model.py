@@ -56,6 +56,7 @@ def parse_args():
         default=None,
         type=str,
         help="Configuration file of slim method.")
+    parser.add_argument("--for_fd", action='store_true')
     args = parser.parse_args()
     return args
 
@@ -76,9 +77,10 @@ def run(FLAGS, cfg):
             trainer.load_weights(cfg.weights)
 
     # export model
-    trainer.export(FLAGS.output_dir)
+    trainer.export(FLAGS.output_dir, for_fd=FLAGS.for_fd)
 
     if FLAGS.export_serving_model:
+        assert not FLAGS.for_fd
         from paddle_serving_client.io import inference_model_to_serving
         model_name = os.path.splitext(os.path.split(cfg.filename)[-1])[0]
 

@@ -1092,7 +1092,10 @@ class Trainer(object):
     def _get_infer_cfg_and_input_spec(self,
                                       save_dir,
                                       prune_input=True,
-                                      kl_quant=False):
+                                      kl_quant=False,
+                                      yaml_name=None):
+        if yaml_name is None:
+            yaml_name = 'infer_cfg.yml'
         image_shape = None
         im_shape = [None, 2]
         scale_factor = [None, 2]
@@ -1143,7 +1146,7 @@ class Trainer(object):
 
         # Save infer cfg
         _dump_infer_config(self.cfg,
-                           os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
+                           os.path.join(save_dir, yaml_name), image_shape,
                            self.model)
 
         input_spec = [{
@@ -1199,7 +1202,7 @@ class Trainer(object):
 
         return static_model, pruned_input_spec
 
-    def export(self, output_dir='output_inference'):
+    def export(self, output_dir='output_inference', for_fd=False):
         if hasattr(self.model, 'aux_neck'):
             self.model.__delattr__('aux_neck')
         if hasattr(self.model, 'aux_head'):
@@ -1207,23 +1210,31 @@ class Trainer(object):
         self.model.eval()
 
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
-        save_dir = os.path.join(output_dir, model_name)
+        if for_fd:
+            save_dir = output_dir
+            save_name = 'inference'
+            yaml_name = 'inference.yml'
+        else:
+            save_dir = os.path.join(output_dir, model_name)
+            save_name = 'model'
+            yaml_name = None
+
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         static_model, pruned_input_spec = self._get_infer_cfg_and_input_spec(
-            save_dir)
+            save_dir, yaml_name=yaml_name)
 
         # dy2st and save model
         if 'slim' not in self.cfg or 'QAT' not in self.cfg['slim_type']:
             paddle.jit.save(
                 static_model,
-                os.path.join(save_dir, 'model'),
+                os.path.join(save_dir, save_name),
                 input_spec=pruned_input_spec)
         else:
             self.cfg.slim.save_quantized_model(
                 self.model,
-                os.path.join(save_dir, 'model'),
+                os.path.join(save_dir, save_name),
                 input_spec=pruned_input_spec)
         logger.info("Export model and saved in {}".format(save_dir))
 
