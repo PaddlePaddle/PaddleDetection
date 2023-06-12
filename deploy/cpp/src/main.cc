@@ -62,7 +62,7 @@ DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 DEFINE_bool(run_benchmark,
             false,
             "Whether to predict a image_file repeatedly for benchmark");
-DEFINE_bool(use_mkldnn, false, "Whether use mkldnn with CPU");
+DECLARE_bool(use_mkldnn);
 DEFINE_int32(cpu_threads, 1, "Num of threads with CPU");
 DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
