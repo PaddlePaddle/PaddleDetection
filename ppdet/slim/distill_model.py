@@ -332,12 +332,11 @@ class PPYOLOEDistillModel(DistillModel):
             with paddle.no_grad():
                 teacher_loss = self.teacher_model(inputs)
             if hasattr(self.teacher_model.yolo_head, "assigned_labels"):
-                self.student_model.yolo_head.assigned_labels, self.student_model.yolo_head.assigned_bboxes, self.student_model.yolo_head.assigned_scores, self.student_model.yolo_head.mask_positive = \
-                    self.teacher_model.yolo_head.assigned_labels, self.teacher_model.yolo_head.assigned_bboxes, self.teacher_model.yolo_head.assigned_scores, self.teacher_model.yolo_head.mask_positive
+                self.student_model.yolo_head.assigned_labels, self.student_model.yolo_head.assigned_bboxes, self.student_model.yolo_head.assigned_scores = \
+                    self.teacher_model.yolo_head.assigned_labels, self.teacher_model.yolo_head.assigned_bboxes, self.teacher_model.yolo_head.assigned_scores
                 delattr(self.teacher_model.yolo_head, "assigned_labels")
                 delattr(self.teacher_model.yolo_head, "assigned_bboxes")
                 delattr(self.teacher_model.yolo_head, "assigned_scores")
-                delattr(self.teacher_model.yolo_head, "mask_positive")
             student_loss = self.student_model(inputs)
 
             logits_loss, feat_loss = self.distill_loss(self.teacher_model,
