@@ -874,7 +874,7 @@ class PredictConfig():
         model_dir (str): root path of model.yml
     """
 
-    def __init__(self, model_dir, use_fd_format):
+    def __init__(self, model_dir, use_fd_format=False):
         # parsing Yaml config for Preprocess
         if use_fd_format:
             deploy_file = os.path.join(model_dir, 'inference.yml')
