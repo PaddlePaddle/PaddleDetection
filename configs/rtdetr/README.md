@@ -2,12 +2,12 @@
 
 ## 最新动态
 
-- 发布RT-DETR-Swin和RT-DETR-FocalNet模型
 - 发布RT-DETR-R50和RT-DETR-R101的代码和预训练模型
-- **发布RT-DETR-L和RT-DETR-X的代码和预训练模型**
+- 发布RT-DETR-L和RT-DETR-X的代码和预训练模型
 - 发布RT-DETR-R50-m模型（scale模型的范例）
 - 发布RT-DETR-R34模型
 - 发布RT-DETR-R18模型
+- 发布RT-DETR-Swin和RT-DETR-FocalNet模型
 
 ## 简介
 <!-- We propose a **R**eal-**T**ime **DE**tection **TR**ansformer (RT-DETR), the first real-time end-to-end object detector to our best knowledge. Specifically, we design an efficient hybrid encoder to efficiently process multi-scale features by decoupling the intra-scale interaction and cross-scale fusion, and propose IoU-aware query selection to improve the initialization of object queries. In addition, our proposed detector supports flexibly adjustment of the inference speed by using different decoder layers without the need for retraining, which facilitates the practical application of real-time object detectors. Our RT-DETR-L achieves 53.0% AP on COCO val2017 and 114 FPS on T4 GPU, while RT-DETR-X achieves 54.8% AP and 74 FPS, outperforming all YOLO detectors of the same scale in both speed and accuracy. Furthermore, our RT-DETR-R50 achieves 53.1% AP and 108 FPS, outperforming DINO-Deformable-DETR-R50 by 2.2% AP in accuracy and by about 21 times in FPS.  -->
@@ -15,7 +15,7 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
 若要了解更多细节，请参考我们的论文[paper](https://arxiv.org/abs/2304.08069).
 
 <div align="center">
-  <img src="https://github.com/PaddlePaddle/PaddleDetection/assets/17582080/3184a08e-aa4d-49cf-9079-f3695c4cc1c3" width=500 />
+  <img src="https://github.com/PaddlePaddle/PaddleDetection/assets/17582080/196b0a10-d2e8-401c-9132-54b9126e0a33" width=500 />
 </div>
 
 ## 基础模型
