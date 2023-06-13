@@ -305,9 +305,9 @@ def save_model(model,
         os.makedirs(save_dir)
 
     if save_name == "best_model":
-        uapi_best_model_path = os.path.join(save_dir, 'best_model')
-        if not os.path.exists(uapi_best_model_path):
-            os.makedirs(uapi_best_model_path)
+        best_model_path = os.path.join(save_dir, 'best_model')
+        if not os.path.exists(best_model_path):
+            os.makedirs(best_model_path)
 
     save_path = os.path.join(save_dir, save_name)
     # save model
@@ -330,8 +330,8 @@ def save_model(model,
             best_model = ema_model
 
     if save_name == 'best_model':
-        uapi_best_model_path = os.path.join(uapi_best_model_path, 'model')
-        paddle.save(best_model, uapi_best_model_path + ".pdparams")
+        best_model_path = os.path.join(best_model_path, 'model')
+        paddle.save(best_model, best_model_path + ".pdparams")
     # save optimizer
     state_dict = optimizer.state_dict()
     state_dict['last_epoch'] = last_epoch
