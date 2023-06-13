@@ -160,8 +160,7 @@ class Checkpointer(Callback):
     def __init__(self, model):
         super(Checkpointer, self).__init__(model)
         self.best_ap = -1000.
-        self.save_dir = os.path.join(self.model.cfg.save_dir,
-                                     self.model.cfg.filename)
+        self.save_dir = self.model.cfg.save_dir
         if hasattr(self.model.model, 'student_model'):
             self.weight = self.model.model.student_model
         else:
@@ -323,8 +322,7 @@ class WandbCallback(Callback):
             raise e
 
         self.wandb_params = model.cfg.get('wandb', None)
-        self.save_dir = os.path.join(self.model.cfg.save_dir,
-                                     self.model.cfg.filename)
+        self.save_dir = self.model.cfg.save_dir
         if self.wandb_params is None:
             self.wandb_params = {}
         for k, v in model.cfg.items():

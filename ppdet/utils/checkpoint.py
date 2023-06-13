@@ -300,7 +300,8 @@ def save_model(model,
     """
     if paddle.distributed.get_rank() != 0:
         return
-    save_dir = os.path.dirname(os.path.normpath(save_dir))
+        
+    save_dir = os.path.normpath(save_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
