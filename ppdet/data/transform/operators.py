@@ -1601,6 +1601,8 @@ class RandomCrop(BaseOperator):
             # only used in semi-det as unsup data
             sample = self.set_fake_bboxes(sample)
             sample = self.random_crop(sample, fake_bboxes=True)
+            del sample['gt_bbox']
+            del sample['gt_class']
             return sample
 
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
@@ -2074,26 +2076,29 @@ class NormalizeBox(BaseOperator):
 
     def apply(self, sample, context):
         im = sample['image']
-        gt_bbox = sample['gt_bbox']
-        height, width, _ = im.shape
-        for i in range(gt_bbox.shape[0]):
-            gt_bbox[i][0] = gt_bbox[i][0] / width
-            gt_bbox[i][1] = gt_bbox[i][1] / height
-            gt_bbox[i][2] = gt_bbox[i][2] / width
-            gt_bbox[i][3] = gt_bbox[i][3] / height
-        sample['gt_bbox'] = gt_bbox
+        if 'gt_bbox' in sample.keys():
+            gt_bbox = sample['gt_bbox']
+            height, width, _ = im.shape
+            for i in range(gt_bbox.shape[0]):
+                gt_bbox[i][0] = gt_bbox[i][0] / width
+                gt_bbox[i][1] = gt_bbox[i][1] / height
+                gt_bbox[i][2] = gt_bbox[i][2] / width
+                gt_bbox[i][3] = gt_bbox[i][3] / height
+            sample['gt_bbox'] = gt_bbox
 
-        if 'gt_keypoint' in sample.keys():
-            gt_keypoint = sample['gt_keypoint']
+            if 'gt_keypoint' in sample.keys():
+                gt_keypoint = sample['gt_keypoint']
 
-            for i in range(gt_keypoint.shape[1]):
-                if i % 2:
-                    gt_keypoint[:, i] = gt_keypoint[:, i] / height
-                else:
-                    gt_keypoint[:, i] = gt_keypoint[:, i] / width
-            sample['gt_keypoint'] = gt_keypoint
+                for i in range(gt_keypoint.shape[1]):
+                    if i % 2:
+                        gt_keypoint[:, i] = gt_keypoint[:, i] / height
+                    else:
+                        gt_keypoint[:, i] = gt_keypoint[:, i] / width
+                sample['gt_keypoint'] = gt_keypoint
 
-        return sample
+            return sample
+        else:
+            return sample
 
 
 @register_op
@@ -2106,12 +2111,14 @@ class BboxXYXY2XYWH(BaseOperator):
         super(BboxXYXY2XYWH, self).__init__()
 
     def apply(self, sample, context=None):
-        assert 'gt_bbox' in sample
-        bbox = sample['gt_bbox']
-        bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
-        bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
-        sample['gt_bbox'] = bbox
-        return sample
+        if 'gt_bbox' in sample.keys():
+            bbox = sample['gt_bbox']
+            bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
+            bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
+            sample['gt_bbox'] = bbox
+            return sample
+        else:
+            return sample
 
 
 @register_op
@@ -2801,6 +2808,36 @@ class RandomSelect(BaseOperator):
         if random.random() < self.p:
             return self.transforms1(sample)
         return self.transforms2(sample)
+
+
+@register_op
+class RandomSelects(BaseOperator):
+    """
+    Randomly choose a transformation between transforms1 and transforms2,
+    and the probability of choosing transforms1 is p.
+
+    The code is based on https://github.com/facebookresearch/detr/blob/main/datasets/transforms.py
+
+    """
+
+    def __init__(self, transforms_list, p=None):
+        super(RandomSelects, self).__init__()
+        if p is not None:
+            assert isinstance(p, (list, tuple))
+            assert len(transforms_list) == len(p)
+        else:
+            assert len(transforms_list) > 0
+        self.transforms = [Compose(t) for t in transforms_list]
+        self.p = p
+
+    def apply(self, sample, context=None):
+        if self.p is None:
+            return random.choice(self.transforms)(sample)
+        else:
+            prob = random.random()
+            for p, t in zip(self.p, self.transforms):
+                if prob <= p:
+                    return t(sample)
 
 
 @register_op

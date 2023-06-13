@@ -38,19 +38,10 @@ from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
 logger = setup_logger(__name__)
 
 __all__ = [
-    'PadBatch',
-    'BatchRandomResize',
-    'Gt2YoloTarget',
-    'Gt2FCOSTarget',
-    'Gt2TTFTarget',
-    'Gt2Solov2Target',
-    'Gt2SparseTarget',
-    'PadMaskBatch',
-    'Gt2GFLTarget',
-    'Gt2CenterNetTarget',
-    'Gt2CenterTrackTarget',
-    'PadGT',
-    'PadRGT',
+    'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
+    'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseTarget', 'PadMaskBatch',
+    'Gt2GFLTarget', 'Gt2CenterNetTarget', 'Gt2CenterTrackTarget', 'PadGT',
+    'PadRGT', 'BatchRandomResizeForSSOD'
 ]
 
 
@@ -1484,3 +1475,58 @@ class Gt2CenterTrackTarget(BaseOperator):
 
         del sample
         return new_sample
+
+
+@register_op
+class BatchRandomResizeForSSOD(BaseOperator):
+    """
+    Resize image to target size randomly. random target_size and interpolation method
+    Args:
+        target_size (int, list, tuple): image target size, if random size is True, must be list or tuple
+        keep_ratio (bool): whether keep_raio or not, default true
+        interp (int): the interpolation method
+        random_size (bool): whether random select target size of image
+        random_interp (bool): whether random select interpolation method
+    """
+
+    def __init__(self,
+                 target_size,
+                 keep_ratio,
+                 interp=cv2.INTER_NEAREST,
+                 random_size=True,
+                 random_interp=False):
+        super(BatchRandomResizeForSSOD, self).__init__()
+        self.keep_ratio = keep_ratio
+        self.interps = [
+            cv2.INTER_NEAREST,
+            cv2.INTER_LINEAR,
+            cv2.INTER_AREA,
+            cv2.INTER_CUBIC,
+            cv2.INTER_LANCZOS4,
+        ]
+        self.interp = interp
+        assert isinstance(target_size, (
+            int, Sequence)), "target_size must be int, list or tuple"
+        if random_size and not isinstance(target_size, list):
+            raise TypeError(
+                "Type of target_size is invalid when random_size is True. Must be List, now is {}".
+                format(type(target_size)))
+        self.target_size = target_size
+        self.random_size = random_size
+        self.random_interp = random_interp
+
+    def __call__(self, samples, context=None):
+        if self.random_size:
+            index = np.random.choice(len(self.target_size))
+            target_size = self.target_size[index]
+        else:
+            target_size = self.target_size
+        if context is not None:
+            target_size = self.target_size[context]
+        if self.random_interp:
+            interp = np.random.choice(self.interps)
+        else:
+            interp = self.interp
+
+        resizer = Resize(target_size, keep_ratio=self.keep_ratio, interp=interp)
+        return [resizer(samples, context=context), index]
