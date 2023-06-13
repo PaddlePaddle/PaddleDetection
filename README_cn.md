@@ -80,7 +80,7 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 **🔥超越YOLOv8，飞桨推出精度最高的实时检测器RT-DETR！**
 
   <div align="center">
-  <img src="https://user-images.githubusercontent.com/61035602/234011700-94de22e9-bdf9-4ce2-972d-6e6b800889c8.png"  height = "250" caption='' />
+  <img src="https://github.com/PaddlePaddle/PaddleDetection/assets/17582080/196b0a10-d2e8-401c-9132-54b9126e0a33"  height = "300" caption='' />
   <p></p>
   </div>
 
