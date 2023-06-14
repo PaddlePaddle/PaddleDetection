@@ -68,7 +68,7 @@ DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
 DEFINE_bool(run_benchmark,
             false,
             "Whether to predict a image_file repeatedly for benchmark");
-DEFINE_bool(use_mkldnn, false, "Whether use mkldnn with CPU");
+DEFINE_bool(run_mkldnn, false, "Whether use mkldnn with CPU");
 DEFINE_int32(cpu_threads, 1, "Num of threads with CPU");
 DEFINE_int32(trt_min_shape, 1, "Min shape of TRT DynamicShapeI");
 DEFINE_int32(trt_max_shape, 1280, "Max shape of TRT DynamicShapeI");
@@ -98,7 +98,7 @@ void PrintBenchmarkLog(std::vector<double> det_time, int img_num) {
     LOG(INFO) << "precision: "
               << "fp32";
   }
-  LOG(INFO) << "enable_mkldnn: " << (FLAGS_use_mkldnn ? "True" : "False");
+  LOG(INFO) << "enable_mkldnn: " << (FLAGS_run_mkldnn ? "True" : "False");
   LOG(INFO) << "cpu_math_library_num_threads: " << FLAGS_cpu_threads;
   LOG(INFO) << "----------------------- Data info -----------------------";
   LOG(INFO) << "batch_size: " << FLAGS_batch_size;
@@ -537,7 +537,7 @@ int main(int argc, char** argv) {
   // Load model and create a object detector
   PaddleDetection::ObjectDetector det(FLAGS_model_dir,
                                       FLAGS_device,
-                                      FLAGS_use_mkldnn,
+                                      FLAGS_run_mkldnn,
                                       FLAGS_cpu_threads,
                                       FLAGS_run_mode,
                                       FLAGS_batch_size,
@@ -551,7 +551,7 @@ int main(int argc, char** argv) {
   if (!FLAGS_model_dir_keypoint.empty()) {
     keypoint = new PaddleDetection::KeyPointDetector(FLAGS_model_dir_keypoint,
                                                      FLAGS_device,
-                                                     FLAGS_use_mkldnn,
+                                                     FLAGS_run_mkldnn,
                                                      FLAGS_cpu_threads,
                                                      FLAGS_run_mode,
                                                      FLAGS_batch_size_keypoint,

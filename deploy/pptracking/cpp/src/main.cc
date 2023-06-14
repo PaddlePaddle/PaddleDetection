@@ -47,7 +47,7 @@ DEFINE_string(run_mode,
               "paddle",
               "Mode of running(paddle/trt_fp32/trt_fp16/trt_int8)");
 DEFINE_int32(gpu_id, 0, "Device id of GPU to execute");
-DEFINE_bool(use_mkldnn, false, "Whether use mkldnn with CPU");
+DEFINE_bool(run_mkldnn, false, "Whether use mkldnn with CPU");
 DEFINE_int32(cpu_threads, 1, "Num of threads with CPU");
 DEFINE_bool(trt_calib_mode,
             false,
@@ -150,7 +150,7 @@ int main(int argc, char** argv) {
                                      FLAGS_output_dir,
                                      FLAGS_run_mode,
                                      FLAGS_gpu_id,
-                                     FLAGS_use_mkldnn,
+                                     FLAGS_run_mkldnn,
                                      FLAGS_cpu_threads,
                                      FLAGS_trt_calib_mode,
                                      FLAGS_do_entrance_counting,
