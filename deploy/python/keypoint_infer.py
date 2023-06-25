@@ -306,10 +306,22 @@ class PredictConfig_KeyPoint():
 
     def __init__(self, model_dir, use_fd_format=False):
         # parsing Yaml config for Preprocess
+        fd_deploy_file = os.path.join(model_dir, 'inference.yml')
+        ppdet_deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
         if use_fd_format:
-            deploy_file = os.path.join(model_dir, 'inference.yml')
+            if not os.path.exists(fd_deploy_file) and os.path.exists(
+                    ppdet_deploy_file):
+                raise RuntimeError(
+                    "Non-FD format model detected. Please set `use_fd_format` to False."
+                )
+            deploy_file = fd_deploy_file
         else:
-            deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
+            if not os.path.exists(ppdet_deploy_file) and os.path.exists(
+                    fd_deploy_file):
+                raise RuntimeError(
+                    "FD format model detected. Please set `use_fd_format` to False."
+                )
+            deploy_file = ppdet_deploy_file
         with open(deploy_file) as f:
             yml_conf = yaml.safe_load(f)
         self.check_model(yml_conf)
