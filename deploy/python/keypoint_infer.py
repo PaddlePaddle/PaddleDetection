@@ -76,7 +76,8 @@ class KeyPointDetector(Detector):
                  enable_mkldnn=False,
                  output_dir='output',
                  threshold=0.5,
-                 use_dark=True):
+                 use_dark=True,
+                 use_fd_format=False):
         super(KeyPointDetector, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -89,11 +90,12 @@ class KeyPointDetector(Detector):
             cpu_threads=cpu_threads,
             enable_mkldnn=enable_mkldnn,
             output_dir=output_dir,
-            threshold=threshold, )
+            threshold=threshold, 
+            use_fd_format=use_fd_format)
         self.use_dark = use_dark
 
-    def set_config(self, model_dir):
-        return PredictConfig_KeyPoint(model_dir)
+    def set_config(self, model_dir, use_fd_format):
+        return PredictConfig_KeyPoint(model_dir, use_fd_format=use_fd_format)
 
     def get_person_from_rect(self, image, results):
         # crop the person result from image
@@ -302,9 +304,24 @@ class PredictConfig_KeyPoint():
         model_dir (str): root path of model.yml
     """
 
-    def __init__(self, model_dir):
+    def __init__(self, model_dir, use_fd_format=False):
         # parsing Yaml config for Preprocess
-        deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
+        fd_deploy_file = os.path.join(model_dir, 'inference.yml')
+        ppdet_deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
+        if use_fd_format:
+            if not os.path.exists(fd_deploy_file) and os.path.exists(
+                    ppdet_deploy_file):
+                raise RuntimeError(
+                    "Non-FD format model detected. Please set `use_fd_format` to False."
+                )
+            deploy_file = fd_deploy_file
+        else:
+            if not os.path.exists(ppdet_deploy_file) and os.path.exists(
+                    fd_deploy_file):
+                raise RuntimeError(
+                    "FD format model detected. Please set `use_fd_format` to False."
+                )
+            deploy_file = ppdet_deploy_file
         with open(deploy_file) as f:
             yml_conf = yaml.safe_load(f)
         self.check_model(yml_conf)
@@ -368,7 +385,8 @@ def main():
         enable_mkldnn=FLAGS.enable_mkldnn,
         threshold=FLAGS.threshold,
         output_dir=FLAGS.output_dir,
-        use_dark=FLAGS.use_dark)
+        use_dark=FLAGS.use_dark,
+        use_fd_format=FLAGS.use_fd_format)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
