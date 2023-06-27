@@ -1,0 +1,17 @@
+
+_BASE_: [                                                                                                           
+  '../../picodet/_base_/picodet_v2.yml',                                                                            
+]                                                                                                                   
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/picodet_m_416_coco_lcnet.pdparams                                                             
+
+LCPAN:
+  out_channels: 128
+  spatial_scales: [0.125, 0.0625, 0.03125]
+
+slim: Distill                                                                                                       
+slim_method: MGD
+
+alpha_mgd: 0.00002
+lambda_mgd: 0.65
+

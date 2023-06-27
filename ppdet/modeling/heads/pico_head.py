@@ -353,13 +353,13 @@ class PicoHead(OTAVFLHead):
                 bbox_pred = bbox_pred.reshape([1, (self.reg_max + 1) * 4,
                                                -1]).transpose([0, 2, 1])
             else:
-                _, _, h, w = fpn_feat.shape
+                b, _, h, w = fpn_feat.shape
                 l = h * w
                 cls_score_out = F.sigmoid(
-                    cls_score.reshape([-1, self.cls_out_channels, l]))
+                    cls_score.reshape([b, self.cls_out_channels, l]))
                 bbox_pred = bbox_pred.transpose([0, 2, 3, 1])
                 bbox_pred = self.distribution_project(bbox_pred)
-                bbox_pred = bbox_pred.reshape([-1, l, 4])
+                bbox_pred = bbox_pred.reshape([b, l, 4])
 
             cls_logits_list.append(cls_score_out)
             bboxes_reg_list.append(bbox_pred)
@@ -541,8 +541,11 @@ class PicoHeadV2(GFLHead):
         # initialize the anchor points
         if self.eval_size:
             self.anchor_points, self.stride_tensor = self._generate_anchors()
+        
+        self.distill_pairs = {}
 
     def forward(self, fpn_feats, export_post_process=True):
+        self.distill_pairs['neck_feats'] = fpn_feats
         assert len(fpn_feats) == len(
             self.fpn_stride
         ), "The size of fpn_feats is not equal to size of fpn_stride"
@@ -597,7 +600,7 @@ class PicoHeadV2(GFLHead):
             anchor_points, stride_tensor = self._generate_anchors(fpn_feats)
         cls_score_list, box_list = [], []
         for i, (fpn_feat, stride) in enumerate(zip(fpn_feats, self.fpn_stride)):
-            _, _, h, w = fpn_feat.shape
+            b, _, h, w = fpn_feat.shape
             # task decomposition
             conv_cls_feat, se_feat = self.conv_feat(fpn_feat, i)
             cls_logit = self.head_cls_list[i](se_feat)
@@ -620,11 +623,10 @@ class PicoHeadV2(GFLHead):
                         [0, 2, 1]))
             else:
                 l = h * w
-                cls_score_out = cls_score.reshape(
-                    [-1, self.cls_out_channels, l])
+                cls_score_out = cls_score.reshape([b, self.cls_out_channels, l])
                 bbox_pred = reg_pred.transpose([0, 2, 3, 1])
                 bbox_pred = self.distribution_project(bbox_pred)
-                bbox_pred = bbox_pred.reshape([-1, l, 4])
+                bbox_pred = bbox_pred.reshape([b, l, 4])
                 cls_score_list.append(cls_score_out)
                 box_list.append(bbox_pred)
 
@@ -638,6 +640,7 @@ class PicoHeadV2(GFLHead):
 
     def get_loss(self, head_outs, gt_meta):
         pred_scores, pred_regs, pred_bboxes, fpn_feats = head_outs
+        self.distill_pairs['pred_cls_scores'] = pred_scores
         gt_labels = gt_meta['gt_class']
         gt_bboxes = gt_meta['gt_bbox']
         gt_scores = gt_meta['gt_score'] if 'gt_score' in gt_meta else None
@@ -662,16 +665,30 @@ class PicoHeadV2(GFLHead):
                 pred_bboxes=pred_bboxes.detach() * stride_tensor_list)
 
         else:
-            assigned_labels, assigned_bboxes, assigned_scores = self.assigner(
-                pred_scores.detach(),
-                pred_bboxes.detach() * stride_tensor_list,
-                centers,
-                num_anchors_list,
-                gt_labels,
-                gt_bboxes,
-                pad_gt_mask,
-                bg_index=self.num_classes,
-                gt_scores=gt_scores)
+            if not hasattr(self, "assigned_labels"):                                                                
+                assigned_labels, assigned_bboxes, assigned_scores = self.assigner(                                  
+                    pred_scores.detach(),                                                                           
+                    pred_bboxes.detach() * stride_tensor_list,                                                      
+                    centers,                                                                                        
+                    num_anchors_list,                                                                               
+                    gt_labels,                                                                                      
+                    gt_bboxes,                                                                                      
+                    pad_gt_mask,                                                                                    
+                    bg_index=self.num_classes,                                                                      
+                    gt_scores=gt_scores)                                                                            
+                self.assigned_labels = assigned_labels                                                              
+                self.assigned_bboxes = assigned_bboxes                                                              
+                self.assigned_scores = assigned_scores                                                              
+            else:                                                                                                   
+                assigned_labels = self.assigned_labels                                                              
+                assigned_bboxes = self.assigned_bboxes                                                              
+                assigned_scores = self.assigned_scores
+
+        self.distill_pairs['pos_num'] = assigned_scores.sum()
+        self.distill_pairs['assigned_scores'] = assigned_scores
+        one_hot_label = F.one_hot(assigned_labels,
+                                    self.num_classes + 1)[..., :-1]
+        self.distill_pairs['target_labels'] = one_hot_label
 
         assigned_bboxes /= stride_tensor_list
 
@@ -681,6 +698,7 @@ class PicoHeadV2(GFLHead):
         flatten_strides = stride_tensor_list.expand(
             [num_imgs, centers_shape[0], 1]).reshape([-1, 1])
         flatten_cls_preds = pred_scores.reshape([-1, self.num_classes])
+        self.distill_pairs['flatten_cls_preds'] = flatten_cls_preds
         flatten_regs = pred_regs.reshape([-1, 4 * (self.reg_max + 1)])
         flatten_bboxes = pred_bboxes.reshape([-1, 4])
         flatten_bbox_targets = assigned_bboxes.reshape([-1, 4])
@@ -693,6 +711,8 @@ class PicoHeadV2(GFLHead):
                                (flatten_labels < self.num_classes)),
             as_tuple=False).squeeze(1)
 
+        self.distill_pairs['pos_inds'] = pos_inds
+
         num_total_pos = len(pos_inds)
 
         if num_total_pos > 0:
@@ -700,7 +720,9 @@ class PicoHeadV2(GFLHead):
                 flatten_bbox_targets, pos_inds, axis=0)
             pos_decode_bbox_pred = paddle.gather(
                 flatten_bboxes, pos_inds, axis=0)
+            self.distill_pairs['pred_bboxes_pos'] = pos_decode_bbox_pred
             pos_reg = paddle.gather(flatten_regs, pos_inds, axis=0)
+            self.distill_pairs['pred_dist_pos'] = pos_reg
             pos_strides = paddle.gather(flatten_strides, pos_inds, axis=0)
             pos_centers = paddle.gather(
                 flatten_centers, pos_inds, axis=0) / pos_strides
@@ -708,6 +730,7 @@ class PicoHeadV2(GFLHead):
             weight_targets = flatten_assigned_scores.detach()
             weight_targets = paddle.gather(
                 weight_targets.max(axis=1, keepdim=True), pos_inds, axis=0)
+            self.distill_pairs['bbox_weight'] = weight_targets
 
             pred_corners = pos_reg.reshape([-1, self.reg_max + 1])
             target_corners = bbox2distance(pos_centers, pos_bbox_targets,
