@@ -203,7 +203,7 @@ if [ ${MODE} = "whole_infer" ] || [ ${MODE} = "klquant_whole_infer" ]; then
         export_cmd="${python} ${run_export} ${set_export_weight} ${set_filename} ${set_save_export_dir} "
         echo  $export_cmd
         eval $export_cmd
-        status_check $? "${export_cmd}" "${status_log}" "${model_name}" 
+        status_check $? "${export_cmd}" "${status_log}" "${model_name}"
 
         #run inference
         save_export_model_dir="${save_export_value}/${model_name}"
@@ -279,7 +279,10 @@ else
                 set_use_gpu=$(func_set_params "${train_use_gpu_key}" "${use_gpu}")
                 set_train_params1=$(func_set_params "${train_param_key1}" "${train_param_value1}")
                 save_log="${LOG_PATH}/${trainer}_gpus_${gpu}_autocast_${autocast}"
-                if [ ${autocast} = "amp" ] || [ ${autocast} = "fp16" ]; then
+                if [ ${autocast} = "amp" ]; then
+                    set_autocast="--amp"
+                    set_amp_level="amp_level=O1"
+                elif [ ${autocast} = "fp16" ]; then
                     set_autocast="--amp"
                     set_amp_level="amp_level=O2"
                 else
