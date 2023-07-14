@@ -112,7 +112,7 @@ class PicoFeat(nn.Layer):
                 cls_conv_pw = self.add_sublayer(
                     'cls_conv_pw{}.{}'.format(stage_idx, i),
                     ConvNormLayer(
-                        ch_in=in_c,
+                        ch_in=feat_out,
                         ch_out=feat_out,
                         filter_size=1,
                         stride=1,
