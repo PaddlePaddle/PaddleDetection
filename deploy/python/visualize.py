@@ -159,7 +159,8 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)
-        tw, th = draw.textsize(text)
+        left, top, right, bottom = draw.textbbox(text)
+        tw, th = right - left, bottom - top
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
@@ -497,7 +498,8 @@ def draw_press_box_lanes(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{}".format(labels[clsid])
-        tw, th = draw.textsize(text)
+        left, top, right, bottom = draw.textbbox(text)
+        tw, th = right - left, bottom - top
         draw.rectangle(
             [(xmin + 1, ymax - th), (xmin + tw + 1, ymax)], fill=color)
         draw.text((xmin + 1, ymax - th), text, fill=(0, 0, 255))
@@ -570,7 +572,8 @@ def visualize_vehicle_retrograde(im, mot_res, vehicle_retrograde_res):
 
             # draw label
             text = "retrograde"
-            tw, th = draw.textsize(text)
+            left, top, right, bottom = draw.textbbox(text)
+            tw, th = right - left, bottom - top
             draw.rectangle(
                 [(xmax + 1, ymin - th), (xmax + tw + 1, ymin)],
                 fill=(0, 255, 0))
