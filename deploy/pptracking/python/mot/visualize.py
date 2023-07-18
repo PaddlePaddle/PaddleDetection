@@ -109,7 +109,7 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)
-        left, top, right, bottom = font.getbbox(text)
+        left, top, right, bottom = draw.getbbox(text)
         tw, th = right - left, bottom - top
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
