@@ -51,6 +51,8 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         is_poly, get_border)
 
 from ppdet.utils.logger import setup_logger
+from ppdet.utils.compact import imagedraw_textsize_c
+
 from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
 logger = setup_logger(__name__)
 
@@ -2212,8 +2214,7 @@ class DebugVisibleImage(BaseOperator):
                 fill='green')
             # draw label
             text = str(gt_class[i][0])
-            left, top, right, bottom = draw.textbbox((0, 0), text)
-            tw, th = right - left, bottom - top
+            tw, th = imagedraw_textsize_c(draw, text)
             draw.rectangle(
                 [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
             draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))

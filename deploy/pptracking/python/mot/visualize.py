@@ -20,6 +20,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from collections import deque
+from ppdet.utils.compact import imagedraw_textsize_c
+
 
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
@@ -109,8 +111,7 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)
-        left, top, right, bottom = draw.textbbox((0, 0), text)
-        tw, th = right - left, bottom - top
+        tw, th = imagedraw_textsize_c(draw, text)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
