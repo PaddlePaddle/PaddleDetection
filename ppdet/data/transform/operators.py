@@ -51,6 +51,8 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         is_poly, get_border)
 
 from ppdet.utils.logger import setup_logger
+from ppdet.utils.compact import imagedraw_textsize_c
+
 from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
 logger = setup_logger(__name__)
 
@@ -838,7 +840,7 @@ class RandomFlip(BaseOperator):
 class Resize(BaseOperator):
     def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
         """
-        Resize image to target size. if keep_ratio is True, 
+        Resize image to target size. if keep_ratio is True,
         resize the image's long side to the maximum of target_size
         if keep_ratio is False, resize the image to target size(h, w)
         Args:
@@ -1108,7 +1110,7 @@ class RandomResize(BaseOperator):
             target_size (int, list, tuple): image target size, if random size is True, must be list or tuple
             keep_ratio (bool): whether keep_raio or not, default true
             interp (int): the interpolation method
-            random_range (bool): whether random select target size of image, the target_size must be 
+            random_range (bool): whether random select target size of image, the target_size must be
                 a [[min_short_edge, long_edge], [max_short_edge, long_edge]]
             random_size (bool): whether random select target size of image
             random_interp (bool): whether random select interpolation method
@@ -1903,7 +1905,7 @@ class RandomScaledCrop(BaseOperator):
 @register_op
 class Cutmix(BaseOperator):
     def __init__(self, alpha=1.5, beta=1.5):
-        """ 
+        """
         CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features, see https://arxiv.org/abs/1905.04899
         Cutmix image and gt_bbbox/gt_score
         Args:
@@ -2212,7 +2214,7 @@ class DebugVisibleImage(BaseOperator):
                 fill='green')
             # draw label
             text = str(gt_class[i][0])
-            tw, th = draw.textsize(text)
+            tw, th = imagedraw_textsize_c(draw, text)
             draw.rectangle(
                 [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
             draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
@@ -2417,7 +2419,7 @@ class Poly2Mask(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
-    """ 
+    """
     Augment the SV channel of image data.
     Args:
         fraction (float): the fraction for augment. Default: 0.5.
@@ -2531,7 +2533,7 @@ class RandomResizeCrop(BaseOperator):
         'long', resize the image's long side to the maximum of target_size, if keep_ratio is
         True and mode is 'short', resize the image's short side to the minimum of target_size.
         cropsizes (list): crop sizes after resize, [(min_crop_1, max_crop_1), ...]
-        mode (str): resize mode, `long` or `short`. Details see resizes. 
+        mode (str): resize mode, `long` or `short`. Details see resizes.
         prob (float): probability of this op.
         keep_ratio (bool): whether keep_ratio or not, default true
         interp (int): the interpolation method

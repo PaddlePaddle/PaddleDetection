@@ -20,6 +20,7 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 import math
+from ppdet.utils.compact import imagedraw_textsize_c
 
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
@@ -159,7 +160,7 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)
-        tw, th = draw.textsize(text)
+        tw, th = imagedraw_textsize_c(draw, text)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
@@ -389,7 +390,7 @@ def visualize_action(im,
                 id_action_dict[pid] = id_action_dict.get(pid, [])
                 id_action_dict[pid].append(action_type)
         for mot_box in mot_boxes:
-            # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h] 
+            # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h]
             if mot_box[0] in id_action_dict:
                 text_position = (int(mot_box[3] + mot_box[5] * 0.75),
                                  int(mot_box[4] - 10))
@@ -497,7 +498,7 @@ def draw_press_box_lanes(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{}".format(labels[clsid])
-        tw, th = draw.textsize(text)
+        tw, th = imagedraw_textsize_c(draw, text)
         draw.rectangle(
             [(xmin + 1, ymax - th), (xmin + tw + 1, ymax)], fill=color)
         draw.text((xmin + 1, ymax - th), text, fill=(0, 0, 255))
@@ -570,7 +571,7 @@ def visualize_vehicle_retrograde(im, mot_res, vehicle_retrograde_res):
 
             # draw label
             text = "retrograde"
-            tw, th = draw.textsize(text)
+            tw, th = imagedraw_textsize_c(draw, text)
             draw.rectangle(
                 [(xmax + 1, ymin - th), (xmax + tw + 1, ymin)],
                 fill=(0, 255, 0))
