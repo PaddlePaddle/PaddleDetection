@@ -17,11 +17,19 @@ from __future__ import division
 import os
 import cv2
 import numpy as np
+import PIL
 from PIL import Image, ImageDraw, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from collections import deque
-from ppdet.utils.compact import imagedraw_textsize_c
 
+def imagedraw_textsize_c(draw, text):
+    if int(PIL.__version__.split('.')[0]) < 10:
+        tw, th = draw.textsize(text)
+    else:
+        left, top, right, bottom = draw.textbbox((0, 0), text)
+        tw, th = right - left, bottom - top
+
+    return tw, th
 
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
