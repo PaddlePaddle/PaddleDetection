@@ -17,6 +17,7 @@ PicoDet:
   backbone: LCNet
   neck: CSPPAN
   head: PicoHead
+  nms_cpu: True
 
 LCNet:
   scale: 1.0
