@@ -661,13 +661,6 @@ class FocalNet(nn.Layer):
 
         self.apply(self._init_weights)
         self._freeze_stages()
-        if pretrained:
-            if 'http' in pretrained:  #URL
-                path = paddle.utils.download.get_weights_path_from_url(
-                    pretrained)
-            else:  #model in local path
-                path = pretrained
-            self.set_state_dict(paddle.load(path))
 
     def _freeze_stages(self):
         if self.frozen_stages >= 0:
