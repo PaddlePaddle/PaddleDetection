@@ -26,9 +26,30 @@ from .logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'check_gpu', 'check_npu', 'check_xpu', 'check_mlu', 'check_version',
-    'check_config'
+    'check_gpu', 'check_intel_gpu', 'check_npu', 'check_xpu', 'check_mlu',
+    'check_version', 'check_config'
 ]
+
+
+def check_intel_gpu(use_intel_gpu):
+    """
+    Log error and exit when set use_intel_gpu=true in paddlepaddle
+    version without paddle-custom-intel-gpu installed.
+    """
+    err = "Config use_npu cannot be set as true while you are " \
+          "using paddlepaddle version without paddle-custom-intel-gpu " \
+          "installed! \nPlease try: \n" \
+          "\t1. Install paddle-custom-intel-gpu to run model on intel GPU \n" \
+          "\t2. Set use_npu as false in config file to run " \
+          "model on other devices supported."
+
+    try:
+        if use_intel_gpu and not (
+                'intel_gpu' in paddle.device.get_all_custom_device_type()):
+            logger.error(err)
+            sys.exit(1)
+    except Exception as e:
+        pass
 
 
 def check_mlu(use_mlu):
@@ -43,7 +64,8 @@ def check_mlu(use_mlu):
           "model on CPU/GPU/XPU/NPU"
 
     try:
-        if use_mlu and not paddle.is_compiled_with_mlu():
+        if use_mlu and not (
+                'mlu' in paddle.device.get_all_custom_device_type()):
             logger.error(err)
             sys.exit(1)
     except Exception as e:
@@ -63,7 +85,8 @@ def check_npu(use_npu):
           "model on other devices supported."
 
     try:
-        if use_npu and not 'npu' in paddle.device.get_all_custom_device_type():
+        if use_npu and not (
+                'npu' in paddle.device.get_all_custom_device_type()):
             logger.error(err)
             sys.exit(1)
     except Exception as e:

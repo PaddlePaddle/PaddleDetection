@@ -1,44 +1,45 @@
--   repo: https://github.com/PaddlePaddle/mirrors-yapf.git
-    sha: 0d79c0c469bab64f7229c9aca2b1186ef47f0e37
+repos:
+  - repo: https://github.com/PaddlePaddle/mirrors-yapf.git
+    rev: 0d79c0c469bab64f7229c9aca2b1186ef47f0e37
     hooks:
-    -   id: yapf
-        files: \.py$
--   repo: https://github.com/pre-commit/pre-commit-hooks
-    sha: a11d9314b22d8f8c7556443875b731ef05965464
+    - id: yapf
+      files: \.py$
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: a11d9314b22d8f8c7556443875b731ef05965464
     hooks:
-    -   id: check-merge-conflict
-    -   id: check-symlinks
-    -   id: detect-private-key
-        files: (?!.*paddle)^.*$
-    -   id: end-of-file-fixer
-        files: \.(md|yml)$
-    -   id: trailing-whitespace
-        files: \.(md|yml)$
--   repo: https://github.com/Lucas-C/pre-commit-hooks
-    sha: v1.0.1
+    - id: check-merge-conflict
+    - id: check-symlinks
+    - id: detect-private-key
+      files: (?!.*paddle)^.*$
+    - id: end-of-file-fixer
+      files: \.(md|yml)$
+    - id: trailing-whitespace
+      files: \.(md|yml)$
+  - repo: https://github.com/Lucas-C/pre-commit-hooks
+    rev: v1.0.1
     hooks:
-    -   id: forbid-crlf
-        files: \.(md|yml)$
-    -   id: remove-crlf
-        files: \.(md|yml)$
-    -   id: forbid-tabs
-        files: \.(md|yml)$
-    -   id: remove-tabs
-        files: \.(md|yml)$
--   repo: local
+    - id: forbid-crlf
+      files: \.(md|yml)$
+    - id: remove-crlf
+      files: \.(md|yml)$
+    - id: forbid-tabs
+      files: \.(md|yml)$
+    - id: remove-tabs
+      files: \.(md|yml)$
+  - repo: local
     hooks:
-    -   id: clang-format-with-version-check
-        name: clang-format
-        description: Format files with ClangFormat.
-        entry: bash ./.travis/codestyle/clang_format.hook -i
-        language: system
-        files: \.(c|cc|cxx|cpp|cu|h|hpp|hxx|proto)$
+    - id: clang-format-with-version-check
+      name: clang-format
+      description: Format files with ClangFormat.
+      entry: bash ./.travis/codestyle/clang_format.hook -i
+      language: system
+      files: \.(c|cc|cxx|cpp|cu|h|hpp|hxx|proto)$
 
--   repo: local
+  - repo: local
     hooks:
-    -   id: cpplint-cpp-source
-        name: cpplint
-        description: Check C++ code style using cpplint.py.
-        entry: bash ./.travis/codestyle/cpplint_pre_commit.hook
-        language: system
-        files: \.(c|cc|cxx|cpp|cu|h|hpp|hxx)$
+    - id: cpplint-cpp-source
+      name: cpplint
+      description: Check C++ code style using cpplint.py.
+      entry: bash ./.travis/codestyle/cpplint_pre_commit.hook
+      language: system
+      files: \.(c|cc|cxx|cpp|cu|h|hpp|hxx)$

@@ -179,6 +179,10 @@ def main():
     if 'use_mlu' not in cfg:
         cfg.use_mlu = False
 
+    # disable intel_gpu in config by default
+    if 'use_intel_gpu' not in cfg:
+        cfg.use_intel_gpu = False
+
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
     elif cfg.use_npu:
@@ -187,6 +191,8 @@ def main():
         place = paddle.set_device('xpu')
     elif cfg.use_mlu:
         place = paddle.set_device('mlu')
+    elif cfg.use_intel_gpu:
+        place = paddle.set_device('intel_gpu')
     else:
         place = paddle.set_device('cpu')
 
@@ -200,6 +206,7 @@ def main():
     check.check_npu(cfg.use_npu)
     check.check_xpu(cfg.use_xpu)
     check.check_mlu(cfg.use_mlu)
+    check.check_intel_gpu(cfg.use_intel_gpu)
     check.check_version()
 
     run(FLAGS, cfg)

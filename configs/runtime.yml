@@ -1,5 +1,6 @@
 use_gpu: true
 use_xpu: false
+use_intel_gpu: false
 use_mlu: false
 use_npu: false
 log_iter: 20
