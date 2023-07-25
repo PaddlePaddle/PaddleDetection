@@ -22,4 +22,4 @@ pyclipper
 
 # for culane data augumetation
 imgaug>=0.4.0
-# 测试下
+# 测试下CI
