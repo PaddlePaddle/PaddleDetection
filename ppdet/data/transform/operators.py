@@ -3817,7 +3817,7 @@ class PadResize(BaseOperator):
                               bboxes[:, 3] - bboxes[:, 1]) > 1
             bboxes = bboxes[mask]
             labels = labels[mask]
-        return resized_img, bboxes, labels
+        return resized_img, bboxes, labels, ratio
 
     def _pad(self, img):
         h, w, _ = img.shape
@@ -3835,12 +3835,21 @@ class PadResize(BaseOperator):
         if 'gt_bbox' in sample:
             bboxes = sample['gt_bbox']
             labels = sample['gt_class']
-            image, bboxes, labels = self._resize(image, bboxes, labels)
+            image, bboxes, labels, ratio = self._resize(image, bboxes, labels)
             sample['gt_bbox'] = bboxes
             sample['gt_class'] = labels
         else:
-            image, bboxes, labels = self._resize(image, [], [])
+            image, bboxes, labels, ratio = self._resize(image, [], [])
         sample['image'] = self._pad(image).astype(np.float32)
+        sample['im_shape'] = np.asarray(self.target_size, dtype=np.float32)
+        if 'scale_factor' in sample:
+            scale_factor = sample['scale_factor']
+            sample['scale_factor'] = np.asarray(
+                [scale_factor[0] * ratio, scale_factor[1] * ratio],
+                dtype=np.float32)
+        else:
+            sample['scale_factor'] = np.asarray(
+                [ratio, ratio], dtype=np.float32)
         
         return sample
 
