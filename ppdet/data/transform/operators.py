@@ -3832,12 +3832,16 @@ class PadResize(BaseOperator):
 
     def apply(self, sample, context=None):
         image = sample['image']
-        bboxes = sample['gt_bbox']
-        labels = sample['gt_class']
-        image, bboxes, labels = self._resize(image, bboxes, labels)
+        if 'gt_bbox' in sample:
+            bboxes = sample['gt_bbox']
+            labels = sample['gt_class']
+            image, bboxes, labels = self._resize(image, bboxes, labels)
+            sample['gt_bbox'] = bboxes
+            sample['gt_class'] = labels
+        else:
+            image, bboxes, labels = self._resize(image, [], [])
         sample['image'] = self._pad(image).astype(np.float32)
-        sample['gt_bbox'] = bboxes
-        sample['gt_class'] = labels
+        
         return sample
 
 
