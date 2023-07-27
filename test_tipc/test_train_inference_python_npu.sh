@@ -89,4 +89,4 @@ fi
 # pass parameters to test_train_inference_python.sh
 cmd="bash test_tipc/test_train_inference_python.sh ${FILENAME} $2"
 echo $cmd
-eval $cmd
+eval $cmd 
