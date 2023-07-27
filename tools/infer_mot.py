@@ -30,7 +30,7 @@ warnings.filterwarnings('ignore')
 import paddle
 from ppdet.core.workspace import load_config, merge_config
 from ppdet.engine import Tracker
-from ppdet.utils.check import check_gpu, check_npu, intel_gpu, check_xpu, check_mlu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_npu, check_intel_gpu, check_xpu, check_mlu, check_version, check_config
 from ppdet.utils.cli import ArgsParser
 
 

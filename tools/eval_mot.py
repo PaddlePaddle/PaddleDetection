@@ -141,7 +141,7 @@ def main():
     check_npu(cfg.use_npu)
     check_xpu(cfg.use_xpu)
     check_mlu(cfg.use_mlu)
-    check_mlu(cfg.use_intel_gpu)
+    check_intel_gpu(cfg.use_intel_gpu)
     check_version()
 
     run(FLAGS, cfg)
