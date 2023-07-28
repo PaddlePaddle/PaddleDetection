@@ -176,7 +176,7 @@ class HungarianMatcher(nn.Layer):
         C = [a.squeeze(0) for a in C.chunk(bs)]
         sizes = [a.shape[0] for a in gt_bbox]
         indices = [
-            linear_sum_assignment(c.split(sizes, -1)[i].numpy())
+            linear_sum_assignment(c.split(sizes, -1)[i].contiguous().numpy())
             for i, c in enumerate(C)
         ]
         return [(paddle.to_tensor(

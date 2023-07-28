@@ -241,8 +241,8 @@ class SimOTAAssigner(object):
         pos_inds, neg_inds, pos_gt_bboxes, pos_assigned_gt_inds \
             = self.get_sample(assigned_gt_inds, gt_bboxes.numpy())
 
-        bbox_target = np.zeros_like(flatten_bboxes)
-        bbox_weight = np.zeros_like(flatten_bboxes)
+        bbox_target = np.zeros(flatten_bboxes.shape, paddle.fluid.data_feeder.convert_dtype(flatten_bboxes.dtype))
+        bbox_weight = np.zeros_like(bbox_target)
         label = np.ones([num_bboxes], dtype=np.int64) * self.num_classes
         label_weight = np.zeros([num_bboxes], dtype=np.float32)
 
