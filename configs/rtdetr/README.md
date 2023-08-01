@@ -39,10 +39,10 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
 
 
 ## Objects365预训练模型
-| Model | Epoch | Dataset | Input shape | $AP^{val}$ | $AP^{val}_{50}$ | Weight | Logs
-|:---:|:---:|:---:| :---:|:---:|:---:|:---:|:---:|
-RT-DETR-R50 | 1x | Objects365 | 640 | 35.1 | 46.2 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_1x_objects365.pdparams) | [log](https://github.com/lyuwenyu/RT-DETR/issues/8)
-RT-DETR-R50 | 2x | COCO + Objects365 | 640 | 55.3 | 73.4 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_2x_coco_objects365.pdparams) | [log](https://github.com/lyuwenyu/RT-DETR/issues/8)
+| Model | Epoch | Dataset | Input shape | $AP^{val}$ | $AP^{val}_{50}$ | T4 TensorRT FP16(FPS) | Weight | Logs
+|:---:|:---:|:---:| :---:|:---:|:---:|:---:|:---:|:---:|
+RT-DETR-R50 | 1x | Objects365 | 640 | 35.1 | 46.2 | 108 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_1x_objects365.pdparams) | [log](https://github.com/lyuwenyu/RT-DETR/issues/8)
+RT-DETR-R50 | 2x | COCO + Objects365 | 640 | 55.3 | 73.4 | 108 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_2x_coco_objects365.pdparams) | [log](https://github.com/lyuwenyu/RT-DETR/issues/8)
 
 **Notes:**
 - `COCO + Objects365` 代表使用Objects365预训练权重，在COCO上finetune的结果
