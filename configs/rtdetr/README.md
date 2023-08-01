@@ -38,9 +38,7 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
 | RT-DETR-FocalNet | 3x |  FocalNet_L_384  | 640 | 56.9 | 74.3 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_focalnet_L_384_3x_coco.pdparams) | [config](./rtdetr_focalnet_L_384_3x_coco.yml)
 
 
-# Objects365预训练模型
-
-## Model Zoo on Objects365
+## Objects365预训练模型
 | Model | Epoch | Dataset | Input shape | $AP^{val}$ | $AP^{val}_{50}$ | Weight | Logs
 |:---:|:---:|:---:| :---:|:---:|:---:|:---:|:---:|
 RT-DETR-R50 | 1x | Objects365 | 640 | 35.1 | 46.2 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_1x_objects365.pdparams) | [log](https://github.com/lyuwenyu/RT-DETR/issues/8)
