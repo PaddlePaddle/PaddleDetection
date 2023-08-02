@@ -175,10 +175,16 @@ class HungarianMatcher(nn.Layer):
         C = C.reshape([bs, num_queries, -1])
         C = [a.squeeze(0) for a in C.chunk(bs)]
         sizes = [a.shape[0] for a in gt_bbox]
-        indices = [
-            linear_sum_assignment(c.split(sizes, -1)[i].contiguous().numpy())
-            for i, c in enumerate(C)
-        ]
+        if hasattr(paddle.Tensor, "contiguous"):
+            indices = [
+                linear_sum_assignment(c.split(sizes, -1)[i].contiguous().numpy())
+                for i, c in enumerate(C)
+            ]
+        else:
+            indices = [
+                linear_sum_assignment(c.split(sizes, -1)[i].numpy())
+                for i, c in enumerate(C)
+            ]
         return [(paddle.to_tensor(
             i, dtype=paddle.int64), paddle.to_tensor(
                 j, dtype=paddle.int64)) for i, j in indices]
