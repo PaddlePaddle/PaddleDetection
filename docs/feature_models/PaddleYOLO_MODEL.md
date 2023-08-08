@@ -21,7 +21,7 @@
     - [**一键运行全流程**](#一键运行全流程)
     - [自定义数据集](#自定义数据集)
       - [数据集准备：](#数据集准备)
-      - [fintune训练：](#fintune训练)
+      - [finetune训练：](#finetune训练)
       - [预测和导出：](#预测和导出)
 
 ## 简介
@@ -375,21 +375,21 @@ paddle2onnx --model_dir output_inference/${job_name} --model_filename model.pdmo
 2.自定义数据集的训练准备，请参考[PrepareDataSet](../tutorials/PrepareDataSet.md)。
 
 
-#### fintune训练：
+#### finetune训练：
 
-除了更改数据集的路径外，训练一般推荐加载**对应模型的COCO预训练权重**去fintune，会更快收敛和达到更高精度，如：
+除了更改数据集的路径外，训练一般推荐加载**对应模型的COCO预训练权重**去finetune，会更快收敛和达到更高精度，如：
 
 ```base
-# 单卡fintune训练：
+# 单卡finetune训练：
 # CUDA_VISIBLE_DEVICES=0 python tools/train.py -c ${config} --eval --amp -o pretrain_weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
-# 多卡fintune训练：
+# 多卡finetune训练：
 python -m paddle.distributed.launch --log_dir=./log_dir --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ${config} --eval --amp -o pretrain_weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 ```
 
 **注意:**
-- fintune训练一般会提示head分类分支最后一层卷积的通道数没对应上，属于正常情况，是由于自定义数据集一般和COCO数据集种类数不一致；
-- fintune训练一般epoch数可以设置更少，lr设置也更小点如1/10，最高精度可能出现在中间某个epoch；
+- finetune训练一般会提示head分类分支最后一层卷积的通道数没对应上，属于正常情况，是由于自定义数据集一般和COCO数据集种类数不一致；
+- finetune训练一般epoch数可以设置更少，lr设置也更小点如1/10，最高精度可能出现在中间某个epoch；
 
 #### 预测和导出：
 
