@@ -62,7 +62,7 @@ function build_and_install() {
     echo -e "${RED}[FAIL]${NONE} build paddledet wheel failed !"
     exit 1
   fi
-  echo -e "${BLUE}[build]${NONE} ${GREEN}build paddldet wheel success\n"
+  echo -e "${BLUE}[build]${NONE} ${GREEN}build paddledet wheel success\n"
 
   echo -e "${BLUE}[install]${NONE} installing paddledet..."
   cd $DIST_DIR
