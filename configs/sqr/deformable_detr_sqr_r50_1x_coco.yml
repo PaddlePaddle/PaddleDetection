@@ -1,0 +1,9 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/deformable_sqr_optimizer_1x.yml',
+  '_base_/deformable_detr_sqr_r50.yml',
+  '_base_/deformable_detr_sqr_reader.yml',
+]
+weights: output/deformable_detr_sqr_r50_1x_coco/model_final
+find_unused_parameters: True
