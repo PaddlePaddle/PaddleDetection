@@ -3664,7 +3664,7 @@ class Mosaic(BaseOperator):
         mosaic_img, mosaic_labels = self.random_affine_augment(
             mosaic_img,
             mosaic_labels,
-            input_dim=self.input_dim,
+            input_dim=[input_w, input_h],
             degrees=self.degrees,
             translates=self.translate,
             scales=self.scale,
