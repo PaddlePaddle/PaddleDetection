@@ -36,6 +36,7 @@ import copy
 import logging
 import cv2
 from PIL import Image, ImageDraw
+import paddle.vision.transforms.functional as TF
 import pickle
 import threading
 MUTEX = threading.Lock()
@@ -495,7 +496,7 @@ class RandomDistort(BaseOperator):
     """
 
     def __init__(self,
-                 hue=[-18, 18, 0.5],
+                 hue=[-0.5, 0.5, 0.5],
                  saturation=[0.5, 1.5, 0.5],
                  contrast=[0.5, 1.5, 0.5],
                  brightness=[0.5, 1.5, 0.5],
@@ -515,19 +516,8 @@ class RandomDistort(BaseOperator):
         low, high, prob = self.hue
         if np.random.uniform(0., 1.) < prob:
             return img
-
-        img = img.astype(np.float32)
-        # it works, but result differ from HSV version
         delta = np.random.uniform(low, high)
-        u = np.cos(delta * np.pi)
-        w = np.sin(delta * np.pi)
-        bt = np.array([[1.0, 0.0, 0.0], [0.0, u, -w], [0.0, w, u]])
-        tyiq = np.array([[0.299, 0.587, 0.114], [0.596, -0.274, -0.321],
-                         [0.211, -0.523, 0.311]])
-        ityiq = np.array([[1.0, 0.956, 0.621], [1.0, -0.272, -0.647],
-                          [1.0, -1.107, 1.705]])
-        t = np.dot(np.dot(ityiq, bt), tyiq).T
-        img = np.dot(img, t)
+        img = TF.adjust_hue(img, delta)
         return img
 
     def apply_saturation(self, img):
@@ -535,13 +525,7 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        # it works, but result differ from HSV version
-        gray = img * np.array([[[0.299, 0.587, 0.114]]], dtype=np.float32)
-        gray = gray.sum(axis=2, keepdims=True)
-        gray *= (1.0 - delta)
-        img *= delta
-        img += gray
+        img = TF.adjust_saturation(img, delta)
         return img
 
     def apply_contrast(self, img):
@@ -549,8 +533,7 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        img *= delta
+        img = TF.adjust_contrast(img, delta)
         return img
 
     def apply_brightness(self, img):
@@ -558,8 +541,7 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        img += delta
+        img = TF.adjust_brightness(img, delta)
         return img
 
     def apply(self, sample, context=None):
@@ -711,32 +693,41 @@ class AutoAugment(BaseOperator):
         Learning Data Augmentation Strategies for Object Detection, see https://arxiv.org/abs/1906.11172
         """
         im = sample['image']
-        gt_bbox = sample['gt_bbox']
+        gt_bbox, gt_class, is_crowd = sample['gt_bbox'], sample[
+            'gt_class'], sample['is_crowd']
+        _labels = np.concatenate([gt_bbox, gt_class, is_crowd], 1)
+
         if not isinstance(im, np.ndarray):
             raise TypeError("{}: image is not a numpy array.".format(self))
         if len(im.shape) != 3:
             raise ImageError("{}: image is not 3-dimensional.".format(self))
-        if len(gt_bbox) == 0:
+        if gt_bbox.size == 0:
             return sample
 
         height, width, _ = im.shape
-        norm_gt_bbox = np.ones_like(gt_bbox, dtype=np.float32)
-        norm_gt_bbox[:, 0] = gt_bbox[:, 1] / float(height)
-        norm_gt_bbox[:, 1] = gt_bbox[:, 0] / float(width)
-        norm_gt_bbox[:, 2] = gt_bbox[:, 3] / float(height)
-        norm_gt_bbox[:, 3] = gt_bbox[:, 2] / float(width)
+        norm_labels = np.copy(_labels)
+        norm_labels[:, 0] = _labels[:, 1] / float(height)
+        norm_labels[:, 1] = _labels[:, 0] / float(width)
+        norm_labels[:, 2] = _labels[:, 3] / float(height)
+        norm_labels[:, 3] = _labels[:, 2] / float(width)
 
         from .autoaugment_utils import distort_image_with_autoaugment
-        im, norm_gt_bbox = distort_image_with_autoaugment(im, norm_gt_bbox,
-                                                          self.autoaug_type)
+        im, norm_labels = distort_image_with_autoaugment(im, norm_labels,
+                                                         self.autoaug_type)
+        # if there is not boxes in image after augmentation, just return sample
+        if norm_labels.size == 0:
+            return sample
 
-        gt_bbox[:, 0] = norm_gt_bbox[:, 1] * float(width)
-        gt_bbox[:, 1] = norm_gt_bbox[:, 0] * float(height)
-        gt_bbox[:, 2] = norm_gt_bbox[:, 3] * float(width)
-        gt_bbox[:, 3] = norm_gt_bbox[:, 2] * float(height)
+        gt_labels = np.copy(norm_labels)
+        gt_labels[:, 0] = norm_labels[:, 1] * float(width)
+        gt_labels[:, 1] = norm_labels[:, 0] * float(height)
+        gt_labels[:, 2] = norm_labels[:, 3] * float(width)
+        gt_labels[:, 3] = norm_labels[:, 2] * float(height)
 
         sample['image'] = im
-        sample['gt_bbox'] = gt_bbox
+        sample['gt_bbox'] = gt_labels[:, :4]
+        sample['gt_class'] = gt_labels[:, 4:5]
+        sample['is_crowd'] = gt_labels[:, 5:6]
         return sample
 
 
@@ -3455,6 +3446,10 @@ class Mosaic(BaseOperator):
         enable_mixup (bool): whether to enable Mixup or not
         mixup_prob (float): probability of using Mixup, 1.0 as default
         mixup_scale (list[int]): scale range of Mixup
+        iou_thresh_alpha (float): Ratio of mosaic box area to un clip mosaic box area,
+            boxes with ratios higher than this value are retained, 0.0 as default, recommand 0.2.
+        iou_thresh_beta (float): Ratio of mosaic box area to transformed image area,
+            boxes with ratios higher than this value are retained, 0.0 as default, recommand 0.05.
         remove_outside_box (bool): whether remove outside boxes, False as
             default in COCO dataset, True in MOT dataset
     """
@@ -3469,6 +3464,8 @@ class Mosaic(BaseOperator):
                  enable_mixup=True,
                  mixup_prob=1.0,
                  mixup_scale=[0.5, 1.5],
+                 iou_thresh_alpha=0.0,
+                 iou_thresh_beta=0.0,
                  remove_outside_box=False):
         super(Mosaic, self).__init__()
         self.prob = prob
@@ -3482,6 +3479,8 @@ class Mosaic(BaseOperator):
         self.enable_mixup = enable_mixup
         self.mixup_prob = mixup_prob
         self.mixup_scale = mixup_scale
+        self.iou_thresh_alpha = iou_thresh_alpha
+        self.iou_thresh_beta = iou_thresh_beta
         self.remove_outside_box = remove_outside_box
 
     def get_mosaic_coords(self, mosaic_idx, xc, yc, w, h, input_h, input_w):
@@ -3507,6 +3506,68 @@ class Mosaic(BaseOperator):
 
         return (x1, y1, x2, y2), small_coords
 
+    def get_affine_matrix(self,
+                          input_dim,
+                          degrees=[-10, 10],
+                          scales=[0.1, 2],
+                          shears=[-2, 2],
+                          translates=[-0.1, 0.1]):
+        iwidth, iheight = input_dim
+
+        # Rotation and Scale
+        degree = random.uniform(degrees[0], degrees[1])
+        scale = random.uniform(scales[0], scales[1])
+
+        if scale <= 0.0:
+            raise ValueError("Argument scale should be positive")
+
+        R = cv2.getRotationMatrix2D(angle=degree, center=(0, 0), scale=scale)
+
+        M = np.ones([2, 3])
+        # Shear
+        shear = random.uniform(shears[0], shears[1])
+        shear_x = math.tan(shear * math.pi / 180)
+        shear_y = math.tan(shear * math.pi / 180)
+
+        M[0] = R[0] + shear_y * R[1]
+        M[1] = R[1] + shear_x * R[0]
+
+        # Translation
+        translate = random.uniform(translates[0], translates[1])
+        translation_x = translate * iwidth  # x translation (pixels)
+        translation_y = translate * iheight  # y translation (pixels)
+
+        M[0, 2] = translation_x
+        M[1, 2] = translation_y
+
+        return M, scale
+
+    def apply_affine_to_bboxes(self, labels, input_dim, M):
+        num_gts = len(labels)
+
+        # warp corner points
+        twidth, theight = input_dim
+        corner_points = np.ones((4 * num_gts, 3))
+        corner_points[:, :2] = labels[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
+            4 * num_gts, 2)  # x1y1, x2y2, x1y2, x2y1
+        corner_points = corner_points @M.T  # apply affine transform
+        corner_points = corner_points.reshape(num_gts, 8)
+
+        # create new boxes
+        corner_xs = corner_points[:, 0::2]
+        corner_ys = corner_points[:, 1::2]
+        new_bboxes = (np.concatenate((corner_xs.min(1), corner_ys.min(1),
+                                      corner_xs.max(1), corner_ys.max(1)))
+                      .reshape(4, num_gts).T)
+
+        # clip boxes
+        new_bboxes[:, 0::2] = new_bboxes[:, 0::2].clip(0, twidth)
+        new_bboxes[:, 1::2] = new_bboxes[:, 1::2].clip(0, theight)
+
+        labels[:, :4] = new_bboxes
+
+        return labels
+
     def random_affine_augment(self,
                               img,
                               labels=[],
@@ -3516,51 +3577,18 @@ class Mosaic(BaseOperator):
                               shears=[-2, 2],
                               translates=[-0.1, 0.1]):
         # random rotation and scale
-        degree = random.uniform(degrees[0], degrees[1])
-        scale = random.uniform(scales[0], scales[1])
-        assert scale > 0, "Argument scale should be positive."
-        R = cv2.getRotationMatrix2D(angle=degree, center=(0, 0), scale=scale)
-        M = np.ones([2, 3])
-
-        # random shear
-        shear = random.uniform(shears[0], shears[1])
-        shear_x = math.tan(shear * math.pi / 180)
-        shear_y = math.tan(shear * math.pi / 180)
-        M[0] = R[0] + shear_y * R[1]
-        M[1] = R[1] + shear_x * R[0]
-
-        # random translation
-        translate = random.uniform(translates[0], translates[1])
-        translation_x = translate * input_dim[0]
-        translation_y = translate * input_dim[1]
-        M[0, 2] = translation_x
-        M[1, 2] = translation_y
-
+        M, _ = self.get_affine_matrix(
+            input_dim=input_dim,
+            degrees=degrees,
+            scales=scales,
+            shears=shears,
+            translates=translates)
         # warpAffine
         img = cv2.warpAffine(
             img, M, dsize=tuple(input_dim), borderValue=(114, 114, 114))
 
-        num_gts = len(labels)
-        if num_gts > 0:
-            # warp corner points
-            corner_points = np.ones((4 * num_gts, 3))
-            corner_points[:, :2] = labels[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
-                4 * num_gts, 2)  # x1y1, x2y2, x1y2, x2y1
-            # apply affine transform
-            corner_points = corner_points @M.T
-            corner_points = corner_points.reshape(num_gts, 8)
-
-            # create new boxes
-            corner_xs = corner_points[:, 0::2]
-            corner_ys = corner_points[:, 1::2]
-            new_bboxes = np.concatenate((corner_xs.min(1), corner_ys.min(1),
-                                         corner_xs.max(1), corner_ys.max(1)))
-            new_bboxes = new_bboxes.reshape(4, num_gts).T
-
-            # clip boxes
-            new_bboxes[:, 0::2] = np.clip(new_bboxes[:, 0::2], 0, input_dim[0])
-            new_bboxes[:, 1::2] = np.clip(new_bboxes[:, 1::2], 0, input_dim[1])
-            labels[:, :4] = new_bboxes
+        if len(labels) > 0:
+            labels = self.apply_affine_to_bboxes(labels, input_dim, M)
 
         return img, labels
 
@@ -3574,6 +3602,7 @@ class Mosaic(BaseOperator):
             return sample[0]
 
         mosaic_gt_bbox, mosaic_gt_class, mosaic_is_crowd, mosaic_difficult = [], [], [], []
+        mosaic_labels = []
         input_h, input_w = self.input_dim
         yc = int(random.uniform(0.5 * input_h, 1.5 * input_h))
         xc = int(random.uniform(0.5 * input_w, 1.5 * input_w))
@@ -3581,8 +3610,9 @@ class Mosaic(BaseOperator):
 
         # 1. get mosaic coords
         for mosaic_idx, sp in enumerate(sample[:4]):
-            img = sp['image']
-            gt_bbox = sp['gt_bbox']
+            img, gt_bbox, gt_class, is_crowd = sp['image'], sp['gt_bbox'], sp[
+                'gt_class'], sp['is_crowd']
+            _labels = np.concatenate([gt_bbox, gt_class, is_crowd], 1)
             h0, w0 = img.shape[:2]
             scale = min(1. * input_h / h0, 1. * input_w / w0)
             img = cv2.resize(
@@ -3598,49 +3628,26 @@ class Mosaic(BaseOperator):
             mosaic_img[l_y1:l_y2, l_x1:l_x2] = img[s_y1:s_y2, s_x1:s_x2]
             padw, padh = l_x1 - s_x1, l_y1 - s_y1
 
+            labels = _labels.copy()
             # Normalized xywh to pixel xyxy format
-            _gt_bbox = gt_bbox.copy()
-            if len(gt_bbox) > 0:
-                _gt_bbox[:, 0] = scale * gt_bbox[:, 0] + padw
-                _gt_bbox[:, 1] = scale * gt_bbox[:, 1] + padh
-                _gt_bbox[:, 2] = scale * gt_bbox[:, 2] + padw
-                _gt_bbox[:, 3] = scale * gt_bbox[:, 3] + padh
+            if len(_labels) > 0:
+                labels[:, 0] = scale * _labels[:, 0] + padw
+                labels[:, 1] = scale * _labels[:, 1] + padh
+                labels[:, 2] = scale * _labels[:, 2] + padw
+                labels[:, 3] = scale * _labels[:, 3] + padh
 
-            mosaic_gt_bbox.append(_gt_bbox)
-            mosaic_gt_class.append(sp['gt_class'])
-            if 'is_crowd' in sp:
-                mosaic_is_crowd.append(sp['is_crowd'])
-            if 'difficult' in sp:
-                mosaic_difficult.append(sp['difficult'])
+            mosaic_labels.append(labels)
 
         # 2. clip bbox and get mosaic_labels([gt_bbox, gt_class, is_crowd])
-        if len(mosaic_gt_bbox):
-            mosaic_gt_bbox = np.concatenate(mosaic_gt_bbox, 0)
-            mosaic_gt_class = np.concatenate(mosaic_gt_class, 0)
-            if mosaic_is_crowd:
-                mosaic_is_crowd = np.concatenate(mosaic_is_crowd, 0)
-                mosaic_labels = np.concatenate([
-                    mosaic_gt_bbox,
-                    mosaic_gt_class.astype(mosaic_gt_bbox.dtype),
-                    mosaic_is_crowd.astype(mosaic_gt_bbox.dtype)
-                ], 1)
-            elif mosaic_difficult:
-                mosaic_difficult = np.concatenate(mosaic_difficult, 0)
-                mosaic_labels = np.concatenate([
-                    mosaic_gt_bbox,
-                    mosaic_gt_class.astype(mosaic_gt_bbox.dtype),
-                    mosaic_difficult.astype(mosaic_gt_bbox.dtype)
-                ], 1)
-            else:
-                mosaic_labels = np.concatenate([
-                    mosaic_gt_bbox, mosaic_gt_class.astype(mosaic_gt_bbox.dtype)
-                ], 1)
+        if len(mosaic_labels):
+            mosaic_labels = np.concatenate(mosaic_labels, 0)
+            un_clip_mosaic_labels = np.copy(mosaic_labels)
             if self.remove_outside_box:
                 # for MOT dataset
-                flag1 = mosaic_gt_bbox[:, 0] < 2 * input_w
-                flag2 = mosaic_gt_bbox[:, 2] > 0
-                flag3 = mosaic_gt_bbox[:, 1] < 2 * input_h
-                flag4 = mosaic_gt_bbox[:, 3] > 0
+                flag1 = mosaic_labels[:, 0] < 2 * input_w
+                flag2 = mosaic_labels[:, 2] > 0
+                flag3 = mosaic_labels[:, 1] < 2 * input_h
+                flag4 = mosaic_labels[:, 3] > 0
                 flag_all = flag1 * flag2 * flag3 * flag4
                 mosaic_labels = mosaic_labels[flag_all]
             else:
@@ -3652,8 +3659,6 @@ class Mosaic(BaseOperator):
                                               2 * input_w)
                 mosaic_labels[:, 3] = np.clip(mosaic_labels[:, 3], 0,
                                               2 * input_h)
-        else:
-            mosaic_labels = np.zeros((1, 6))
 
         # 3. random_affine augment
         mosaic_img, mosaic_labels = self.random_affine_augment(
@@ -3669,27 +3674,22 @@ class Mosaic(BaseOperator):
         # optinal, not used(enable_mixup=False) in tiny/nano
         if (self.enable_mixup and not len(mosaic_labels) == 0 and
                 random.random() < self.mixup_prob):
-            sample_mixup = sample[4]
-            mixup_img = sample_mixup['image']
-            if 'is_crowd' in sample_mixup:
-                cp_labels = np.concatenate([
-                    sample_mixup['gt_bbox'],
-                    sample_mixup['gt_class'].astype(mosaic_labels.dtype),
-                    sample_mixup['is_crowd'].astype(mosaic_labels.dtype)
-                ], 1)
-            elif 'difficult' in sample_mixup:
-                cp_labels = np.concatenate([
-                    sample_mixup['gt_bbox'],
-                    sample_mixup['gt_class'].astype(mosaic_labels.dtype),
-                    sample_mixup['difficult'].astype(mosaic_labels.dtype)
-                ], 1)
-            else:
-                cp_labels = np.concatenate([
-                    sample_mixup['gt_bbox'],
-                    sample_mixup['gt_class'].astype(mosaic_labels.dtype)
-                ], 1)
-            mosaic_img, mosaic_labels = self.mixup_augment(
-                mosaic_img, mosaic_labels, self.input_dim, cp_labels, mixup_img)
+            mosaic_img, mosaic_labels, add_labels = self.mixup_augment(
+                mosaic_img, mosaic_labels, self.input_dim, sample[-1])
+            un_clip_mosaic_labels = np.vstack(
+                (un_clip_mosaic_labels, add_labels))
+
+        # Only retain boxes with an IoU greater than the threshold after truncation
+        bbox_area = (mosaic_labels[:, 2] - mosaic_labels[:, 0]) * (
+            mosaic_labels[:, 3] - mosaic_labels[:, 1])
+        un_clip_bbox_area = (
+            un_clip_mosaic_labels[:, 2] - un_clip_mosaic_labels[:, 0]
+        ) * (un_clip_mosaic_labels[:, 3] - un_clip_mosaic_labels[:, 1]) + 1e-8
+        bbox_un_clip_bbox_iou = bbox_area / un_clip_bbox_area
+        bbox_image_iou = bbox_area / (self.input_dim[0] * self.input_dim[1])
+        mosaic_labels = mosaic_labels[
+            np.logical_or(bbox_un_clip_bbox_iou > self.iou_thresh_alpha,
+                          bbox_image_iou > self.iou_thresh_beta)]
 
         sample0 = sample[0]
         sample0['image'] = mosaic_img.astype(np.uint8)  # can not be float32
@@ -3701,12 +3701,12 @@ class Mosaic(BaseOperator):
         sample0['gt_class'] = mosaic_labels[:, 4:5].astype(np.float32)
         if 'is_crowd' in sample[0]:
             sample0['is_crowd'] = mosaic_labels[:, 5:6].astype(np.float32)
-        if 'difficult' in sample[0]:
-            sample0['difficult'] = mosaic_labels[:, 5:6].astype(np.float32)
         return sample0
 
-    def mixup_augment(self, origin_img, origin_labels, input_dim, cp_labels,
-                      img):
+    def mixup_augment(self, origin_img, origin_labels, input_dim, cp_sample):
+        img, gt_bbox, gt_class, is_crowd = cp_sample['image'], cp_sample[
+            'gt_bbox'], cp_sample['gt_class'], cp_sample['is_crowd']
+        cp_labels = np.concatenate([gt_bbox, gt_class, is_crowd], 1)
         jit_factor = random.uniform(*self.mixup_scale)
         FLIP = random.uniform(0, 1) > 0.5
         if len(img.shape) == 3:
@@ -3786,7 +3786,7 @@ class Mosaic(BaseOperator):
         origin_img = 0.5 * origin_img + 0.5 * padded_cropped_img.astype(
             np.float32)
 
-        return origin_img.astype(np.uint8), origin_labels
+        return origin_img.astype(np.uint8), origin_labels, labels
 
 
 @register_op
