@@ -20,7 +20,7 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
 
 ## 基础模型
 
-| Model | Epoch | backbone  | input shape | $AP^{val}$ | $AP^{val}_{50}$| Params(M) | FLOPs(G) |  T4 TensorRT FP16(FPS) | Pretrained Model | config |
+| Model | Epoch | Backbone  | Input shape | $AP^{val}$ | $AP^{val}_{50}$| Params(M) | FLOPs(G) |  T4 TensorRT FP16(FPS) | Pretrained Model | config |
 |:--------------:|:-----:|:----------:| :-------:|:--------------------------:|:---------------------------:|:---------:|:--------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|
 | RT-DETR-R18 | 6x |  ResNet-18 | 640 | 46.5 | 63.8 | 20 | 60 | 217 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r18vd_dec3_6x_coco.pdparams) | [config](./rtdetr_r18vd_6x_coco.yml)
 | RT-DETR-R34 | 6x |  ResNet-34 | 640 | 48.9 | 66.8 | 31 | 92 | 161 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r34vd_dec4_6x_coco.pdparams) | [config](./rtdetr_r34vd_6x_coco.yml)
@@ -36,6 +36,18 @@ RT-DETR是第一个实时端到端目标检测器。具体而言，我们设计�
 |:-----:|:-----:|:---------:| :---------:|:-----------:|:---------------:|:----------------:|:------:|
 | RT-DETR-Swin | 3x |  Swin_L_384 | 640 | 56.2 | 73.5 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_swin_L_384_3x_coco.pdparams) | [config](./rtdetr_swin_L_384_3x_coco.yml)
 | RT-DETR-FocalNet | 3x |  FocalNet_L_384  | 640 | 56.9 | 74.3 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_focalnet_L_384_3x_coco.pdparams) | [config](./rtdetr_focalnet_L_384_3x_coco.yml)
+
+
+## Objects365预训练模型
+| Model | Epoch | Dataset | Input shape | $AP^{val}$ | $AP^{val}_{50}$ | T4 TensorRT FP16(FPS) | Weight | Logs
+|:---:|:---:|:---:| :---:|:---:|:---:|:---:|:---:|:---:|
+RT-DETR-R50 | 1x | Objects365 | 640 | 35.1 | 46.2 | 108 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_1x_objects365.pdparams) | [log](https://github.com/lyuwenyu/RT-DETR/issues/8)
+RT-DETR-R50 | 2x | COCO + Objects365 | 640 | 55.3 | 73.4 | 108 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_2x_coco_objects365.pdparams) | [log](https://github.com/lyuwenyu/RT-DETR/issues/8)
+
+**Notes:**
+- `COCO + Objects365` 代表使用Objects365预训练权重，在COCO上finetune的结果
+
+
 
 **注意事项:**
 - RT-DETR 基础模型均使用4个GPU训练。
