@@ -35,7 +35,7 @@ warnings.filterwarnings("ignore")
 
 
 def gen_restxt(output_dir_filename, map_tid, cid_tid_dict):
-    pattern = re.compile(r'c(\d)_t(\d)')
+    pattern = re.compile(r'c(\d+)_t(\d+)')
     f_w = open(output_dir_filename, 'w')
     for key, res in cid_tid_dict.items():
         cid, tid = pattern.search(key).groups()
