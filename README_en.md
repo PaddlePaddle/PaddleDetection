@@ -294,7 +294,7 @@ The comparison between COCO mAP and FPS on Tesla V100 of representative models o
 </details>
 
 <details>
-<summary><b> Performance omparison on mobiles</b></summary>
+<summary><b> Performance comparison on mobiles</b></summary>
 
 The comparison between COCO mAP and FPS on Qualcomm Snapdragon 865 processor of models on mobile devices.
 
@@ -462,7 +462,7 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
 
   - [Data processing module](docs/advanced_tutorials/READER.md)
   - [New object detection models](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-  - Custumization
+  - Customization
     - [Object detection](docs/advanced_tutorials/customization/detection.md)
     - [Keypoint detection](docs/advanced_tutorials/customization/keypoint_detection.md)
     - [Multiple object tracking](docs/advanced_tutorials/customization/pphuman_mot.md)
