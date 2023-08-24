@@ -22,8 +22,8 @@ import paddle.nn as nn
 from .meta_arch import BaseArch
 from ppdet.core.workspace import register, create
 from ..initializer import linear_init_, constant_, xavier_uniform_, normal_
-
-from ..embedder.clip_utils import build_text_embedding_coco, read_clip_feat
+import pickle
+import numpy as np
 
 __all__ = ['DETR', 'OVDETR']
 
@@ -138,9 +138,8 @@ class OVDETR(DETR):
             prob=0.5,
             with_box_refine=True,
             two_stage=True,
-            bpe_path='ppdet://v1/paddledet/models/clip/bpe_simple_vocab_16e6.txt.gz',
-            clip_path='',
-            clip_feat_path='ppdet://v1/paddledet/data/coco/clip_feat_coco_pickle_label.pkl',
+            zero_shot_weight_path='./dataset/zeroshot_coco/zero-shot/zeroshot_w.npy',
+            clip_feat_path='./dataset/zeroshot_coco/zero-shot/clip_feat_coco.pkl',
             post_process='OVDETRBBoxPostProcess',
             exclude_post_process=False):
         super(OVDETR, self).__init__(
@@ -151,8 +150,9 @@ class OVDETR(DETR):
             exclude_post_process=exclude_post_process)
         if neck is not None:
             self.neck = neck
-
-        self.zeroshot_w = build_text_embedding_coco(bpe_path, clip_path).t()
+        self.zeroshot_w = paddle.to_tensor(
+            np.load(
+                zero_shot_weight_path, allow_pickle=True), dtype='float32').t()
         self.patch2query = nn.Linear(512, 256)
         self.patch2query_img = nn.Linear(512, 256)
         # mark 源码此处for layer in [self.patch2query]:
@@ -163,9 +163,8 @@ class OVDETR(DETR):
         self.max_len = max_len
         self.max_pad_len = self.max_len - 3
 
-        # with open(clip_feat_path, 'rb') as f:
-        #     self.clip_feat = pickle.load(f)
-        self.clip_feat = read_clip_feat(clip_feat_path)
+        with open(clip_feat_path, 'rb') as f:
+            self.clip_feat = pickle.load(f)
         self.prob = prob
         self.two_stage = two_stage
         if with_box_refine:
@@ -257,7 +256,7 @@ class OVDETR(DETR):
         clip_query = text_query * mask + img_query * (1 - mask)
 
         # Transformer
-        head_inputs_dict = self.transformer(
+        head_inputs_dict, _ = self.transformer(
             body_feats, pad_mask, text_query=clip_query)
         head_inputs_dict.update(
             dict(
@@ -266,8 +265,6 @@ class OVDETR(DETR):
 
         # DETR Head
         loss = self.detr_head(head_inputs_dict, body_feats, self.inputs)
-
-        # paddle.device.cuda.empty_cache()
 
         return loss
 
@@ -288,7 +285,7 @@ class OVDETR(DETR):
         preds_list = []
         bboxes_list = []
         logits_list = []
-
+        cache = None
         for c in range(len(select_id) // num_patch + 1):
             clip_query = self.zeroshot_w[:, c * num_patch:(c + 1) *
                                          num_patch].t()
@@ -296,8 +293,8 @@ class OVDETR(DETR):
             clip_query = self.patch2query(clip_query.astype(dtype))
 
             # Transformer
-            head_inputs_dict = self.transformer(
-                body_feats, pad_mask, text_query=clip_query)
+            head_inputs_dict, cache = self.transformer(
+                body_feats, pad_mask, text_query=clip_query, cache=cache)
             head_inputs_dict.update(
                 dict(
                     select_id=select_id,

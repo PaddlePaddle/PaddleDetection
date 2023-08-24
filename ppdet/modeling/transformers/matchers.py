@@ -177,7 +177,8 @@ class HungarianMatcher(nn.Layer):
         sizes = [a.shape[0] for a in gt_bbox]
         if hasattr(paddle.Tensor, "contiguous"):
             indices = [
-                linear_sum_assignment(c.split(sizes, -1)[i].contiguous().numpy())
+                linear_sum_assignment(
+                    c.split(sizes, -1)[i].contiguous().numpy())
                 for i, c in enumerate(C)
             ]
         else:
@@ -304,7 +305,7 @@ class OVHungarianMatcher(OVHungarianMatcher_ori):
     __shared__ = ['use_focal_loss']
 
     def __init__(self,
-                 matcher_coeff={'class': 1,
+                 matcher_coeff={'class': 3,
                                 'bbox': 5,
                                 'giou': 2},
                  use_focal_loss=False,

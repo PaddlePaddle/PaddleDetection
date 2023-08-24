@@ -146,7 +146,7 @@ class DETRChannelMapper(nn.Layer):
                         kernel_size=1,
                         weight_attr=weight_attr,
                         bias_attr=bias_attr),
-                    nn.GroupNorm(32, hidden_dim)))
+                    nn.GroupNorm(32, hidden_dim), ))
         in_channels = backbone_num_channels[-1]
         for _ in range(num_feature_levels - len(backbone_num_channels)):
             self.input_proj.append(
@@ -159,7 +159,7 @@ class DETRChannelMapper(nn.Layer):
                         padding=1,
                         weight_attr=weight_attr,
                         bias_attr=bias_attr),
-                    nn.GroupNorm(32, hidden_dim)))
+                    nn.GroupNorm(32, hidden_dim), ))
             in_channels = hidden_dim
 
     def _reset_parameters(self):

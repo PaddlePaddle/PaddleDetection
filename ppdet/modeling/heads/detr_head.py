@@ -575,11 +575,12 @@ class OVDeformableDETRHead(nn.Layer):
 
         self._reset_parameters()
 
-        self.num_pred = (num_decoder_layer) if two_stage else num_decoder_layer
         if with_box_refine:
-            self.score_head = _get_clones(self.score_head, self.num_pred + 1)
-            self.bbox_head = _get_clones(self.bbox_head, self.num_pred + 1)
-            self.feature_align = _get_clones(self.feature_align, self.num_pred)
+            self.score_head = _get_clones(self.score_head,
+                                          num_decoder_layer + 1)
+            self.bbox_head = _get_clones(self.bbox_head, num_decoder_layer + 1)
+            self.feature_align = _get_clones(self.feature_align,
+                                             num_decoder_layer)
             constant_(self.bbox_head[0].layers[-1].bias[2:], -2.0)
         else:
             constant_(self.bbox_head.layers[-1].bias[2:], -2.0)

@@ -209,10 +209,10 @@ class DeformableTransformerDecoderLayer(nn.Layer):
         tgt = self.norm2(tgt)
 
         # cross attention
-        tgt2 = self.cross_attn(
+        tgt1 = self.cross_attn(
             self.with_pos_embed(tgt, query_pos_embed), reference_points, memory,
             memory_spatial_shapes, memory_level_start_index, memory_mask)
-        tgt = tgt + self.dropout2(tgt2)
+        tgt = tgt + self.dropout2(tgt1)
         tgt = self.norm1(tgt)
 
         # ffn
@@ -580,7 +580,7 @@ class OVDeformableTransformer(nn.Layer):
             enc_outputs_class=enc_outputs_class,
             enc_outputs_coord_unact=enc_outputs_coord_unact, )
         if self.two_stage:
-            return head_inputs_dict
+            return head_inputs_dict, cache
         return (hs, init_reference_out, inter_references_out, None,
                 None), memory_features
 

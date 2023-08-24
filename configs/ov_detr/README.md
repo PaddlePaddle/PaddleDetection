@@ -15,8 +15,8 @@ Code is reproduced by [OV-DETR](https://github.com/yuhangzang/OV-DETR).
 
 ## Data Prepare
 
-OV-DETR uses COCO Dataset with zero-shot [annotation](https://bj.bcebos.com/v1/paddledet/data/coco/ov_detr_zero-shot.zip).
-Try to download to dataset dir before training.
+OV-DETR uses COCO Dataset with zero-shot [annotation](https://bj.bcebos.com/v1/paddledet/data/coco/zero-shot.zip).
+Try to download and decompose to dataset dir('./dataset/zeroshot_coco/zero-shot') before training.
 
 ## Model Zoo
 
