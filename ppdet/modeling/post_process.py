@@ -27,7 +27,7 @@ except Exception:
 __all__ = [
     'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
     'CenterNetPostProcess', 'DETRPostProcess', 'SparsePostProcess',
-    'OVDETRBBoxPostProcess'
+    'OVDETRBBoxPostProcess', 'DETRBBoxSemiPostProcess',
 ]
 
 
@@ -801,3 +801,58 @@ def nms(dets, match_threshold=0.6, match_metric='iou'):
     keep = np.where(suppressed == 0)[0]
     dets = dets[keep, :]
     return dets
+
+
+@register
+class DETRBBoxSemiPostProcess(object):
+    __shared__ = ['num_classes', 'use_focal_loss']
+    __inject__ = []
+
+    def __init__(self,
+                 num_classes=80,
+                 num_top_queries=100,
+                 use_focal_loss=False):
+        super(DETRBBoxSemiPostProcess, self).__init__()
+        self.num_classes = num_classes
+        self.num_top_queries = num_top_queries
+        self.use_focal_loss = use_focal_loss
+
+    def __call__(self, head_out):
+        """
+        Decode the bbox.
+        Args:
+            head_out (tuple): bbox_pred, cls_logit and masks of bbox_head output.
+            im_shape (Tensor): The shape of the input image.
+            scale_factor (Tensor): The scale factor of the input image.
+        Returns:
+            bbox_pred (Tensor): The output prediction with shape [N, 6], including
+                labels, scores and bboxes. The size of bboxes are corresponding
+                to the input image, the bboxes may be used in other branch.
+            bbox_num (Tensor): The number of prediction boxes of each batch with
+                shape [bs], and is N.
+        """
+        bboxes, logits, masks = head_out
+        bbox_pred = bboxes
+
+        scores = F.softmax(logits, axis=2)
+
+        import copy
+        soft_scores = copy.deepcopy(scores)
+        scores, index = paddle.topk(scores.max(-1), 300, axis=-1)
+
+        batch_ind = paddle.arange(end=scores.shape[0]).unsqueeze(-1).tile(
+            [1, 300])
+        index = paddle.stack([batch_ind, index], axis=-1)
+        labels = paddle.gather_nd(soft_scores.argmax(-1), index).astype('int32')
+        score_class = paddle.gather_nd(soft_scores, index)
+        bbox_pred = paddle.gather_nd(bbox_pred, index)
+        bbox_pred = paddle.concat(
+            [
+                labels.unsqueeze(-1).astype('float32'), score_class,
+                scores.unsqueeze(-1), bbox_pred
+            ],
+            axis=-1)
+        bbox_num = paddle.to_tensor(
+            bbox_pred.shape[1], dtype='int32').tile([bbox_pred.shape[0]])
+        bbox_pred = bbox_pred.reshape([-1, bbox_pred.shape[-1]])
+        return bbox_pred, bbox_num

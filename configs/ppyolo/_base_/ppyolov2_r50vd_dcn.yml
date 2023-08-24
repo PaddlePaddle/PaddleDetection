@@ -4,6 +4,9 @@ norm_type: sync_bn
 use_ema: true
 ema_decay: 0.9998
 
+# AMP training
+master_grad: true
+
 YOLOv3:
   backbone: ResNet
   neck: PPYOLOPAN

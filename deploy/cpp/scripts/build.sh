@@ -40,11 +40,39 @@ then
   echo "set OPENCV_DIR for x86_64"
   # linux系统通过以下命令下载预编译的opencv
   mkdir -p $(pwd)/deps && cd $(pwd)/deps
-  wget -c https://paddledet.bj.bcebos.com/data/opencv-3.4.16_gcc8.2_ffmpeg.tar.gz
-  tar -xvf opencv-3.4.16_gcc8.2_ffmpeg.tar.gz && cd ..
+  wget -c https://bj.bcebos.com/v1/paddledet/data/opencv-3.4.7.tar.gz
+  tar -xvf opencv-3.4.7.tar.gz
+  cd opencv-3.4.7
+
+  OPENCV_INSTALL_PATH=./opencv3
+  rm -rf build
+  mkdir build
+  cd build
+
+  cmake .. \
+    -DCMAKE_INSTALL_PREFIX=${OPENCV_INSTALL_PATH} \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DWITH_IPP=OFF \
+    -DBUILD_IPP_IW=OFF \
+    -DWITH_LAPACK=OFF \
+    -DWITH_EIGEN=OFF \
+    -DCMAKE_INSTALL_LIBDIR=lib64 \
+    -DWITH_ZLIB=ON \
+    -DBUILD_ZLIB=ON \
+    -DWITH_JPEG=ON \
+    -DBUILD_JPEG=ON \
+    -DWITH_PNG=ON \
+    -DBUILD_PNG=ON \
+    -DWITH_TIFF=ON \
+    -DBUILD_TIFF=ON
+
+  make -j
+  make install
+  cd ../../../
 
   # set OPENCV_DIR
-  OPENCV_DIR=$(pwd)/deps/opencv-3.4.16_gcc8.2_ffmpeg
+  OPENCV_DIR=$(pwd)/deps/opencv-3.4.7/build/opencv3
 
 elif [ "$MACHINE_TYPE" = "aarch64" ]
 then

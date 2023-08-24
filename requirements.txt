@@ -10,6 +10,7 @@ terminaltables
 Cython
 pycocotools
 setuptools
+Pillow
 
 wget==3.2
 ftfy==6.1.1

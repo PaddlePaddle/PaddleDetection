@@ -31,7 +31,7 @@ __all__ = ['DETR', 'OVDETR']
 @register
 class DETR(BaseArch):
     __category__ = 'architecture'
-    __inject__ = ['post_process']
+    __inject__ = ['post_process', 'post_process_semi']
     __shared__ = ['with_mask', 'exclude_post_process']
 
     def __init__(self,
@@ -40,6 +40,7 @@ class DETR(BaseArch):
                  detr_head='DETRHead',
                  neck=None,
                  post_process='DETRPostProcess',
+                 post_process_semi=None,
                  with_mask=False,
                  exclude_post_process=False):
         super(DETR, self).__init__()
@@ -50,6 +51,7 @@ class DETR(BaseArch):
         self.post_process = post_process
         self.with_mask = with_mask
         self.exclude_post_process = exclude_post_process
+        self.post_process_semi = post_process_semi
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):

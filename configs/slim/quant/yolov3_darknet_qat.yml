@@ -10,6 +10,9 @@ QAT:
 
 epoch: 50
 
+TrainReader:
+  batch_size: 8
+
 LearningRate:
   base_lr: 0.0001
   schedulers:

@@ -300,17 +300,27 @@ def save_model(model,
     """
     if paddle.distributed.get_rank() != 0:
         return
+        
+    save_dir = os.path.normpath(save_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+
+    if save_name == "best_model":
+        best_model_path = os.path.join(save_dir, 'best_model')
+        if not os.path.exists(best_model_path):
+            os.makedirs(best_model_path)
+
     save_path = os.path.join(save_dir, save_name)
     # save model
     if isinstance(model, nn.Layer):
         paddle.save(model.state_dict(), save_path + ".pdparams")
+        best_model = model.state_dict()
     else:
         assert isinstance(model,
                           dict), 'model is not a instance of nn.layer or dict'
         if ema_model is None:
             paddle.save(model, save_path + ".pdparams")
+            best_model = model
         else:
             assert isinstance(ema_model,
                               dict), ("ema_model is not a instance of dict, "
@@ -318,8 +328,50 @@ def save_model(model,
             # Exchange model and ema_model to save
             paddle.save(ema_model, save_path + ".pdparams")
             paddle.save(model, save_path + ".pdema")
+            best_model = ema_model
+
+    if save_name == 'best_model':
+        best_model_path = os.path.join(best_model_path, 'model')
+        paddle.save(best_model, best_model_path + ".pdparams")
     # save optimizer
     state_dict = optimizer.state_dict()
     state_dict['last_epoch'] = last_epoch
     paddle.save(state_dict, save_path + ".pdopt")
+    logger.info("Save checkpoint: {}".format(save_dir))
+
+
+def save_semi_model(teacher_model, student_model, optimizer, save_dir,
+                    save_name, last_epoch, last_iter):
+    """
+    save teacher and student model into disk.
+    Args:
+        teacher_model (dict): the teacher_model state_dict to save parameters.
+        student_model (dict): the student_model state_dict to save parameters.
+        optimizer (paddle.optimizer.Optimizer): the Optimizer instance to
+            save optimizer states.
+        save_dir (str): the directory to be saved.
+        save_name (str): the path to be saved.
+        last_epoch (int): the epoch index.
+        last_iter (int): the iter index.
+    """
+    if paddle.distributed.get_rank() != 0:
+        return
+    assert isinstance(teacher_model, dict), (
+        "teacher_model is not a instance of dict, "
+        "please call teacher_model.state_dict() to get.")
+    assert isinstance(student_model, dict), (
+        "student_model is not a instance of dict, "
+        "please call student_model.state_dict() to get.")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    save_path = os.path.join(save_dir, save_name)
+    # save model
+    paddle.save(teacher_model, save_path + str(last_epoch) + "epoch_t.pdparams")
+    paddle.save(student_model, save_path + str(last_epoch) + "epoch_s.pdparams")
+
+    # save optimizer
+    state_dict = optimizer.state_dict()
+    state_dict['last_epoch'] = last_epoch
+    state_dict['last_iter'] = last_iter
+    paddle.save(state_dict, save_path + str(last_epoch) + "epoch.pdopt")
     logger.info("Save checkpoint: {}".format(save_dir))

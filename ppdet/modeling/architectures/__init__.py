@@ -42,6 +42,8 @@ from . import yolof
 from . import pose3d_metro
 from . import centertrack
 from . import queryinst
+from . import detr_ssod
+from . import multi_stream_detector
 from . import clrnet
 
 from .meta_arch import *
@@ -76,4 +78,6 @@ from .pose3d_metro import *
 from .centertrack import *
 from .queryinst import *
 from .keypoint_petr import *
+from .detr_ssod import *
+from .multi_stream_detector import *
 from .clrnet import *

@@ -24,6 +24,7 @@ import math
 
 from .colormap import colormap
 from ppdet.utils.logger import setup_logger
+from ppdet.utils.compact import imagedraw_textsize_c
 logger = setup_logger(__name__)
 
 __all__ = ['visualize_results']
@@ -125,7 +126,7 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
 
         # draw label
         text = "{} {:.2f}".format(catid2name[catid], score)
-        tw, th = draw.textsize(text)
+        tw, th = imagedraw_textsize_c(draw, text)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))

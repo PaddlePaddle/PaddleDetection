@@ -40,6 +40,8 @@ FILENAME=$1
  sed -i "s/--slim_config _template_pact/ /g" $FILENAME
  sed -i "s/--slim_config _template_fpgm/ /g" $FILENAME
  sed -i "s/--slim_config _template_kl_quant/ /g" $FILENAME
+ # python has been updated to version 3.9 for npu backend
+ sed -i "s/python3.7/python3.9/g" $FILENAME
  sed -i 's/\"gpu\"/\"npu\"/g' test_tipc/test_train_inference_python.sh
 
  # parser params
