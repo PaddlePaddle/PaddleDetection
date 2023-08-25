@@ -32,7 +32,7 @@ DETRChannelMapper:
 
 OVDeformableTransformer:
   nhead: 8
-  dropout: 0
+  dropout: 0.1
 
 
 OVDeformableDETRHead:
