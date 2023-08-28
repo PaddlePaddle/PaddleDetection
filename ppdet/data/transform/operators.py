@@ -956,13 +956,11 @@ class Resize(BaseOperator):
 
             resize_h = int(im_scale * float(im_shape[0]) + 0.5)
             resize_w = int(im_scale * float(im_shape[1]) + 0.5)
-
-            im_scale_x = im_scale
-            im_scale_y = im_scale
         else:
             resize_h, resize_w = self.target_size
-            im_scale_y = resize_h / im_shape[0]
-            im_scale_x = resize_w / im_shape[1]
+
+        im_scale_y = resize_h / im_shape[0]
+        im_scale_x = resize_w / im_shape[1]
 
         if len(im.shape) == 3:
             im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
