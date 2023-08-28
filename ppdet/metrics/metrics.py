@@ -124,7 +124,7 @@ class COCOMetric(Metric):
 
     def accumulate(self):
         if len(self.results['bbox']) > 0:
-            output = "bbox.json"
+            output = f"bbox_{paddle.distributed.get_rank()}.json"
             if self.output_eval:
                 output = os.path.join(self.output_eval, output)
             with open(output, 'w') as f:
