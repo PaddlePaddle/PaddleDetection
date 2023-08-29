@@ -237,7 +237,7 @@ def create_voc_list(data_dir, devkit_subdir='VOCdevkit'):
     years = ['2007', '2012']
 
     # NOTE: since using auto download VOC
-    # dataset, VOC default label list should be used, 
+    # dataset, VOC default label list should be used,
     # do not generate label_list.txt here. For default
     # label, see ../data/source/voc.py
     create_list(devkit_dir, years, data_dir)
@@ -296,7 +296,7 @@ def get_path(url, root_dir, md5sum=None, check_exist=True):
 
     # new weights format which postfix is 'pdparams' not
     # need to decompress
-    if osp.splitext(fullname)[-1] not in ['.pdparams', '.yml']:
+    if osp.splitext(fullname)[-1] not in ['.pdparams', '.yml', '.ttf']:
         _decompress_dist(fullname)
 
     return fullpath, False
@@ -411,7 +411,7 @@ def _download_dist(url, path, md5sum=None):
             must_mkdirs(path)
 
             if not osp.exists(fullname):
-                with open(lock_path, 'w'):  # touch    
+                with open(lock_path, 'w'):  # touch
                     os.utime(lock_path, None)
                 if rank_id_curr_node == 0:
                     _download(url, path, md5sum)
@@ -425,7 +425,7 @@ def _download_dist(url, path, md5sum=None):
 
 
 def _check_exist_file_md5(filename, md5sum, url):
-    # if md5sum is None, and file to check is weights file, 
+    # if md5sum is None, and file to check is weights file,
     # read md5um from url and check, else check md5sum directly
     return _md5check_from_url(filename, url) if md5sum is None \
             and filename.endswith('pdparams') \
@@ -525,7 +525,7 @@ def _decompress_dist(fname):
             # trainer pipeline in order
             # **change this if you have more elegent methods**
             if ParallelEnv().current_endpoint in unique_endpoints:
-                with open(lock_path, 'w'):  # touch    
+                with open(lock_path, 'w'):  # touch
                     os.utime(lock_path, None)
                 _decompress(fname)
                 os.remove(lock_path)
