@@ -31,6 +31,7 @@ import copy
 from .operators import register_op, BaseOperator
 from ppdet.modeling.rbox_utils import poly2rbox_le135_np, poly2rbox_oc_np, rbox2poly_np
 from ppdet.utils.logger import setup_logger
+from ppdet.utils.compact import imagedraw_textsize_c
 logger = setup_logger(__name__)
 
 
@@ -107,7 +108,7 @@ class RRotate(BaseOperator):
         matrix, h, w = self.get_rotated_matrix(self.angle, self.scale, h, w)
         sample['image'] = self.apply_image(image, matrix, h, w)
         polys = sample['gt_poly']
-        # TODO: segment or keypoint to be processed 
+        # TODO: segment or keypoint to be processed
         if len(polys) > 0:
             pts = self.apply_pts(polys, matrix, h, w)
             sample['gt_poly'] = pts
@@ -257,7 +258,7 @@ class Poly2Array(BaseOperator):
 class RResize(BaseOperator):
     def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
         """
-        Resize image to target size. if keep_ratio is True, 
+        Resize image to target size. if keep_ratio is True,
         resize the image's long side to the maximum of target_size
         if keep_ratio is False, resize the image to target size(h, w)
         Args:
@@ -433,7 +434,7 @@ class VisibleRBox(BaseOperator):
             xmin = min(x1, x2, x3, x4)
             ymin = min(y1, y2, y3, y4)
             text = str(gt_class[i][0])
-            tw, th = draw.textsize(text)
+            tw, th = imagedraw_textsize_c(draw, text)
             draw.rectangle(
                 [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
             draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))

@@ -17,13 +17,16 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
 import numpy as np
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 import cv2
 import math
 
 from .colormap import colormap
 from ppdet.utils.logger import setup_logger
+from ppdet.utils.compact import imagedraw_textsize_c
+from ppdet.utils.download import get_path
 logger = setup_logger(__name__)
 
 __all__ = ['visualize_results']
@@ -85,6 +88,11 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
     """
     Draw bbox on image
     """
+    font_url = "https://paddledet.bj.bcebos.com/simfang.ttf"
+    font_path , _ = get_path(font_url, "~/.cache/paddle/")
+    font_size = 18
+    font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
+
     draw = ImageDraw.Draw(image)
 
     catid2color = {}
@@ -125,10 +133,10 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
 
         # draw label
         text = "{} {:.2f}".format(catid2name[catid], score)
-        tw, th = draw.textsize(text)
+        tw, th = imagedraw_textsize_c(draw, text, font=font)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
-        draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
+        draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255), font=font)
 
     return image
 

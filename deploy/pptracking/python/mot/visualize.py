@@ -20,6 +20,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from collections import deque
+from ppdet.utils.compact import imagedraw_textsize_c
+
 
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
@@ -109,7 +111,7 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)
-        tw, th = draw.textsize(text)
+        tw, th = imagedraw_textsize_c(draw, text)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
@@ -202,7 +204,7 @@ def plot_tracking_dict(image,
     im = np.ascontiguousarray(np.copy(image))
     im_h, im_w = im.shape[:2]
     if do_break_in_counting or do_illegal_parking_recognition:
-        entrance = np.array(entrance[:-1])  # last pair is [im_w, im_h] 
+        entrance = np.array(entrance[:-1])  # last pair is [im_w, im_h]
 
     text_scale = max(0.5, image.shape[1] / 3000.)
     text_thickness = 2
