@@ -48,6 +48,11 @@ def parse_args():
         default=None,
         help="Directory for images to perform inference on.")
     parser.add_argument(
+        "--infer_list",
+        type=str,
+        default=None,
+        help="The file path containing path of image to be infered. Valid only when --infer_dir is given.")
+    parser.add_argument(
         "--infer_img",
         type=str,
         default=None,
@@ -124,7 +129,7 @@ def parse_args():
     return args
 
 
-def get_test_images(infer_dir, infer_img):
+def get_test_images(infer_dir, infer_img, infer_list=None):
     """
     Get image path list in TEST mode
     """
@@ -143,12 +148,18 @@ def get_test_images(infer_dir, infer_img):
     infer_dir = os.path.abspath(infer_dir)
     assert os.path.isdir(infer_dir), \
         "infer_dir {} is not a directory".format(infer_dir)
-    exts = ['jpg', 'jpeg', 'png', 'bmp']
-    exts += [ext.upper() for ext in exts]
-    for ext in exts:
-        images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+    if infer_list:
+        assert os.path.isfile(infer_list), f"infer_list {infer_list} is not a valid file path."
+        with open(infer_list, 'r') as f:
+            lines = f.readlines()
+        for line in lines:
+            images.update([os.path.join(infer_dir, line.strip())])
+    else:
+        exts = ['jpg', 'jpeg', 'png', 'bmp']
+        exts += [ext.upper() for ext in exts]
+        for ext in exts:
+            images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
     images = list(images)
-
     assert len(images) > 0, "no image found in {}".format(infer_dir)
     logger.info("Found {} inference images in total.".format(len(images)))
 
@@ -164,7 +175,7 @@ def run(FLAGS, cfg):
         trainer = Trainer(cfg, mode='test')
         trainer.load_weights(cfg.weights)
     # get inference images
-    images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img)
+    images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img, FLAGS.infer_list)
 
     # inference
     if FLAGS.slice_infer:
