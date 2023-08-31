@@ -41,14 +41,12 @@ MAIN_PID = os.getpid()
 
 
 class Compose(object):
-    def __init__(self, transforms, num_classes=80, rtn_im_file=False):
+    def __init__(self, transforms, num_classes=80):
         self.transforms = transforms
         self.transforms_cls = []
         for t in self.transforms:
             for k, v in t.items():
                 op_cls = getattr(transform, k)
-                if op_cls.__name__ == "Decode":
-                    v['rtn_im_file'] = rtn_im_file
                 f = op_cls(**v)
                 if hasattr(f, 'num_classes'):
                     f.num_classes = num_classes
@@ -147,10 +145,9 @@ class BaseDataLoader(object):
                  collate_batch=True,
                  use_shared_memory=False,
                  **kwargs):
-        rtn_im_file = kwargs.get('rtn_im_file', False)
         # sample transform
         self._sample_transforms = Compose(
-            sample_transforms, num_classes=num_classes, rtn_im_file=rtn_im_file)
+            sample_transforms, num_classes=num_classes)
 
         # batch transfrom
         self._batch_transforms = BatchCompose(batch_transforms, num_classes,
