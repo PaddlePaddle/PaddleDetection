@@ -15,7 +15,12 @@ import six
 import numpy as np
 
 
-def get_det_res(bboxes, bbox_nums, image_id, label_to_cat_id_map, bias=0):
+def get_det_res(bboxes,
+                bbox_nums,
+                image_id,
+                label_to_cat_id_map,
+                bias=0,
+                im_file=None):
     det_res = []
     k = 0
     for i in range(len(bbox_nums)):
@@ -37,6 +42,8 @@ def get_det_res(bboxes, bbox_nums, image_id, label_to_cat_id_map, bias=0):
                 'bbox': bbox,
                 'score': score
             }
+            if im_file:
+                dt_res['im_file'] = im_file
             det_res.append(dt_res)
     return det_res
 
