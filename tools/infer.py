@@ -69,6 +69,11 @@ def parse_args():
         default=0.5,
         help="Threshold to reserve the result for visualization.")
     parser.add_argument(
+        "--save_threshold",
+        type=float,
+        default=0.5,
+        help="Threshold to reserve the result for saving.")
+    parser.add_argument(
         "--slim_config",
         default=None,
         type=str,
@@ -175,7 +180,8 @@ def get_test_images(infer_dir, infer_img, infer_list=None):
 
 def run(FLAGS, cfg):
     if FLAGS.rtn_im_file:
-        cfg['TestReader']['sample_transforms'][0]['Decode']['rtn_im_file'] = FLAGS.rtn_im_file
+        cfg['TestReader']['sample_transforms'][0]['Decode'][
+            'rtn_im_file'] = FLAGS.rtn_im_file
     ssod_method = cfg.get('ssod_method', None)
     if ssod_method == 'ARSL':
         trainer = Trainer_ARSL(cfg, mode='test')
@@ -205,7 +211,8 @@ def run(FLAGS, cfg):
             draw_threshold=FLAGS.draw_threshold,
             output_dir=FLAGS.output_dir,
             save_results=FLAGS.save_results,
-            visualize=FLAGS.visualize)
+            visualize=FLAGS.visualize,
+            save_threshold=FLAGS.save_threshold)
 
 
 def main():
