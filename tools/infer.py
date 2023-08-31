@@ -51,7 +51,8 @@ def parse_args():
         "--infer_list",
         type=str,
         default=None,
-        help="The file path containing path of image to be infered. Valid only when --infer_dir is given.")
+        help="The file path containing path of image to be infered. Valid only when --infer_dir is given."
+    )
     parser.add_argument(
         "--infer_img",
         type=str,
@@ -125,6 +126,11 @@ def parse_args():
         type=ast.literal_eval,
         default=True,
         help="Whether to save visualize results to output_dir.")
+    parser.add_argument(
+        "--rtn_im_file",
+        type=bool,
+        default=False,
+        help="Whether to return image file path in Dataloader.")
     args = parser.parse_args()
     return args
 
@@ -149,7 +155,8 @@ def get_test_images(infer_dir, infer_img, infer_list=None):
     assert os.path.isdir(infer_dir), \
         "infer_dir {} is not a directory".format(infer_dir)
     if infer_list:
-        assert os.path.isfile(infer_list), f"infer_list {infer_list} is not a valid file path."
+        assert os.path.isfile(
+            infer_list), f"infer_list {infer_list} is not a valid file path."
         with open(infer_list, 'r') as f:
             lines = f.readlines()
         for line in lines:
@@ -167,6 +174,8 @@ def get_test_images(infer_dir, infer_img, infer_list=None):
 
 
 def run(FLAGS, cfg):
+    if FLAGS.rtn_im_file:
+        cfg['TestReader']['sample_transforms'][0]['Decode']['rtn_im_file'] = FLAGS.rtn_im_file
     ssod_method = cfg.get('ssod_method', None)
     if ssod_method == 'ARSL':
         trainer = Trainer_ARSL(cfg, mode='test')
