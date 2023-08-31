@@ -41,12 +41,14 @@ MAIN_PID = os.getpid()
 
 
 class Compose(object):
-    def __init__(self, transforms, num_classes=80):
+    def __init__(self, transforms, num_classes=80, rtn_im_file=False):
         self.transforms = transforms
         self.transforms_cls = []
         for t in self.transforms:
             for k, v in t.items():
                 op_cls = getattr(transform, k)
+                if op_cls.__name__ == "Decode":
+                    v['rtn_im_file'] = rtn_im_file
                 f = op_cls(**v)
                 if hasattr(f, 'num_classes'):
                     f.num_classes = num_classes
@@ -123,7 +125,7 @@ class BaseDataLoader(object):
         collate_batch (bool): whether to collate batch in dataloader.
             If set to True, the samples will collate into batch according
             to the batch size. Otherwise, the ground-truth will not collate,
-            which is used when the number of ground-truch is different in 
+            which is used when the number of ground-truch is different in
             samples.
         use_shared_memory (bool): whether to use shared memory to
                 accelerate data loading, enable this only if you
@@ -145,11 +147,12 @@ class BaseDataLoader(object):
                  collate_batch=True,
                  use_shared_memory=False,
                  **kwargs):
+        rtn_im_file = kwargs.get('rtn_im_file', False)
         # sample transform
         self._sample_transforms = Compose(
-            sample_transforms, num_classes=num_classes)
+            sample_transforms, num_classes=num_classes, rtn_im_file=rtn_im_file)
 
-        # batch transfrom 
+        # batch transfrom
         self._batch_transforms = BatchCompose(batch_transforms, num_classes,
                                               collate_batch)
         self.batch_size = batch_size
@@ -514,7 +517,7 @@ class BaseSemiDataLoader(object):
                  batch_sampler_label=None,
                  batch_sampler_unlabel=None,
                  return_list=False):
-        # sup dataset 
+        # sup dataset
         self.dataset_label = dataset_label
         self.dataset_label.check_or_download_dataset()
         self.dataset_label.parse_dataset()
