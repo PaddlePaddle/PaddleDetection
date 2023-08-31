@@ -20,7 +20,8 @@ def get_det_res(bboxes,
                 image_id,
                 label_to_cat_id_map,
                 bias=0,
-                im_file=None):
+                im_file=None,
+                save_threshold=0):
     det_res = []
     k = 0
     for i in range(len(bbox_nums)):
@@ -30,7 +31,7 @@ def get_det_res(bboxes,
             dt = bboxes[k]
             k = k + 1
             num_id, score, xmin, ymin, xmax, ymax = dt.tolist()
-            if int(num_id) < 0:
+            if int(num_id) < 0 or score < save_threshold:
                 continue
             category_id = label_to_cat_id_map[int(num_id)]
             w = xmax - xmin + bias

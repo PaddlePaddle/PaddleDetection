@@ -267,6 +267,8 @@ class Trainer(object):
             clsid2catid = {v: k for k, v in self.dataset.catid2clsid.items()} \
                                 if self.mode == 'eval' else None
 
+            save_threshold = self.cfg.get('save_threshold', 0)
+
             # when do validation in train, annotation file should be get from
             # EvalReader instead of self.dataset(which is TrainReader)
             if self.mode == 'train' and validate:
@@ -288,7 +290,8 @@ class Trainer(object):
                         output_eval=output_eval,
                         bias=bias,
                         IouType=IouType,
-                        save_prediction_only=save_prediction_only)
+                        save_prediction_only=save_prediction_only,
+                        save_threshold=save_threshold)
                 ]
             elif self.cfg.metric == "SNIPERCOCO":  # sniper
                 self._metrics = [
@@ -959,7 +962,8 @@ class Trainer(object):
                 draw_threshold=0.5,
                 output_dir='output',
                 save_results=False,
-                visualize=True):
+                visualize=True,
+                save_threshold=0):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
@@ -982,6 +986,7 @@ class Trainer(object):
             self.cfg['save_prediction_only'] = True
             self.cfg['output_eval'] = output_dir
             self.cfg['imid2path'] = imid2path
+            self.cfg['save_threshold'] = save_threshold
             self._init_metrics()
 
             # restore

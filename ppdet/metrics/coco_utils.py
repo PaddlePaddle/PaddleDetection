@@ -28,7 +28,7 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-def get_infer_results(outs, catid, bias=0):
+def get_infer_results(outs, catid, bias=0, save_threshold=0):
     """
     Get result at the stage of inference.
     The output format is dictionary containing bbox or mask result.
@@ -56,7 +56,8 @@ def get_infer_results(outs, catid, bias=0):
                 im_id,
                 catid,
                 bias=bias,
-                im_file=im_file)
+                im_file=im_file,
+                save_threshold=save_threshold)
 
     if 'mask' in outs:
         # mask post process

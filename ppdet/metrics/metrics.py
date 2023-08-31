@@ -90,6 +90,8 @@ class COCOMetric(Metric):
         if self.output_eval is not None:
             Path(self.output_eval).mkdir(exist_ok=True)
 
+        self.save_threshold = kwargs.get('save_threshold', 0)
+
         self.reset()
 
     def reset(self):
@@ -114,7 +116,10 @@ class COCOMetric(Metric):
             outs['im_file'] = inputs['im_file']
 
         infer_results = get_infer_results(
-            outs, self.clsid2catid, bias=self.bias)
+            outs,
+            self.clsid2catid,
+            bias=self.bias,
+            save_threshold=self.save_threshold)
         self.results['bbox'] += infer_results[
             'bbox'] if 'bbox' in infer_results else []
         self.results['mask'] += infer_results[
