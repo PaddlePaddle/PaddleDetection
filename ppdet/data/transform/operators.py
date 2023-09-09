@@ -35,7 +35,7 @@ import os
 import copy
 import logging
 import cv2
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageEnhance
 import pickle
 import threading
 MUTEX = threading.Lock()
@@ -490,10 +490,10 @@ class RandomDistort(BaseOperator):
         saturation (list): saturation settings. in [lower, upper, probability] format.
         contrast (list): contrast settings. in [lower, upper, probability] format.
         brightness (list): brightness settings. in [lower, upper, probability] format.
-        random_apply (bool): whether to apply in random (yolo) or fixed (SSD)
-            order.
-        count (int): the number of doing distrot
-        random_channel (bool): whether to swap channels randomly
+        random_apply (bool): whether to apply in random (yolo) or fixed (SSD) order.
+        count (int): the number of doing distrot.
+        random_channel (bool): whether to swap channels randomly.
+        prob (float): the probability of enhancing the sample.
     """
 
     def __init__(self,
@@ -519,19 +519,10 @@ class RandomDistort(BaseOperator):
         low, high, prob = self.hue
         if np.random.uniform(0., 1.) < prob:
             return img
-
-        img = img.astype(np.float32)
-        # it works, but result differ from HSV version
         delta = np.random.uniform(low, high)
-        u = np.cos(delta * np.pi)
-        w = np.sin(delta * np.pi)
-        bt = np.array([[1.0, 0.0, 0.0], [0.0, u, -w], [0.0, w, u]])
-        tyiq = np.array([[0.299, 0.587, 0.114], [0.596, -0.274, -0.321],
-                         [0.211, -0.523, 0.311]])
-        ityiq = np.array([[1.0, 0.956, 0.621], [1.0, -0.272, -0.647],
-                          [1.0, -1.107, 1.705]])
-        t = np.dot(np.dot(ityiq, bt), tyiq).T
-        img = np.dot(img, t)
+        img = np.array(img.convert('HSV'))
+        img[:, :, 0] = img[:, :, 0] + delta
+        img = Image.fromarray(img, mode='HSV').convert('RGB')
         return img
 
     def apply_saturation(self, img):
@@ -539,13 +530,7 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        # it works, but result differ from HSV version
-        gray = img * np.array([[[0.299, 0.587, 0.114]]], dtype=np.float32)
-        gray = gray.sum(axis=2, keepdims=True)
-        gray *= (1.0 - delta)
-        img *= delta
-        img += gray
+        img = ImageEnhance.Color(img).enhance(delta)
         return img
 
     def apply_contrast(self, img):
@@ -553,8 +538,7 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        img *= delta
+        img = ImageEnhance.Contrast(img).enhance(delta)
         return img
 
     def apply_brightness(self, img):
@@ -562,14 +546,14 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        img += delta
+        img = ImageEnhance.Brightness(img).enhance(delta)
         return img
 
     def apply(self, sample, context=None):
         if random.random() > self.prob:
             return sample
         img = sample['image']
+        img = Image.fromarray(img.astype(np.uint8))
         if self.random_apply:
             functions = [
                 self.apply_brightness, self.apply_contrast,
@@ -578,21 +562,20 @@ class RandomDistort(BaseOperator):
             distortions = np.random.permutation(functions)[:self.count]
             for func in distortions:
                 img = func(img)
+            img = np.asarray(img).astype(np.float32)
             sample['image'] = img
             return sample
 
         img = self.apply_brightness(img)
         mode = np.random.randint(0, 2)
-
         if mode:
             img = self.apply_contrast(img)
-
         img = self.apply_saturation(img)
         img = self.apply_hue(img)
-
         if not mode:
             img = self.apply_contrast(img)
 
+        img = np.asarray(img).astype(np.float32)
         if self.random_channel:
             if np.random.randint(0, 2):
                 img = img[..., np.random.permutation(3)]
