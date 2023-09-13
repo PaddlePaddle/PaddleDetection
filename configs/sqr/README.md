@@ -7,11 +7,11 @@ This paper investigates a phenomenon where query-based object detectors mispredi
 
 ## Model Zoo
 
-| Backbone |      Model          | Images/GPU | Epochs | Box AP |            Config                                | Download  |
-|:--------:|:-------------------:|:----------:|:------:|:------:|:------------------------------------------------:|:---------:|
-|   R-50   | Deformable DETR SQR |     2      |   12   |  32.9  | [config](./deformable_detr_sqr_r50_12e_coco.yml) |[model](https://bj.bcebos.com/v1/paddledet/models/deformable_detr_sqr_r50_12e_coco.pdparams) |
+| Backbone |      Model          | Images/GPU | GPUs | Epochs | Box AP |            Config                                | Download  |
+|:--------:|:-------------------:|:----------:|:----:|:------:|:------:|:------------------------------------------------:|:---------:|
+|   R-50   | Deformable DETR SQR |     1      |  4   |   12   |  32.9  | [config](./deformable_detr_sqr_r50_12e_coco.yml) |[model](https://bj.bcebos.com/v1/paddledet/models/deformable_detr_sqr_r50_12e_coco.pdparams) |
 
-> We did not find the config for the 12 epochs experiment in the paper, which we wrote ourselves with reference to the standard 12 epochs config in mmdetection. The same accuracy was obtained in the official project and in this project with this [config](./deformable_detr_sqr_r50_12e_coco.yml). <br> We haven't finished validating the 50 epochs experiment yet, if you need the config, please refer to [this](https://github.com/flytocc/PaddleDetection/blob/SQR/configs/sqr/deformable_detr_sqr_r50_1x_coco.yml).
+> We did not find the config for the 12 epochs experiment in the paper, which we wrote ourselves with reference to the standard 12 epochs config in mmdetection. The same accuracy was obtained in the official project and in this project with this [config](./deformable_detr_sqr_r50_12e_coco.yml). <br> We haven't finished validating the 50 epochs experiment yet, if you need the config, please refer to [here](https://pan.baidu.com/s/1eWavnAiRoFXm3mMlpn9WPw?pwd=3z6m).
 
 
 ## Citations
