@@ -1,6 +1,5 @@
 
 Global:
-  reader_config: configs/dino_reader.yml
   include_nms: True
   Evaluation: True
   model_dir: ./dino_r50_4scale_2x_coco/

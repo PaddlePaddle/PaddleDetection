@@ -1,9 +1,8 @@
 
 Global:
-  reader_config: configs/dino_reader.yml
   include_nms: True
   Evaluation: True
-  model_dir: ./dino_r50_4scale_1x_coco/
+  model_dir: ./dino_dir/dino_r50_4scale_1x_coco/
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 

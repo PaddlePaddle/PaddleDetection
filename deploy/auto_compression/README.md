@@ -58,6 +58,9 @@ git
 | PicoDet-S-NPU | Baseline | 30.1 |  -   |  -   |  -   |         [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/picodet/picodet_s_416_coco_npu.yml)         | [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_416_coco_npu.tar) |
 | PicoDet-S-NPU | 量化训练     | 29.7 |  -   |  -   |  -   | [config](https://github.com/PaddlePaddle/PaddleSlim/tree/develop/demo/full_quantization/detection/configs/picodet_s_qat_dis.yaml) |  [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_npu_quant.tar)   |
 
+| PicoDet-S-320-LCNet | 量化训练     | 29.1 |  -   |  -   |  -   | [config](../../configs/picodet/picodet_s_320_coco_lcnet.yml) |  [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_npu_quant.tar)   |
+| PicoDet-S-320-LCNet | 量化训练     | 29.1 |  -   |  -   |  -   | [config](configs/picodet_s_320_lcnet_qat_dis.yaml) |  [Model](https://bj.bcebos.com/v1/paddle-slim-models/act/picodet_s_npu_quant.tar)   |
+
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 
 ### RT-DETR
@@ -83,10 +86,13 @@ git
 
 ### DINO
 
-| 模型                 | Base mAP | 离线量化mAP | ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 | 配置文件 | 量化模型 |
-|:-------------------|:---------|:-------:|:--------:|:--------:|:--------:|:--------:|:----:|:----:|
-| DINO-R50-4scale-1x | 49.5     |   待补充   |   待补充    |   待补充    |   待补充    |   待补充    | 待补充  | 待补充  |
-| DINO-R50-4scale-2x | 50.8     |   待补充   |   待补充    |   待补充    |   待补充    |   待补充    | 待补充  | 待补充  |
+| 模型                 | Base mAP |ACT量化mAP | TRT-FP32 | TRT-FP16 | TRT-INT8 | 配置文件 | 量化模型 |
+|:-------------------|:---------|:--------:|:--------:|:--------:|:--------:|:----:|:----:|
+| DINO-R50-4scale-1x | 49.5     |   48.2      |   待补充    |   待补充    |   待补充    | 待补充  | https://paddledet.bj.bcebos.com/deploy/act/dino/dino_1x_qat.zip  |
+| DINO-R50-4scale-2x | 50.8     |    49.87   |   待补充    |   待补充    |   待补充    | 待补充  | https://paddledet.bj.bcebos.com/deploy/act/dino/dino_2x_qat.zip  |
+
+上表测试环境：Tesla V100，TensorRT 8.0.3.4，CUDA 11.2，batch_size=1。
+mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 
 **注意：**
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
@@ -165,13 +171,18 @@ python tools/export_model.py \
 - 单卡训练：
 ```
 export CUDA_VISIBLE_DEVICES=0
-python run.py --config_path=./configs/ppyoloe_l_qat_dis.yaml --save_dir='./output/'
+python run.py \
+        --act_config_path=./configs/ppyoloe_l_qat_dis.yaml \
+        --config configs/ppyoloe_reader.yml \
+        --save_dir='./output/' 
 ```
 
 - 多卡训练：
 ```
 CUDA_VISIBLE_DEVICES=0,1,2,3 python -m paddle.distributed.launch --log_dir=log --gpus 0,1,2,3 run.py \
-          --config_path=./configs/ppyoloe_l_qat_dis.yaml --save_dir='./output/'
+          --act_config_path=./configs/ppyoloe_l_qat_dis.yaml \
+          --config configs/ppyoloe_reader.yml \
+          --save_dir='./output/'
 ```
 
 #### 3.5 测试模型精度
@@ -179,13 +190,17 @@ CUDA_VISIBLE_DEVICES=0,1,2,3 python -m paddle.distributed.launch --log_dir=log -
 使用eval.py脚本得到模型的mAP：
 ```
 export CUDA_VISIBLE_DEVICES=0
-python eval.py --config_path=./configs/ppyoloe_l_qat_dis.yaml
+python eval.py --act_config_path=./configs/ppyoloe_l_qat_dis.yaml
 ```
 
 使用paddle inference并使用trt int8得到模型的mAP:
 ```
 export CUDA_VISIBLE_DEVICES=0
-python paddle_inference_eval.py --model_path ./output/ --reader_config configs/ppyoloe_reader.yml --precision int8 --use_trt=True
+python paddle_inference_eval.py --model_path ./output/ --config configs/ppyoloe_reader.yml --precision int8 --use_trt=True
+```
+
+```
+python paddle_inference_eval.py  --model_path output/ --config configs/dino_reader.yml  --precision int8 --use_mkldnn True --device CPU
 ```
 
 **注意**：
@@ -195,3 +210,9 @@ python paddle_inference_eval.py --model_path ./output/ --reader_config configs/p
 ## 4.预测部署
 
 - 可以参考[PaddleDetection部署教程](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.4/deploy)，GPU上量化模型开启TensorRT并设置trt_int8模式进行部署。
+
+## 5. FAQ:
+
+### 1. ModuleNotFoundError: No module named 'ppdet'
+
+**A**: 运行：export PYTHONPATH=[path/to/ppdet]:$PYTHONPATH
