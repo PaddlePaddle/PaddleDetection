@@ -298,7 +298,7 @@ else
                 nodes="1"
                 if [ ${#gpu} -le 2 ];then  # train with cpu or single gpu
                     cmd="${python} ${run_train} LearningRate.base_lr=0.0001 log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_shuffle} ${set_amp_level} ${set_enable_ce} ${set_autocast} ${set_to_static} ${set_train_params1}"
-                elif [ ${#ips} -le 15 ];then  # train with multi-gpu
+                elif [ ${#ips} -le 15 ];then  # train with multi-gpus
                     cmd="${python} -m paddle.distributed.launch --devices=${gpu} ${run_train} log_iter=1 ${set_use_gpu} ${set_save_model} ${set_epoch} ${set_pretrain} ${set_batchsize} ${set_filename} ${set_shuffle} ${set_amp_level} ${set_enable_ce} ${set_autocast} ${set_to_static} ${set_train_params1}"
                 else     # train with multi-machine
                     IFS=","
