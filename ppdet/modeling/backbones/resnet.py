@@ -50,12 +50,14 @@ class ConvNormLayer(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  lr=1.0,
-                 dcn_v2=False):
+                 dcn_v2=False,
+                 data_format='NCHW'):
         super(ConvNormLayer, self).__init__()
         assert norm_type in ['bn', 'sync_bn']
         self.norm_type = norm_type
         self.act = act
         self.dcn_v2 = dcn_v2
+        self.data_format = data_format
 
         if not self.dcn_v2:
             self.conv = nn.Conv2D(
@@ -66,7 +68,8 @@ class ConvNormLayer(nn.Layer):
                 padding=(filter_size - 1) // 2,
                 groups=groups,
                 weight_attr=ParamAttr(learning_rate=lr),
-                bias_attr=False)
+                bias_attr=False,
+                data_format=data_format)
         else:
             self.offset_channel = 2 * filter_size**2
             self.mask_channel = filter_size**2
@@ -78,7 +81,8 @@ class ConvNormLayer(nn.Layer):
                 stride=stride,
                 padding=(filter_size - 1) // 2,
                 weight_attr=ParamAttr(initializer=Constant(0.)),
-                bias_attr=ParamAttr(initializer=Constant(0.)))
+                bias_attr=ParamAttr(initializer=Constant(0.)),
+                data_format=data_format)
             self.conv = DeformConv2D(
                 in_channels=ch_in,
                 out_channels=ch_out,
@@ -106,7 +110,8 @@ class ConvNormLayer(nn.Layer):
                 ch_out,
                 weight_attr=param_attr,
                 bias_attr=bias_attr,
-                use_global_stats=global_stats)
+                use_global_stats=global_stats,
+                data_format=data_format)
         norm_params = self.norm.parameters()
 
         if freeze_norm:
@@ -133,23 +138,25 @@ class ConvNormLayer(nn.Layer):
 
 
 class SELayer(nn.Layer):
-    def __init__(self, ch, reduction_ratio=16):
+    def __init__(self, ch, reduction_ratio=16, data_format="NCHW"):
         super(SELayer, self).__init__()
-        self.pool = nn.AdaptiveAvgPool2D(1)
+        self.pool = nn.AdaptiveAvgPool2D(1, data_format)
         stdv = 1.0 / math.sqrt(ch)
         c_ = ch // reduction_ratio
         self.squeeze = nn.Linear(
             ch,
             c_,
             weight_attr=paddle.ParamAttr(initializer=Uniform(-stdv, stdv)),
-            bias_attr=True)
+            bias_attr=True,
+            data_format=data_format)
 
         stdv = 1.0 / math.sqrt(c_)
         self.extract = nn.Linear(
             c_,
             ch,
             weight_attr=paddle.ParamAttr(initializer=Uniform(-stdv, stdv)),
-            bias_attr=True)
+            bias_attr=True,
+            data_format=data_format)
 
     def forward(self, inputs):
         out = self.pool(inputs)
@@ -180,7 +187,8 @@ class BasicBlock(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  dcn_v2=False,
-                 std_senet=False):
+                 std_senet=False,
+                 data_format='NCHW'):
         super(BasicBlock, self).__init__()
         assert groups == 1 and base_width == 64, 'BasicBlock only supports groups=1 and base_width=64'
 
@@ -191,7 +199,7 @@ class BasicBlock(nn.Layer):
                 self.short.add_sublayer(
                     'pool',
                     nn.AvgPool2D(
-                        kernel_size=2, stride=2, padding=0, ceil_mode=True))
+                        kernel_size=2, stride=2, padding=0, ceil_mode=True, data_format=data_format))
                 self.short.add_sublayer(
                     'conv',
                     ConvNormLayer(
@@ -202,7 +210,8 @@ class BasicBlock(nn.Layer):
                         norm_type=norm_type,
                         norm_decay=norm_decay,
                         freeze_norm=freeze_norm,
-                        lr=lr))
+                        lr=lr,
+                        data_format=data_format))
             else:
                 self.short = ConvNormLayer(
                     ch_in=ch_in,
@@ -212,7 +221,8 @@ class BasicBlock(nn.Layer):
                     norm_type=norm_type,
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
-                    lr=lr)
+                    lr=lr,
+                    data_format=data_format)
 
         self.branch2a = ConvNormLayer(
             ch_in=ch_in,
@@ -223,7 +233,8 @@ class BasicBlock(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            lr=lr)
+            lr=lr,
+            data_format=data_format)
 
         self.branch2b = ConvNormLayer(
             ch_in=ch_out,
@@ -235,7 +246,8 @@ class BasicBlock(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             lr=lr,
-            dcn_v2=dcn_v2)
+            dcn_v2=dcn_v2,
+            data_format=data_format)
 
         self.std_senet = std_senet
         if self.std_senet:
@@ -275,7 +287,8 @@ class BottleNeck(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  dcn_v2=False,
-                 std_senet=False):
+                 std_senet=False,
+                 data_format='NCHW'):
         super(BottleNeck, self).__init__()
         if variant == 'a':
             stride1, stride2 = stride, 1
@@ -295,7 +308,8 @@ class BottleNeck(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            lr=lr)
+            lr=lr,
+            data_format=data_format)
 
         self.branch2b = ConvNormLayer(
             ch_in=width,
@@ -308,7 +322,8 @@ class BottleNeck(nn.Layer):
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
             lr=lr,
-            dcn_v2=dcn_v2)
+            dcn_v2=dcn_v2,
+            data_format=data_format)
 
         self.branch2c = ConvNormLayer(
             ch_in=width,
@@ -319,7 +334,8 @@ class BottleNeck(nn.Layer):
             norm_type=norm_type,
             norm_decay=norm_decay,
             freeze_norm=freeze_norm,
-            lr=lr)
+            lr=lr,
+            data_format=data_format)
 
         self.shortcut = shortcut
         if not shortcut:
@@ -328,7 +344,7 @@ class BottleNeck(nn.Layer):
                 self.short.add_sublayer(
                     'pool',
                     nn.AvgPool2D(
-                        kernel_size=2, stride=2, padding=0, ceil_mode=True))
+                        kernel_size=2, stride=2, padding=0, ceil_mode=True, data_format=data_format))
                 self.short.add_sublayer(
                     'conv',
                     ConvNormLayer(
@@ -339,7 +355,8 @@ class BottleNeck(nn.Layer):
                         norm_type=norm_type,
                         norm_decay=norm_decay,
                         freeze_norm=freeze_norm,
-                        lr=lr))
+                        lr=lr,
+                        data_format=data_format))
             else:
                 self.short = ConvNormLayer(
                     ch_in=ch_in,
@@ -349,14 +366,14 @@ class BottleNeck(nn.Layer):
                     norm_type=norm_type,
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
-                    lr=lr)
+                    lr=lr,
+                    data_format=data_format)
 
         self.std_senet = std_senet
         if self.std_senet:
-            self.se = SELayer(ch_out * self.expansion)
+            self.se = SELayer(ch_out * self.expansion, data_format)
 
     def forward(self, inputs):
-
         out = self.branch2a(inputs)
         out = self.branch2b(out)
         out = self.branch2c(out)
@@ -391,7 +408,8 @@ class Blocks(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  dcn_v2=False,
-                 std_senet=False):
+                 std_senet=False,
+                 data_format='NCHW'):
         super(Blocks, self).__init__()
 
         self.blocks = []
@@ -412,7 +430,8 @@ class Blocks(nn.Layer):
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
                     dcn_v2=dcn_v2,
-                    std_senet=std_senet))
+                    std_senet=std_senet,
+                    data_format=data_format))
             self.blocks.append(layer)
             if i == 0:
                 ch_in = ch_out * block.expansion
@@ -444,7 +463,8 @@ class ResNet(nn.Layer):
                  dcn_v2_stages=[-1],
                  num_stages=4,
                  std_senet=False,
-                 freeze_stem_only=False):
+                 freeze_stem_only=False,
+                 data_format='NHWC'):
         """
         Residual Network, see https://arxiv.org/abs/1512.03385
         
@@ -522,7 +542,8 @@ class ResNet(nn.Layer):
                     norm_type=norm_type,
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
-                    lr=1.0))
+                    lr=1.0,
+                    data_format=data_format))
 
         self.ch_in = ch_in
         ch_out_list = [64, 128, 256, 512]
@@ -553,9 +574,11 @@ class ResNet(nn.Layer):
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
                     dcn_v2=(i in self.dcn_v2_stages),
-                    std_senet=std_senet))
+                    std_senet=std_senet,
+                    data_format=data_format))
             self.res_layers.append(res_layer)
             self.ch_in = self._out_channels[i]
+            self.data_format = data_format
 
         if freeze_at >= 0:
             self._freeze_parameters(self.conv1)
@@ -578,7 +601,7 @@ class ResNet(nn.Layer):
     def forward(self, inputs):
         x = inputs['image']
         conv1 = self.conv1(x)
-        x = F.max_pool2d(conv1, kernel_size=3, stride=2, padding=1)
+        x = F.max_pool2d(conv1, kernel_size=3, stride=2, padding=1, data_format=self.data_format)
         outs = []
         for idx, stage in enumerate(self.res_layers):
             x = stage(x)
@@ -589,7 +612,7 @@ class ResNet(nn.Layer):
 
 @register
 class Res5Head(nn.Layer):
-    def __init__(self, depth=50):
+    def __init__(self, depth=50, data_format='NCHW'):
         super(Res5Head, self).__init__()
         feat_in, feat_out = [1024, 512]
         if depth < 50:
@@ -597,7 +620,7 @@ class Res5Head(nn.Layer):
         na = NameAdapter(self)
         block = BottleNeck if depth >= 50 else BasicBlock
         self.res5 = Blocks(
-            block, feat_in, feat_out, count=3, name_adapter=na, stage_num=5)
+            block, feat_in, feat_out, count=3, name_adapter=na, stage_num=5, data_format=data_format)
         self.feat_out = feat_out if depth < 50 else feat_out * 4
 
     @property
