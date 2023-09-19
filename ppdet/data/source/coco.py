@@ -25,7 +25,9 @@ from .dataset import DetDataset
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
-__all__ = ['COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet']
+__all__ = [
+    'COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet', 'COCODetDataset'
+]
 
 
 @register
@@ -585,3 +587,10 @@ class SemiCOCODataSet(COCODataSet):
         self._curr_iter += 1
 
         return self.transform(roidb)
+
+
+# for PaddleX
+@register
+@serializable
+class COCODetDataset(COCODataSet):
+    pass
