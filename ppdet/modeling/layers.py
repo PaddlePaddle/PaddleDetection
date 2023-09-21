@@ -1002,8 +1002,12 @@ class MaskMatrixNMS(object):
         keep = paddle.nonzero(keep)
         keep = paddle.squeeze(keep, axis=[1])
         # Prevent empty and increase fake data
-        keep = paddle.concat(
-            [keep, paddle.cast(paddle.shape(cate_scores)[0] - 1, 'int64')])
+        keep = paddle.concat([
+            keep,
+            paddle.cast(
+                paddle.reshape(paddle.shape(cate_scores) - 1, shape=[1]),
+                'int64')
+        ])
 
         seg_preds = paddle.gather(seg_preds, index=keep)
         cate_scores = paddle.gather(cate_scores, index=keep)
