@@ -464,7 +464,7 @@ class ResNet(nn.Layer):
                  num_stages=4,
                  std_senet=False,
                  freeze_stem_only=False,
-                 data_format='NHWC'):
+                 data_format='NCHW'):
         """
         Residual Network, see https://arxiv.org/abs/1512.03385
         
