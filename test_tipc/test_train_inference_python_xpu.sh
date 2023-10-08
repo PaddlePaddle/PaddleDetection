@@ -39,11 +39,15 @@
  # change gpu to xpu in tipc txt configs
  sed -i "s/use_gpu:True/use_xpu:True/g" $FILENAME
  sed -i "s/--device:gpu|cpu/--device:xpu|cpu/g" $FILENAME
+ sed -i "s/--device:gpu/--device:xpu/g" $FILENAME
+ sed -i "s/--device:cpu|gpu/--device:cpu|xpu/g" $FILENAME
  sed -i "s/trainer:pact_train/trainer:norm_train/g" $FILENAME
  sed -i "s/trainer:fpgm_train/trainer:norm_train/g" $FILENAME
  sed -i "s/--slim_config _template_pact/ /g" $FILENAME
  sed -i "s/--slim_config _template_fpgm/ /g" $FILENAME
  sed -i "s/--slim_config _template_kl_quant/ /g" $FILENAME
+  # python has been updated to version 3.9 for npu backend
+ sed -i "s/python3.7/python3.9/g" $FILENAME
  sed -i 's/\"gpu\"/\"xpu\"/g' test_tipc/test_train_inference_python.sh
 
  # parser params
@@ -58,6 +62,7 @@
      trainer_config=$(func_parser_config ${train_cmd})
      echo ${trainer_config}
      sed -i 's/use_gpu/use_xpu/g' "$REPO_ROOT_PATH/$trainer_config"
+     sed -i 's/aligned: True/aligned: False/g' "$REPO_ROOT_PATH/$trainer_config"
      # fine use_gpu in those included yaml
      sub_datalinee=`cat $REPO_ROOT_PATH/$trainer_config`
      IFS=$'\n'
@@ -67,9 +72,11 @@
          sub_config=${sub_lines[sub_line_num-1]} 
          dst=${#sub_config}-5
          sub_path=$(func_parser_dir "${trainer_config}")
+         sub_config_name=$(echo "$sub_config" | awk -F"'" '{ print $2 }')
          sub_config_path="${REPO_ROOT_PATH}${sub_path}/${sub_config:3:${dst}}"
          echo ${sub_config_path}
          sed -i 's/use_gpu/use_xpu/g' "$sub_config_path"
+         sed -i 's/aligned: True/aligned: False/g' "$sub_config_path"
      done
  done
 
