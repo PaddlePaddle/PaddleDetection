@@ -325,15 +325,15 @@ class DETRLoss(nn.Layer):
             match_indices = dn_match_indices
 
         if self.use_vfl:
-            if sum(len(a) for a in gt_bbox) > 0:
+            if gt_score is not None:  #ssod
+                _, target_score = self._get_src_target_assign(
+                    logits[-1].detach(), gt_score, match_indices)
+            elif sum(len(a) for a in gt_bbox) > 0:
                 src_bbox, target_bbox = self._get_src_target_assign(
                     boxes.detach(), gt_bbox, match_indices)
                 iou_score = bbox_iou(
                     bbox_cxcywh_to_xyxy(src_bbox).split(4, -1),
                     bbox_cxcywh_to_xyxy(target_bbox).split(4, -1))
-            if gt_score is not None:  #ssod
-                _, target_score = self._get_src_target_assign(
-                    logits[-1].detach(), gt_score, match_indices)
             else:
                 iou_score = None
         else:
