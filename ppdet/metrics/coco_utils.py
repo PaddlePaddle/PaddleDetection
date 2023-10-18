@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 from __future__ import absolute_import
@@ -28,7 +28,7 @@ from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 
-def get_infer_results(outs, catid, bias=0):
+def get_infer_results(outs, catid, bias=0, save_threshold=0):
     """
     Get result at the stage of inference.
     The output format is dictionary containing bbox or mask result.
@@ -42,6 +42,7 @@ def get_infer_results(outs, catid, bias=0):
         )
 
     im_id = outs['im_id']
+    im_file = outs['im_file'] if 'im_file' in outs else None
 
     infer_res = {}
     if 'bbox' in outs:
@@ -50,7 +51,13 @@ def get_infer_results(outs, catid, bias=0):
                 outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
         else:
             infer_res['bbox'] = get_det_res(
-                outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
+                outs['bbox'],
+                outs['bbox_num'],
+                im_id,
+                catid,
+                bias=bias,
+                im_file=im_file,
+                save_threshold=save_threshold)
 
     if 'mask' in outs:
         # mask post process
@@ -154,7 +161,7 @@ def cocoapi_eval(jsonfile,
         results_flatten = list(itertools.chain(*results_per_category))
         headers = ['category', 'AP'] * (num_columns // 2)
         results_2d = itertools.zip_longest(
-            * [results_flatten[i::num_columns] for i in range(num_columns)])
+            *[results_flatten[i::num_columns] for i in range(num_columns)])
         table_data = [headers]
         table_data += [result for result in results_2d]
         table = AsciiTable(table_data)

@@ -123,7 +123,7 @@ class BaseDataLoader(object):
         collate_batch (bool): whether to collate batch in dataloader.
             If set to True, the samples will collate into batch according
             to the batch size. Otherwise, the ground-truth will not collate,
-            which is used when the number of ground-truch is different in 
+            which is used when the number of ground-truch is different in
             samples.
         use_shared_memory (bool): whether to use shared memory to
                 accelerate data loading, enable this only if you
@@ -149,7 +149,7 @@ class BaseDataLoader(object):
         self._sample_transforms = Compose(
             sample_transforms, num_classes=num_classes)
 
-        # batch transfrom 
+        # batch transfrom
         self._batch_transforms = BatchCompose(batch_transforms, num_classes,
                                               collate_batch)
         self.batch_size = batch_size
@@ -514,7 +514,7 @@ class BaseSemiDataLoader(object):
                  batch_sampler_label=None,
                  batch_sampler_unlabel=None,
                  return_list=False):
-        # sup dataset 
+        # sup dataset
         self.dataset_label = dataset_label
         self.dataset_label.check_or_download_dataset()
         self.dataset_label.parse_dataset()
