@@ -113,17 +113,19 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
+    def __init__(self, rtn_im_file=False):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
+        self.rtn_im_file = rtn_im_file
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
         if 'image' not in sample:
             with open(sample['im_file'], 'rb') as f:
                 sample['image'] = f.read()
-            sample.pop('im_file')
+            if not self.rtn_im_file:
+                sample.pop('im_file')
 
         try:
             im = sample['image']
