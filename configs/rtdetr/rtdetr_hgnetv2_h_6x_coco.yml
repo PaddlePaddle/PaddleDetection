@@ -6,8 +6,8 @@ _BASE_: [
   '_base_/rtdetr_reader.yml',
 ]
 
-weights: output/rtdetr_hgnetv2_x_6x_coco/model_final
-pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/PPHGNetV2_X_ssld_pretrained.pdparams
+weights: output/rtdetr_hgnetv2_h_6x_coco/model_final
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/PPHGNetV2_H_ssld_pretrained.pdparams
 find_unused_parameters: True
 log_iter: 200
 
@@ -18,7 +18,7 @@ DETR:
 
 
 PPHGNetV2:
-  arch: 'X'
+  arch: 'H'
   return_idx: [1, 2, 3]
   freeze_stem_only: True
   freeze_at: 0
@@ -27,12 +27,12 @@ PPHGNetV2:
 
 
 HybridEncoder:
-  hidden_dim: 384
+  hidden_dim: 512
   use_encoder_idx: [2]
-  num_encoder_layers: 1
+  num_encoder_layers: 2
   encoder_layer:
     name: TransformerLayer
-    d_model: 384
+    d_model: 512
     nhead: 8
     dim_feedforward: 2048
     dropout: 0.
