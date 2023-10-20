@@ -103,7 +103,8 @@ class Detector(object):
                  threshold=0.5,
                  delete_shuffle_pass=False,
                  use_fd_format=False):
-        self.pred_config = self.set_config(model_dir, use_fd_format=use_fd_format)
+        self.pred_config = self.set_config(
+            model_dir, use_fd_format=use_fd_format)
         self.predictor, self.config = load_predictor(
             model_dir,
             self.pred_config.arch,
@@ -356,7 +357,10 @@ class Detector(object):
         if save_results:
             Path(self.output_dir).mkdir(exist_ok=True)
             self.save_coco_results(
-                img_list, results, use_coco_category=FLAGS.use_coco_category)
+                img_list,
+                results,
+                use_coco_category=FLAGS.use_coco_category,
+                task_type=FLAGS.task_type)
         return results
 
     def predict_image(self,
@@ -425,7 +429,10 @@ class Detector(object):
         if save_results:
             Path(self.output_dir).mkdir(exist_ok=True)
             self.save_coco_results(
-                image_list, results, use_coco_category=FLAGS.use_coco_category)
+                image_list,
+                results,
+                use_coco_category=FLAGS.use_coco_category,
+                task_type=FLAGS.task_type)
         return results
 
     def predict_video(self, video_file, camera_id):
@@ -469,7 +476,11 @@ class Detector(object):
                     break
         writer.release()
 
-    def save_coco_results(self, image_list, results, use_coco_category=False):
+    def save_coco_results(self,
+                          image_list,
+                          results,
+                          use_coco_category=False,
+                          task_type='Detection'):
         bbox_results = []
         mask_results = []
         idx = 0
@@ -483,13 +494,20 @@ class Detector(object):
 
             if 'boxes' in results:
                 boxes = results['boxes'][idx:idx + box_num].tolist()
+                if task_type == 'Rotate':
+                    bbox = [
+                        box[2], box[3], box[4], box[5], box[6], box[7], box[8],
+                        box[9]
+                    ]  # x1, y1, x2, y2, x3, y3, x4, y4
+                else:  # default is 'Detection'
+                    bbox: [box[2], box[3], box[4] - box[2],
+                           box[5] - box[3]]  # xyxy -> xywh
                 bbox_results.extend([{
                     'image_id': img_id,
                     'category_id': coco_clsid2catid[int(box[0])] \
                         if use_coco_category else int(box[0]),
                     'file_name': file_name,
-                    'bbox': [box[2], box[3], box[4] - box[2],
-                         box[5] - box[3]],  # xyxy -> xywh
+                    'bbox': bbox,
                     'score': box[1]} for box in boxes])
 
             if 'masks' in results:
@@ -547,22 +565,21 @@ class DetectorSOLOv2(Detector):
        
     """
 
-    def __init__(
-            self,
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            enable_mkldnn_bfloat16=False,
-            output_dir='./',
-            threshold=0.5, 
-            use_fd_format=False):
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False,
+                 output_dir='./',
+                 threshold=0.5,
+                 use_fd_format=False):
         super(DetectorSOLOv2, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -576,7 +593,7 @@ class DetectorSOLOv2(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, 
+            threshold=threshold,
             use_fd_format=use_fd_format)
 
     def predict(self, repeats=1, run_benchmark=False):
@@ -639,22 +656,21 @@ class DetectorPicoDet(Detector):
         enable_mkldnn_bfloat16 (bool): whether to turn on MKLDNN_BFLOAT16
     """
 
-    def __init__(
-            self,
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            enable_mkldnn_bfloat16=False,
-            output_dir='./',
-            threshold=0.5, 
-            use_fd_format=False):
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False,
+                 output_dir='./',
+                 threshold=0.5,
+                 use_fd_format=False):
         super(DetectorPicoDet, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -668,7 +684,7 @@ class DetectorPicoDet(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, 
+            threshold=threshold,
             use_fd_format=use_fd_format)
 
     def postprocess(self, inputs, result):
@@ -736,22 +752,21 @@ class DetectorCLRNet(Detector):
         enable_mkldnn_bfloat16 (bool): whether to turn on MKLDNN_BFLOAT16
     """
 
-    def __init__(
-            self,
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            enable_mkldnn_bfloat16=False,
-            output_dir='./',
-            threshold=0.5, 
-            use_fd_format=False):
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False,
+                 output_dir='./',
+                 threshold=0.5,
+                 use_fd_format=False):
         super(DetectorCLRNet, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -765,7 +780,7 @@ class DetectorCLRNet(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, 
+            threshold=threshold,
             use_fd_format=use_fd_format)
 
         deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
