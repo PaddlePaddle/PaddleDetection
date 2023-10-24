@@ -708,40 +708,32 @@ def nms(dets, match_threshold=0.6, match_metric='iou'):
     areas = (x2 - x1 + 1) * (y2 - y1 + 1)
     order = scores.argsort()[::-1]
 
-    ndets = dets.shape[0]
-    suppressed = np.zeros((ndets), dtype=np.int32)
+    keep = []
+    while order.size > 0:
+        i = order[0]
+        keep.append(i)
 
-    for _i in range(ndets):
-        i = order[_i]
-        if suppressed[i] == 1:
-            continue
-        ix1 = x1[i]
-        iy1 = y1[i]
-        ix2 = x2[i]
-        iy2 = y2[i]
-        iarea = areas[i]
-        for _j in range(_i + 1, ndets):
-            j = order[_j]
-            if suppressed[j] == 1:
-                continue
-            xx1 = max(ix1, x1[j])
-            yy1 = max(iy1, y1[j])
-            xx2 = min(ix2, x2[j])
-            yy2 = min(iy2, y2[j])
-            w = max(0.0, xx2 - xx1 + 1)
-            h = max(0.0, yy2 - yy1 + 1)
-            inter = w * h
-            if match_metric == 'iou':
-                union = iarea + areas[j] - inter
-                match_value = inter / union
-            elif match_metric == 'ios':
-                smaller = min(iarea, areas[j])
-                match_value = inter / smaller
-            else:
-                raise ValueError()
-            if match_value >= match_threshold:
-                suppressed[j] = 1
-    keep = np.where(suppressed == 0)[0]
+        xx1 = np.maximum(x1[i], x1[order[1:]])
+        yy1 = np.maximum(y1[i], y1[order[1:]])
+        xx2 = np.minimum(x2[i], x2[order[1:]])
+        yy2 = np.minimum(y2[i], y2[order[1:]])
+
+        w = np.maximum(0.0, xx2 - xx1 + 1)
+        h = np.maximum(0.0, yy2 - yy1 + 1)
+        inter = w * h
+
+        if match_metric == 'iou':
+            union = areas[i] + areas[order[1:]] - inter
+            match_value = inter / union
+        elif match_metric == 'ios':
+            smaller = np.minimum(areas[i], areas[order[1:]])
+            match_value = inter / smaller
+        else:
+            raise ValueError()
+
+        inds = np.where(match_value < match_threshold)[0]
+        order = order[inds + 1]
+
     dets = dets[keep, :]
     return dets
 
