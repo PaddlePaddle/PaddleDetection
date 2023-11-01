@@ -104,11 +104,11 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 
 - PaddleX官网地址：https://www.paddlepaddle.org.cn/paddle/PaddleX
 
-- 微信扫描下面二维码添加运营同学，并回复【PaddleX】，运营同学会邀请您加入官方交流群，获得更高效的问题答疑。
+- 欢迎微信扫描下方二维码或者点击[链接](https://aistudio.baidu.com/community/channel/610)进入AI Studio【PaddleX社区频道】获得更高效的技术答疑～
 
 <div align="center">
-<img src="https://raw.githubusercontent.com/PaddlePaddle/PaddleOCR/dygraph/doc/joinus_paddlex.jpg"  width = "150" height = "150",caption='' />
-<p>飞桨AI套件【PaddleX】技术交流群二维码</p>
+<img src="https://github.com/PaddlePaddle/PaddleClas/assets/45199522/e9f960f7-f0e5-4b92-95fb-79313bee2d89"  width = "150" height = "150",caption='' />
+<p>飞桨AI套件【PaddleX】社区频道二维码</p>
 </div>
 
 
