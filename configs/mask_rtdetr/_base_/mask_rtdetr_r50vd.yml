@@ -1,0 +1,76 @@
+architecture: DETR
+with_mask: True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+norm_type: sync_bn
+use_ema: True
+ema_decay: 0.9999
+ema_decay_type: "exponential"
+ema_filter_no_grad: True
+hidden_dim: 256
+use_focal_loss: True
+eval_size: [640, 640]
+num_prototypes: 32
+
+
+DETR:
+  backbone: ResNet
+  neck: MaskHybridEncoder
+  transformer: MaskRTDETR
+  detr_head: MaskDINOHead
+  post_process: DETRPostProcess
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [0, 1, 2, 3]
+  lr_mult_list: [0.1, 0.1, 0.1, 0.1]
+  num_stages: 4
+  freeze_stem_only: True
+
+MaskHybridEncoder:
+  hidden_dim: 256
+  use_encoder_idx: [3]
+  num_encoder_layers: 1
+  encoder_layer:
+    name: TransformerLayer
+    d_model: 256
+    nhead: 8
+    dim_feedforward: 1024
+    dropout: 0.
+    activation: 'gelu'
+  expansion: 1.0
+
+
+MaskRTDETR:
+  num_queries: 300
+  position_embed_type: sine
+  feat_strides: [8, 16, 32]
+  num_levels: 3
+  nhead: 8
+  num_decoder_layers: 6
+  dim_feedforward: 1024
+  dropout: 0.0
+  activation: relu
+  num_denoising: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  learnt_init_query: False
+  mask_enhanced: True
+
+MaskDINOHead:
+  loss:
+    name: MaskDINOLoss
+    loss_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5}
+    aux_loss: True
+    use_vfl: True
+    vfl_iou_type: 'mask'
+    matcher:
+      name: HungarianMatcher
+      matcher_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5}
+
+DETRPostProcess:
+  num_top_queries: 100
+  mask_stride: 4

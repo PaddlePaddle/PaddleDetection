@@ -2354,6 +2354,18 @@ class Pad(BaseOperator):
             sample['gt_keypoint'] = self.apply_keypoint(sample['gt_keypoint'],
                                                         offsets)
 
+        if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            masks = [
+                cv2.copyMakeBorder(
+                    gt_segm,
+                    offset_y, h - (offset_y + im_h),
+                    offset_x, w - (offset_x + im_w),
+                    borderType=cv2.BORDER_CONSTANT,
+                    value=0)
+                for gt_segm in sample['gt_segm']
+            ]
+            sample['gt_segm'] = np.asarray(masks, dtype=np.uint8)
+
         return sample
 
 

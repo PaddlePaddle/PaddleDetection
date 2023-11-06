@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -26,7 +26,7 @@ from ..layers import MultiHeadAttention
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 
-__all__ = ['HybridEncoder']
+__all__ = ['HybridEncoder', 'MaskHybridEncoder']
 
 
 class CSPRepLayer(nn.Layer):
@@ -299,3 +299,105 @@ class HybridEncoder(nn.Layer):
                 channels=self.hidden_dim, stride=self.feat_strides[idx])
             for idx in range(len(self.in_channels))
         ]
+
+
+class FPNMaskLayer(nn.Layer):
+    def __init__(self,
+                 in_channels=[256, 256, 256, 256],
+                 feat_strides=[4, 8, 16, 32],
+                 feat_channels=128,
+                 num_prototypes=32,
+                 act='silu'):
+        super().__init__()
+        assert len(feat_strides) == len(in_channels)
+        assert min(feat_strides) == feat_strides[0]
+        self.feat_strides = feat_strides
+
+        self.scale_heads = nn.LayerList()
+        for i in range(len(feat_strides)):
+            head_length = max(
+                1,
+                int(np.log2(feat_strides[i]) - np.log2(feat_strides[0])))
+            scale_head = []
+            for k in range(head_length):
+                scale_head.append(
+                    BaseConv(
+                        in_channels[i] if k == 0 else feat_channels,
+                        feat_channels, ksize=3, stride=1, act=act))
+                if feat_strides[i] != feat_strides[0]:
+                    scale_head.append(
+                        nn.Upsample(
+                            scale_factor=2,
+                            mode='bilinear',
+                            align_corners=False))
+            self.scale_heads.append(nn.Sequential(*scale_head))
+
+        self.output_head = nn.Sequential(
+            BaseConv(
+                feat_channels, feat_channels,
+                ksize=3, stride=1, act=act),
+            nn.Conv2D(feat_channels, num_prototypes, kernel_size=1))
+
+    def forward(self, inputs):
+        output = self.scale_heads[0](inputs[0])
+        for i in range(1, len(self.feat_strides)):
+            output = output + F.interpolate(
+                self.scale_heads[i](inputs[i]),
+                size=output.shape[-2:],
+                mode='bilinear',
+                align_corners=False)
+        output = self.output_head(output)
+        return output
+
+
+@register
+@serializable
+class MaskHybridEncoder(HybridEncoder):
+    __shared__ = ['depth_mult', 'act', 'trt', 'eval_size', 'num_prototypes']
+    __inject__ = ['encoder_layer']
+
+    def __init__(self,
+                 in_channels=[256, 512, 1024, 2048],
+                 feat_strides=[4, 8, 16, 32],
+                 hidden_dim=256,
+                 use_encoder_idx=[3],
+                 num_encoder_layers=1,
+                 encoder_layer='TransformerLayer',
+                 mask_feat_channels=128,
+                 num_prototypes=32,
+                 pe_temperature=10000,
+                 expansion=1.0,
+                 depth_mult=1.0,
+                 act='silu',
+                 trt=False,
+                 eval_size=None):
+        feat0_dim = in_channels.pop(0)
+        feat0_stride = feat_strides.pop(0)
+        assert feat0_stride == 4
+        use_encoder_idx = [i - 1 for i in use_encoder_idx]
+        super(MaskHybridEncoder, self).__init__(
+            in_channels=in_channels,
+            feat_strides=feat_strides,
+            hidden_dim=hidden_dim,
+            use_encoder_idx=use_encoder_idx,
+            num_encoder_layers=num_encoder_layers,
+            encoder_layer=encoder_layer,
+            pe_temperature=pe_temperature,
+            expansion=expansion,
+            depth_mult=depth_mult,
+            act=act,
+            trt=trt,
+            eval_size=eval_size)
+        self.mask_head = FPNMaskLayer(
+            [feat0_dim] + [hidden_dim] * len(feat_strides),
+            [feat0_stride] + feat_strides,
+            feat_channels=mask_feat_channels,
+            num_prototypes=num_prototypes,
+            act=act)
+
+    def forward(self, feats, for_mot=False, is_teacher=False):
+        feat0 = feats.pop(0)
+        output = super(MaskHybridEncoder, self).forward(
+            feats, for_mot=for_mot, is_teacher=is_teacher)
+        mask_feat = self.mask_head([feat0] + output)
+        return output, mask_feat

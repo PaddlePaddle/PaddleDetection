@@ -1,0 +1,24 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/mask_rtdetr_r50vd.yml',
+  '_base_/mask_rtdetr_reader.yml',
+]
+
+weights: output/mask_rtdetr_hgnetv2_l_6x_coco/model_final
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/PPHGNetV2_L_ssld_pretrained.pdparams
+find_unused_parameters: True
+log_iter: 5 # 200
+save_dir: output/mask_rtdetr_hgnetv2_l_6x_coco
+
+DETR:
+  backbone: PPHGNetV2
+
+PPHGNetV2:
+  arch: 'L'
+  return_idx: [0, 1, 2, 3]
+  freeze_stem_only: True
+  freeze_at: 0
+  freeze_norm: True
+  lr_mult_list: [0., 0.05, 0.05, 0.05, 0.05]
