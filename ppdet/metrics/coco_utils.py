@@ -106,7 +106,10 @@ def cocoapi_eval(jsonfile,
         from xtcocotools.cocoeval import COCOeval
     else:
         from pycocotools.coco import COCO
-        from pycocotools.cocoeval import COCOeval
+        try:
+            from .fast_cocoeval import FastCOCOeval as COCOeval
+        except:
+            from pycocotools.cocoeval import COCOeval
 
     if coco_gt == None:
         coco_gt = COCO(anno_file)
