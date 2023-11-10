@@ -1,0 +1,18 @@
+epoch: 80
+
+LearningRate:
+  base_lr: 0.001
+  schedulers:
+    - name: CosineDecay
+      max_epochs: 96
+    - name: LinearWarmup
+      start_factor: 0.
+      epochs: 5
+
+OptimizerBuilder:
+  optimizer:
+    momentum: 0.9
+    type: Momentum
+  regularizer:
+    factor: 0.0005
+    type: L2
