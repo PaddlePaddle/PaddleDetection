@@ -434,7 +434,7 @@ class Trainer(object):
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 
-        # enabel auto mixed precision mode
+        # enable auto mixed precision mode
         if self.use_amp:
             scaler = paddle.amp.GradScaler(
                 enable=self.cfg.use_gpu or self.cfg.use_npu or self.cfg.use_mlu,
