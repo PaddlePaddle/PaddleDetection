@@ -9,7 +9,7 @@ _BASE_: [
 weights: output/mask_rtdetr_hgnetv2_l_6x_coco/model_final
 pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/PPHGNetV2_L_ssld_pretrained.pdparams
 find_unused_parameters: True
-log_iter: 5 # 200
+log_iter: 200
 save_dir: output/mask_rtdetr_hgnetv2_l_6x_coco
 
 DETR:
