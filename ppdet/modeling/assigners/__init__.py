@@ -21,6 +21,8 @@ from . import fcosr_assigner
 from . import rotated_task_aligned_assigner
 from . import task_aligned_assigner_cr
 from . import uniform_assigner
+from . import inst_atss_assigner
+from . import inst_task_aligned_assigner
 
 from .utils import *
 from .task_aligned_assigner import *
@@ -33,3 +35,5 @@ from .task_aligned_assigner_cr import *
 from .uniform_assigner import *
 from .hungarian_assigner import *
 from .pose_utils import *
+from .inst_atss_assigner import *
+from .inst_task_aligned_assigner import *
