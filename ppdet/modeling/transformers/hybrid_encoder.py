@@ -332,7 +332,7 @@ class MaskFeatFPN(nn.Layer):
                 in_c = in_channels[i] if k == 0 else feat_channels
                 scale_head.append(
                     nn.Sequential(
-                        BaseConv(in_c, feat_channels, 3, 1, act=act))
+                        RepVggBlock(in_c, feat_channels, act=act))
                 )
                 if fpn_strides[i] != fpn_strides[0]:
                     scale_head.append(
@@ -406,7 +406,7 @@ class MaskHybridEncoder(HybridEncoder):
         self.mask_feat_head = MaskFeatFPN(
             [hidden_dim] * len(feat_strides),
             feat_strides,
-            feat_channels=64,
+            feat_channels=256,
             out_channels=64,
             act=act)
         self.enc_mask_lateral = BaseConv(

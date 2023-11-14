@@ -22,3 +22,7 @@ PPHGNetV2:
   freeze_at: 0
   freeze_norm: True
   lr_mult_list: [0., 0.05, 0.05, 0.05, 0.05]
+
+MaskRTDETR:
+  eval_idx: 5
+  num_decoder_layers: 9

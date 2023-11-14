@@ -66,7 +66,7 @@ MaskDINOHead:
     loss_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5}
     aux_loss: True
     use_vfl: True
-    vfl_iou_type: 'mask'
+    vfl_iou_type: 'bbox&mask'
     matcher:
       name: HungarianMatcher
       matcher_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5}

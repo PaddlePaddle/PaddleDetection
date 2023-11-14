@@ -364,6 +364,42 @@ class DETRLoss(nn.Layer):
                     union = src_mask.sum(1) + target_mask.sum(1) - inter
                     iou_score = (inter + 1e-2) / (union + 1e-2)
                     iou_score = iou_score.unsqueeze(-1)
+                elif self.vfl_iou_type == 'bbox&mask':
+                    src_bbox, target_bbox = self._get_src_target_assign(
+                        boxes.detach(), gt_bbox, match_indices)
+                    bbox_iou_score = bbox_iou(
+                        bbox_cxcywh_to_xyxy(src_bbox).split(4, -1),
+                        bbox_cxcywh_to_xyxy(target_bbox).split(4, -1))
+
+                    assert (masks is not None and gt_mask is not None,
+                            'Make sure the input has `mask` and `gt_mask`')
+                    assert sum(len(a) for a in gt_mask) > 0
+                    src_mask, target_mask = self._get_src_target_assign(
+                        masks.detach(), gt_mask, match_indices)
+                    src_mask = F.interpolate(
+                        src_mask.unsqueeze(0),
+                        scale_factor=2,
+                        mode='bilinear',
+                        align_corners=False).squeeze(0)
+                    target_mask = F.interpolate(
+                        target_mask.unsqueeze(0),
+                        size=src_mask.shape[-2:],
+                        mode='bilinear',
+                        align_corners=False).squeeze(0)
+                    src_mask = src_mask.flatten(1)
+                    src_mask = F.sigmoid(src_mask)
+                    src_mask = paddle.where(
+                        src_mask > 0.5, 1., 0.).astype(masks.dtype)
+                    target_mask = target_mask.flatten(1)
+                    target_mask = paddle.where(
+                        target_mask > 0.5, 1., 0.).astype(masks.dtype)
+                    inter = (src_mask * target_mask).sum(1)
+                    union = src_mask.sum(1) + target_mask.sum(1) - inter
+                    mask_iou_score = (inter + 1e-2) / (union + 1e-2)
+                    mask_iou_score = mask_iou_score.unsqueeze(-1)
+
+                    iou_score = 0.5 * bbox_iou_score + 0.5 * mask_iou_score
+
                 else:
                     iou_score = None
             else:
