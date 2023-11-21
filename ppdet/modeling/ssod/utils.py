@@ -80,3 +80,25 @@ def QFLv2(pred_sigmoid,
     elif reduction == "sum":
         loss = loss[valid].sum()
     return loss
+
+
+def filter_invalid(bbox, label=None, score=None, thr=0.0, min_size=0):
+    if score.numel() > 0:
+        soft_score = score.max(-1)
+        valid = soft_score >= thr
+        bbox = bbox[valid]
+
+        if label is not None:
+            label = label[valid]
+        score = score[valid]
+    if min_size is not None and bbox.shape[0] > 0:
+        bw = bbox[:, 2]
+        bh = bbox[:, 3]
+        valid = (bw > min_size) & (bh > min_size)
+        bbox = bbox[valid]
+
+        if label is not None:
+            label = label[valid]
+            score = score[valid]
+
+    return bbox, label, score

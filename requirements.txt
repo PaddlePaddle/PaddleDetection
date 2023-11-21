@@ -10,6 +10,7 @@ terminaltables
 Cython
 pycocotools
 setuptools
+Pillow
 
 # for MOT evaluation and inference
 lap

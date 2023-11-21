@@ -218,14 +218,19 @@ class TransformerDecoder(nn.Layer):
                 score_head,
                 query_pos_head,
                 attn_mask=None,
-                memory_mask=None):
+                memory_mask=None,
+                query_pos_head_inv_sig=False):
         output = tgt
         dec_out_bboxes = []
         dec_out_logits = []
         ref_points_detach = F.sigmoid(ref_points_unact)
         for i, layer in enumerate(self.layers):
             ref_points_input = ref_points_detach.unsqueeze(2)
-            query_pos_embed = query_pos_head(ref_points_detach)
+            if not query_pos_head_inv_sig:
+                query_pos_embed = query_pos_head(ref_points_detach)
+            else:
+                query_pos_embed = query_pos_head(
+                    inverse_sigmoid(ref_points_detach))
 
             output = layer(output, ref_points_input, memory,
                            memory_spatial_shapes, memory_level_start_index,
@@ -276,6 +281,7 @@ class RTDETRTransformer(nn.Layer):
                  label_noise_ratio=0.5,
                  box_noise_scale=1.0,
                  learnt_init_query=True,
+                 query_pos_head_inv_sig=False,
                  eval_size=None,
                  eval_idx=-1,
                  eps=1e-2):
@@ -321,6 +327,7 @@ class RTDETRTransformer(nn.Layer):
         if learnt_init_query:
             self.tgt_embed = nn.Embedding(num_queries, hidden_dim)
         self.query_pos_head = MLP(4, 2 * hidden_dim, hidden_dim, num_layers=2)
+        self.query_pos_head_inv_sig = query_pos_head_inv_sig
 
         # encoder head
         self.enc_output = nn.Sequential(
@@ -432,7 +439,7 @@ class RTDETRTransformer(nn.Layer):
         level_start_index.pop()
         return (feat_flatten, spatial_shapes, level_start_index)
 
-    def forward(self, feats, pad_mask=None, gt_meta=None):
+    def forward(self, feats, pad_mask=None, gt_meta=None, is_teacher=False):
         # input projection and embedding
         (memory, spatial_shapes,
          level_start_index) = self._get_encoder_input(feats)
@@ -452,7 +459,7 @@ class RTDETRTransformer(nn.Layer):
 
         target, init_ref_points_unact, enc_topk_bboxes, enc_topk_logits = \
             self._get_decoder_input(
-            memory, spatial_shapes, denoising_class, denoising_bbox_unact)
+            memory, spatial_shapes, denoising_class, denoising_bbox_unact,is_teacher)
 
         # decoder
         out_bboxes, out_logits = self.decoder(
@@ -464,7 +471,9 @@ class RTDETRTransformer(nn.Layer):
             self.dec_bbox_head,
             self.dec_score_head,
             self.query_pos_head,
-            attn_mask=attn_mask)
+            attn_mask=attn_mask,
+            memory_mask=None,
+            query_pos_head_inv_sig=self.query_pos_head_inv_sig)
         return (out_bboxes, out_logits, enc_topk_bboxes, enc_topk_logits,
                 dn_meta)
 
@@ -504,10 +513,11 @@ class RTDETRTransformer(nn.Layer):
                            memory,
                            spatial_shapes,
                            denoising_class=None,
-                           denoising_bbox_unact=None):
+                           denoising_bbox_unact=None,
+                           is_teacher=False):
         bs, _, _ = memory.shape
         # prepare input for decoder
-        if self.training or self.eval_size is None:
+        if self.training or self.eval_size is None or is_teacher:
             anchors, valid_mask = self._generate_anchors(spatial_shapes)
         else:
             anchors, valid_mask = self.anchors, self.valid_mask

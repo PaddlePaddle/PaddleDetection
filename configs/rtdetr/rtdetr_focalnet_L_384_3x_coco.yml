@@ -1,0 +1,87 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/rtdetr_r50vd.yml',
+  '_base_/rtdetr_reader.yml',
+]
+
+weights: output/rtdetr_focalnet_L_384_3x_coco/model_final
+find_unused_parameters: True
+log_iter: 100
+snapshot_epoch: 2
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/focalnet_large_fl4_pretrained_on_o365.pdparams
+DETR:
+  backbone: FocalNet
+  neck: HybridEncoder
+  transformer: RTDETRTransformer
+  detr_head: DINOHead
+  post_process: DETRPostProcess
+
+FocalNet:
+  arch: 'focalnet_L_384_22k_fl4'
+  out_indices: [1, 2, 3]
+
+HybridEncoder:
+  hidden_dim: 256
+  use_encoder_idx: [2]
+  num_encoder_layers: 6 #
+  encoder_layer:
+    name: TransformerLayer
+    d_model: 256
+    nhead: 8
+    dim_feedforward: 2048
+    dropout: 0.
+    activation: 'gelu'
+  expansion: 1.0
+
+
+RTDETRTransformer:
+  num_queries: 300
+  position_embed_type: sine
+  feat_strides: [8, 16, 32]
+  num_levels: 3
+  nhead: 8
+  num_decoder_layers: 6
+  dim_feedforward: 2048 #
+  dropout: 0.0
+  activation: relu
+  num_denoising: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  learnt_init_query: False
+  query_pos_head_inv_sig: True #
+
+DINOHead:
+  loss:
+    name: DINOLoss
+    loss_coeff: {class: 1, bbox: 5, giou: 2}
+    aux_loss: True
+    use_vfl: True
+    matcher:
+      name: HungarianMatcher
+      matcher_coeff: {class: 2, bbox: 5, giou: 2}
+
+DETRPostProcess:
+  num_top_queries: 300
+
+
+epoch: 36
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [36]
+    use_warmup: false
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+    param_groups:
+      - params: ['absolute_pos_embed', 'relative_position_bias_table', 'norm']
+        weight_decay: 0.0

@@ -16,11 +16,21 @@ from __future__ import division
 
 import os
 import cv2
+import math
 import numpy as np
+import PIL
 from PIL import Image, ImageDraw, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-import math
 
+def imagedraw_textsize_c(draw, text):
+    if int(PIL.__version__.split('.')[0]) < 10:
+        tw, th = draw.textsize(text)
+    else:
+        left, top, right, bottom = draw.textbbox((0, 0), text)
+        tw, th = right - left, bottom - top
+
+    return tw, th
+    
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
     """
@@ -159,7 +169,7 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)
-        tw, th = draw.textsize(text)
+        tw, th = imagedraw_textsize_c(draw, text)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
@@ -497,7 +507,7 @@ def draw_press_box_lanes(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{}".format(labels[clsid])
-        tw, th = draw.textsize(text)
+        tw, th = imagedraw_textsize_c(draw, text)
         draw.rectangle(
             [(xmin + 1, ymax - th), (xmin + tw + 1, ymax)], fill=color)
         draw.text((xmin + 1, ymax - th), text, fill=(0, 0, 255))
@@ -570,7 +580,7 @@ def visualize_vehicle_retrograde(im, mot_res, vehicle_retrograde_res):
 
             # draw label
             text = "retrograde"
-            tw, th = draw.textsize(text)
+            tw, th = imagedraw_textsize_c(draw, text)
             draw.rectangle(
                 [(xmax + 1, ymin - th), (xmax + tw + 1, ymin)],
                 fill=(0, 255, 0))

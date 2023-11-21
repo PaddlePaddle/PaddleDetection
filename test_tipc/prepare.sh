@@ -91,6 +91,7 @@ elif [ ${MODE} = "benchmark_train" ];then
         cd ./dataset/ && tar -xf coco.tar
         ls ./coco/
         cd ../
+        pip3 install opencv-python==4.5.2.54
     elif [[ ${model_name} =~ "ppyoloe_r_crn_s_3x_spine_coco" ]];then
         wget -nc -P ./dataset/spine_coco/ https://paddledet.bj.bcebos.com/data/tipc/spine_coco_tipc.tar --no-check-certificate
         cd ./dataset/spine_coco/ && tar -xvf spine_coco_tipc.tar && mv -n spine_coco_tipc/* .

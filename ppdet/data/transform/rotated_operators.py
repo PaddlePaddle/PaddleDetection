@@ -31,6 +31,7 @@ import copy
 from .operators import register_op, BaseOperator
 from ppdet.modeling.rbox_utils import poly2rbox_le135_np, poly2rbox_oc_np, rbox2poly_np
 from ppdet.utils.logger import setup_logger
+from ppdet.utils.compact import imagedraw_textsize_c
 logger = setup_logger(__name__)
 
 
@@ -433,7 +434,7 @@ class VisibleRBox(BaseOperator):
             xmin = min(x1, x2, x3, x4)
             ymin = min(y1, y2, y3, y4)
             text = str(gt_class[i][0])
-            tw, th = draw.textsize(text)
+            tw, th = imagedraw_textsize_c(draw, text)
             draw.rectangle(
                 [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
             draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))

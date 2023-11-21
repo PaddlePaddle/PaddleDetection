@@ -17,9 +17,28 @@ from __future__ import division
 import os
 import cv2
 import numpy as np
+import PIL
 from PIL import Image, ImageDraw, ImageFile
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 from collections import deque
+
+def imagedraw_textsize_c(draw, text):
+    if int(PIL.__version__.split('.')[0]) < 10:
+        tw, th = draw.textsize(text)
+    else:
+        left, top, right, bottom = draw.textbbox((0, 0), text)
+        tw, th = right - left, bottom - top
+
+    return tw, th
+
+def imagedraw_textsize_c(draw, text):
+    if int(PIL.__version__.split('.')[0]) < 10:
+        tw, th = draw.textsize(text)
+    else:
+        left, top, right, bottom = draw.textbbox((0, 0), text)
+        tw, th = right - left, bottom - top
+
+    return tw, th
 
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
@@ -109,7 +128,7 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)
-        tw, th = draw.textsize(text)
+        tw, th = imagedraw_textsize_c(draw, text)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))

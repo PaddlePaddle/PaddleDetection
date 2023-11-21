@@ -48,7 +48,7 @@ from ppdet.utils import profiler
 from ppdet.modeling.post_process import multiclass_nms
 from ppdet.modeling.lane_utils import imshow_lanes
 
-from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback
+from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback, SemiCheckpointer, SemiLogPrinter
 from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
 
 from paddle.distributed.fleet.utils.hybrid_parallel_util import fused_allreduce_gradients
@@ -73,6 +73,7 @@ class Trainer(object):
         self.amp_level = self.cfg.get('amp_level', 'O1')
         self.custom_white_list = self.cfg.get('custom_white_list', None)
         self.custom_black_list = self.cfg.get('custom_black_list', None)
+        self.use_master_grad = self.cfg.get('master_grad', False)
         if 'slim' in cfg and cfg['slim_type'] == 'PTQ':
             self.cfg['TestDataset'] = create('TestDataset')()
 
@@ -180,10 +181,19 @@ class Trainer(object):
                 self.pruner = create('UnstructuredPruner')(self.model,
                                                            steps_per_epoch)
         if self.use_amp and self.amp_level == 'O2':
-            self.model, self.optimizer = paddle.amp.decorate(
-                models=self.model,
-                optimizers=self.optimizer,
-                level=self.amp_level)
+            paddle_version = paddle.__version__[:3]
+            # paddle version >= 2.5.0 or develop
+            if paddle_version in ["2.5", "0.0"]:
+                self.model, self.optimizer = paddle.amp.decorate(
+                    models=self.model,
+                    optimizers=self.optimizer,
+                    level=self.amp_level,
+                    master_grad=self.use_master_grad)
+            else:
+                self.model, self.optimizer = paddle.amp.decorate(
+                    models=self.model,
+                    optimizers=self.optimizer,
+                    level=self.amp_level)
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)
@@ -216,7 +226,11 @@ class Trainer(object):
 
     def _init_callbacks(self):
         if self.mode == 'train':
-            self._callbacks = [LogPrinter(self), Checkpointer(self)]
+            if self.cfg.get('ssod_method',
+                            False) and self.cfg['ssod_method'] == 'Semi_RTDETR':
+                self._callbacks = [SemiLogPrinter(self), SemiCheckpointer(self)]
+            else:
+                self._callbacks = [LogPrinter(self), Checkpointer(self)]
             if self.cfg.get('use_vdl', False):
                 self._callbacks.append(VisualDLWriter(self))
             if self.cfg.get('save_proposals', False):
@@ -253,6 +267,8 @@ class Trainer(object):
             clsid2catid = {v: k for k, v in self.dataset.catid2clsid.items()} \
                                 if self.mode == 'eval' else None
 
+            save_threshold = self.cfg.get('save_threshold', 0)
+
             # when do validation in train, annotation file should be get from
             # EvalReader instead of self.dataset(which is TrainReader)
             if self.mode == 'train' and validate:
@@ -274,7 +290,8 @@ class Trainer(object):
                         output_eval=output_eval,
                         bias=bias,
                         IouType=IouType,
-                        save_prediction_only=save_prediction_only)
+                        save_prediction_only=save_prediction_only,
+                        save_threshold=save_threshold)
                 ]
             elif self.cfg.metric == "SNIPERCOCO":  # sniper
                 self._metrics = [
@@ -844,7 +861,7 @@ class Trainer(object):
         clsid2catid, catid2name = get_categories(
             self.cfg.metric, anno_file=anno_file)
 
-        # Run Infer 
+        # Run Infer
         self.status['mode'] = 'test'
         self.model.eval()
         if self.cfg.get('print_flops', False):
@@ -945,7 +962,8 @@ class Trainer(object):
                 draw_threshold=0.5,
                 output_dir='output',
                 save_results=False,
-                visualize=True):
+                visualize=True,
+                save_threshold=0):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
@@ -968,6 +986,7 @@ class Trainer(object):
             self.cfg['save_prediction_only'] = True
             self.cfg['output_eval'] = output_dir
             self.cfg['imid2path'] = imid2path
+            self.cfg['save_threshold'] = save_threshold
             self._init_metrics()
 
             # restore
@@ -996,7 +1015,7 @@ class Trainer(object):
         clsid2catid, catid2name = get_categories(
             self.cfg.metric, anno_file=anno_file)
 
-        # Run Infer 
+        # Run Infer
         self.status['mode'] = 'test'
         self.model.eval()
         if self.cfg.get('print_flops', False):
@@ -1082,7 +1101,10 @@ class Trainer(object):
     def _get_infer_cfg_and_input_spec(self,
                                       save_dir,
                                       prune_input=True,
-                                      kl_quant=False):
+                                      kl_quant=False,
+                                      yaml_name=None):
+        if yaml_name is None:
+            yaml_name = 'infer_cfg.yml'
         image_shape = None
         im_shape = [None, 2]
         scale_factor = [None, 2]
@@ -1133,7 +1155,7 @@ class Trainer(object):
 
         # Save infer cfg
         _dump_infer_config(self.cfg,
-                           os.path.join(save_dir, 'infer_cfg.yml'), image_shape,
+                           os.path.join(save_dir, yaml_name), image_shape,
                            self.model)
 
         input_spec = [{
@@ -1157,7 +1179,7 @@ class Trainer(object):
             })
         if prune_input:
             static_model = paddle.jit.to_static(
-                self.model, input_spec=input_spec)
+                self.model, input_spec=input_spec, full_graph=True)
             # NOTE: dy2st do not pruned program, but jit.save will prune program
             # input spec, prune input spec here and save with pruned input spec
             pruned_input_spec = _prune_input_spec(
@@ -1189,7 +1211,7 @@ class Trainer(object):
 
         return static_model, pruned_input_spec
 
-    def export(self, output_dir='output_inference'):
+    def export(self, output_dir='output_inference', for_fd=False):
         if hasattr(self.model, 'aux_neck'):
             self.model.__delattr__('aux_neck')
         if hasattr(self.model, 'aux_head'):
@@ -1197,23 +1219,31 @@ class Trainer(object):
         self.model.eval()
 
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
-        save_dir = os.path.join(output_dir, model_name)
+        if for_fd:
+            save_dir = output_dir
+            save_name = 'inference'
+            yaml_name = 'inference.yml'
+        else:
+            save_dir = os.path.join(output_dir, model_name)
+            save_name = 'model'
+            yaml_name = None
+
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
 
         static_model, pruned_input_spec = self._get_infer_cfg_and_input_spec(
-            save_dir)
+            save_dir, yaml_name=yaml_name)
 
         # dy2st and save model
         if 'slim' not in self.cfg or 'QAT' not in self.cfg['slim_type']:
             paddle.jit.save(
                 static_model,
-                os.path.join(save_dir, 'model'),
+                os.path.join(save_dir, save_name),
                 input_spec=pruned_input_spec)
         else:
             self.cfg.slim.save_quantized_model(
                 self.model,
-                os.path.join(save_dir, 'model'),
+                os.path.join(save_dir, save_name),
                 input_spec=pruned_input_spec)
         logger.info("Export model and saved in {}".format(save_dir))
 
@@ -1345,7 +1375,7 @@ class Trainer(object):
         else:
             metrics = []
 
-        # Run Infer 
+        # Run Infer
         self.status['mode'] = 'test'
         self.model.eval()
         if self.cfg.get('print_flops', False):

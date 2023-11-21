@@ -211,6 +211,13 @@ def argsparser():
         type=str,
         default="shape_range_info.pbtxt",
         help="Path of a dynamic shape file for tensorrt.")
+    parser.add_argument("--use_fd_format", action="store_true")
+    parser.add_argument(
+        "--task_type",
+        type=str,
+        default='Detection',
+        help="How to save the coco result, it only work with save_results==True.  Optional inputs are Rotate or Detection, default is Detection."
+    )
     return parser
 
 

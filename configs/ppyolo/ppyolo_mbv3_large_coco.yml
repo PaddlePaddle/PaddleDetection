@@ -9,6 +9,9 @@ _BASE_: [
 snapshot_epoch: 10
 weights: output/ppyolo_mbv3_large_coco/model_final
 
+# AMP training
+master_grad: true
+
 TrainReader:
   inputs_def:
     num_max_boxes: 90

@@ -35,7 +35,7 @@ import os
 import copy
 import logging
 import cv2
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageEnhance
 import pickle
 import threading
 MUTEX = threading.Lock()
@@ -51,6 +51,8 @@ from .op_helper import (satisfy_sample_constraint, filter_and_process,
                         is_poly, get_border)
 
 from ppdet.utils.logger import setup_logger
+from ppdet.utils.compact import imagedraw_textsize_c
+
 from ppdet.modeling.keypoint_utils import get_affine_transform, affine_transform
 logger = setup_logger(__name__)
 
@@ -111,17 +113,19 @@ class BaseOperator(object):
 
 @register_op
 class Decode(BaseOperator):
-    def __init__(self):
+    def __init__(self, rtn_im_file=False):
         """ Transform the image data to numpy format following the rgb format
         """
         super(Decode, self).__init__()
+        self.rtn_im_file = rtn_im_file
 
     def apply(self, sample, context=None):
         """ load image if 'im_file' field is not empty but 'image' is"""
         if 'image' not in sample:
             with open(sample['im_file'], 'rb') as f:
                 sample['image'] = f.read()
-            sample.pop('im_file')
+            if not self.rtn_im_file:
+                sample.pop('im_file')
 
         try:
             im = sample['image']
@@ -488,10 +492,10 @@ class RandomDistort(BaseOperator):
         saturation (list): saturation settings. in [lower, upper, probability] format.
         contrast (list): contrast settings. in [lower, upper, probability] format.
         brightness (list): brightness settings. in [lower, upper, probability] format.
-        random_apply (bool): whether to apply in random (yolo) or fixed (SSD)
-            order.
-        count (int): the number of doing distrot
-        random_channel (bool): whether to swap channels randomly
+        random_apply (bool): whether to apply in random (yolo) or fixed (SSD) order.
+        count (int): the number of doing distrot.
+        random_channel (bool): whether to swap channels randomly.
+        prob (float): the probability of enhancing the sample.
     """
 
     def __init__(self,
@@ -517,19 +521,10 @@ class RandomDistort(BaseOperator):
         low, high, prob = self.hue
         if np.random.uniform(0., 1.) < prob:
             return img
-
-        img = img.astype(np.float32)
-        # it works, but result differ from HSV version
         delta = np.random.uniform(low, high)
-        u = np.cos(delta * np.pi)
-        w = np.sin(delta * np.pi)
-        bt = np.array([[1.0, 0.0, 0.0], [0.0, u, -w], [0.0, w, u]])
-        tyiq = np.array([[0.299, 0.587, 0.114], [0.596, -0.274, -0.321],
-                         [0.211, -0.523, 0.311]])
-        ityiq = np.array([[1.0, 0.956, 0.621], [1.0, -0.272, -0.647],
-                          [1.0, -1.107, 1.705]])
-        t = np.dot(np.dot(ityiq, bt), tyiq).T
-        img = np.dot(img, t)
+        img = np.array(img.convert('HSV'))
+        img[:, :, 0] = img[:, :, 0] + delta
+        img = Image.fromarray(img, mode='HSV').convert('RGB')
         return img
 
     def apply_saturation(self, img):
@@ -537,13 +532,7 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        # it works, but result differ from HSV version
-        gray = img * np.array([[[0.299, 0.587, 0.114]]], dtype=np.float32)
-        gray = gray.sum(axis=2, keepdims=True)
-        gray *= (1.0 - delta)
-        img *= delta
-        img += gray
+        img = ImageEnhance.Color(img).enhance(delta)
         return img
 
     def apply_contrast(self, img):
@@ -551,8 +540,7 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        img *= delta
+        img = ImageEnhance.Contrast(img).enhance(delta)
         return img
 
     def apply_brightness(self, img):
@@ -560,14 +548,14 @@ class RandomDistort(BaseOperator):
         if np.random.uniform(0., 1.) < prob:
             return img
         delta = np.random.uniform(low, high)
-        img = img.astype(np.float32)
-        img += delta
+        img = ImageEnhance.Brightness(img).enhance(delta)
         return img
 
     def apply(self, sample, context=None):
         if random.random() > self.prob:
             return sample
         img = sample['image']
+        img = Image.fromarray(img.astype(np.uint8))
         if self.random_apply:
             functions = [
                 self.apply_brightness, self.apply_contrast,
@@ -576,21 +564,20 @@ class RandomDistort(BaseOperator):
             distortions = np.random.permutation(functions)[:self.count]
             for func in distortions:
                 img = func(img)
+            img = np.asarray(img).astype(np.float32)
             sample['image'] = img
             return sample
 
         img = self.apply_brightness(img)
         mode = np.random.randint(0, 2)
-
         if mode:
             img = self.apply_contrast(img)
-
         img = self.apply_saturation(img)
         img = self.apply_hue(img)
-
         if not mode:
             img = self.apply_contrast(img)
 
+        img = np.asarray(img).astype(np.float32)
         if self.random_channel:
             if np.random.randint(0, 2):
                 img = img[..., np.random.permutation(3)]
@@ -838,7 +825,7 @@ class RandomFlip(BaseOperator):
 class Resize(BaseOperator):
     def __init__(self, target_size, keep_ratio, interp=cv2.INTER_LINEAR):
         """
-        Resize image to target size. if keep_ratio is True, 
+        Resize image to target size. if keep_ratio is True,
         resize the image's long side to the maximum of target_size
         if keep_ratio is False, resize the image to target size(h, w)
         Args:
@@ -954,13 +941,11 @@ class Resize(BaseOperator):
 
             resize_h = int(im_scale * float(im_shape[0]) + 0.5)
             resize_w = int(im_scale * float(im_shape[1]) + 0.5)
-
-            im_scale_x = im_scale
-            im_scale_y = im_scale
         else:
             resize_h, resize_w = self.target_size
-            im_scale_y = resize_h / im_shape[0]
-            im_scale_x = resize_w / im_shape[1]
+
+        im_scale_y = resize_h / im_shape[0]
+        im_scale_x = resize_w / im_shape[1]
 
         if len(im.shape) == 3:
             im = self.apply_image(sample['image'], [im_scale_x, im_scale_y])
@@ -1108,7 +1093,7 @@ class RandomResize(BaseOperator):
             target_size (int, list, tuple): image target size, if random size is True, must be list or tuple
             keep_ratio (bool): whether keep_raio or not, default true
             interp (int): the interpolation method
-            random_range (bool): whether random select target size of image, the target_size must be 
+            random_range (bool): whether random select target size of image, the target_size must be
                 a [[min_short_edge, long_edge], [max_short_edge, long_edge]]
             random_size (bool): whether random select target size of image
             random_interp (bool): whether random select interpolation method
@@ -1601,6 +1586,8 @@ class RandomCrop(BaseOperator):
             # only used in semi-det as unsup data
             sample = self.set_fake_bboxes(sample)
             sample = self.random_crop(sample, fake_bboxes=True)
+            del sample['gt_bbox']
+            del sample['gt_class']
             return sample
 
         if 'gt_bbox' in sample and len(sample['gt_bbox']) == 0:
@@ -1901,7 +1888,7 @@ class RandomScaledCrop(BaseOperator):
 @register_op
 class Cutmix(BaseOperator):
     def __init__(self, alpha=1.5, beta=1.5):
-        """ 
+        """
         CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features, see https://arxiv.org/abs/1905.04899
         Cutmix image and gt_bbbox/gt_score
         Args:
@@ -2074,26 +2061,29 @@ class NormalizeBox(BaseOperator):
 
     def apply(self, sample, context):
         im = sample['image']
-        gt_bbox = sample['gt_bbox']
-        height, width, _ = im.shape
-        for i in range(gt_bbox.shape[0]):
-            gt_bbox[i][0] = gt_bbox[i][0] / width
-            gt_bbox[i][1] = gt_bbox[i][1] / height
-            gt_bbox[i][2] = gt_bbox[i][2] / width
-            gt_bbox[i][3] = gt_bbox[i][3] / height
-        sample['gt_bbox'] = gt_bbox
+        if 'gt_bbox' in sample.keys():
+            gt_bbox = sample['gt_bbox']
+            height, width, _ = im.shape
+            for i in range(gt_bbox.shape[0]):
+                gt_bbox[i][0] = gt_bbox[i][0] / width
+                gt_bbox[i][1] = gt_bbox[i][1] / height
+                gt_bbox[i][2] = gt_bbox[i][2] / width
+                gt_bbox[i][3] = gt_bbox[i][3] / height
+            sample['gt_bbox'] = gt_bbox
 
-        if 'gt_keypoint' in sample.keys():
-            gt_keypoint = sample['gt_keypoint']
+            if 'gt_keypoint' in sample.keys():
+                gt_keypoint = sample['gt_keypoint']
 
-            for i in range(gt_keypoint.shape[1]):
-                if i % 2:
-                    gt_keypoint[:, i] = gt_keypoint[:, i] / height
-                else:
-                    gt_keypoint[:, i] = gt_keypoint[:, i] / width
-            sample['gt_keypoint'] = gt_keypoint
+                for i in range(gt_keypoint.shape[1]):
+                    if i % 2:
+                        gt_keypoint[:, i] = gt_keypoint[:, i] / height
+                    else:
+                        gt_keypoint[:, i] = gt_keypoint[:, i] / width
+                sample['gt_keypoint'] = gt_keypoint
 
-        return sample
+            return sample
+        else:
+            return sample
 
 
 @register_op
@@ -2106,12 +2096,14 @@ class BboxXYXY2XYWH(BaseOperator):
         super(BboxXYXY2XYWH, self).__init__()
 
     def apply(self, sample, context=None):
-        assert 'gt_bbox' in sample
-        bbox = sample['gt_bbox']
-        bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
-        bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
-        sample['gt_bbox'] = bbox
-        return sample
+        if 'gt_bbox' in sample.keys():
+            bbox = sample['gt_bbox']
+            bbox[:, 2:4] = bbox[:, 2:4] - bbox[:, :2]
+            bbox[:, :2] = bbox[:, :2] + bbox[:, 2:4] / 2.
+            sample['gt_bbox'] = bbox
+            return sample
+        else:
+            return sample
 
 
 @register_op
@@ -2205,7 +2197,7 @@ class DebugVisibleImage(BaseOperator):
                 fill='green')
             # draw label
             text = str(gt_class[i][0])
-            tw, th = draw.textsize(text)
+            tw, th = imagedraw_textsize_c(draw, text)
             draw.rectangle(
                 [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill='green')
             draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
@@ -2410,7 +2402,7 @@ class Poly2Mask(BaseOperator):
 
 @register_op
 class AugmentHSV(BaseOperator):
-    """ 
+    """
     Augment the SV channel of image data.
     Args:
         fraction (float): the fraction for augment. Default: 0.5.
@@ -2524,7 +2516,7 @@ class RandomResizeCrop(BaseOperator):
         'long', resize the image's long side to the maximum of target_size, if keep_ratio is
         True and mode is 'short', resize the image's short side to the minimum of target_size.
         cropsizes (list): crop sizes after resize, [(min_crop_1, max_crop_1), ...]
-        mode (str): resize mode, `long` or `short`. Details see resizes. 
+        mode (str): resize mode, `long` or `short`. Details see resizes.
         prob (float): probability of this op.
         keep_ratio (bool): whether keep_ratio or not, default true
         interp (int): the interpolation method
@@ -2801,6 +2793,36 @@ class RandomSelect(BaseOperator):
         if random.random() < self.p:
             return self.transforms1(sample)
         return self.transforms2(sample)
+
+
+@register_op
+class RandomSelects(BaseOperator):
+    """
+    Randomly choose a transformation between transforms1 and transforms2,
+    and the probability of choosing transforms1 is p.
+
+    The code is based on https://github.com/facebookresearch/detr/blob/main/datasets/transforms.py
+
+    """
+
+    def __init__(self, transforms_list, p=None):
+        super(RandomSelects, self).__init__()
+        if p is not None:
+            assert isinstance(p, (list, tuple))
+            assert len(transforms_list) == len(p)
+        else:
+            assert len(transforms_list) > 0
+        self.transforms = [Compose(t) for t in transforms_list]
+        self.p = p
+
+    def apply(self, sample, context=None):
+        if self.p is None:
+            return random.choice(self.transforms)(sample)
+        else:
+            prob = random.random()
+            for p, t in zip(self.p, self.transforms):
+                if prob <= p:
+                    return t(sample)
 
 
 @register_op

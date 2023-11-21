@@ -36,13 +36,14 @@ class PicoDet(BaseArch):
 
     __category__ = 'architecture'
 
-    def __init__(self, backbone, neck, head='PicoHead'):
+    def __init__(self, backbone, neck, head='PicoHead', nms_cpu=False):
         super(PicoDet, self).__init__()
         self.backbone = backbone
         self.neck = neck
         self.head = head
         self.export_post_process = True
         self.export_nms = True
+        self.nms_cpu = nms_cpu
 
     @classmethod
     def from_config(cls, cfg, *args, **kwargs):
@@ -69,7 +70,10 @@ class PicoDet(BaseArch):
         else:
             scale_factor = self.inputs['scale_factor']
             bboxes, bbox_num = self.head.post_process(
-                head_outs, scale_factor, export_nms=self.export_nms)
+                head_outs,
+                scale_factor,
+                export_nms=self.export_nms,
+                nms_cpu=self.nms_cpu)
             return bboxes, bbox_num
 
     def get_loss(self, ):

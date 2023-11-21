@@ -32,7 +32,7 @@ import paddle
 from ppdet.core.workspace import load_config, merge_config
 
 from ppdet.engine import Trainer, TrainerCot, init_parallel_env, set_random_seed, init_fleet_env
-from ppdet.engine.trainer_ssod import Trainer_DenseTeacher, Trainer_ARSL
+from ppdet.engine.trainer_ssod import Trainer_DenseTeacher, Trainer_ARSL, Trainer_Semi_RTDETR
 
 from ppdet.slim import build_slim_model
 
@@ -134,10 +134,11 @@ def run(FLAGS, cfg):
             trainer = Trainer_DenseTeacher(cfg, mode='train')
         elif ssod_method == 'ARSL':
             trainer = Trainer_ARSL(cfg, mode='train')
+        elif ssod_method == 'Semi_RTDETR':
+            trainer = Trainer_Semi_RTDETR(cfg, mode='train')
         else:
             raise ValueError(
-                "Semi-Supervised Object Detection only support DenseTeacher and ARSL now."
-            )
+                "Semi-Supervised Object Detection only no support this method.")
     elif cfg.get('use_cot', False):
         trainer = TrainerCot(cfg, mode='train')
     else:
@@ -146,6 +147,10 @@ def run(FLAGS, cfg):
     # load weights
     if FLAGS.resume is not None:
         trainer.resume_weights(FLAGS.resume)
+    elif 'pretrain_student_weights' in cfg and 'pretrain_teacher_weights' in cfg \
+            and cfg.pretrain_teacher_weights and cfg.pretrain_student_weights:
+        trainer.load_semi_weights(cfg.pretrain_teacher_weights,
+                                  cfg.pretrain_student_weights)
     elif 'pretrain_weights' in cfg and cfg.pretrain_weights:
         trainer.load_weights(cfg.pretrain_weights)
 

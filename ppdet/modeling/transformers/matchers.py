@@ -122,9 +122,10 @@ class HungarianMatcher(nn.Layer):
             out_bbox.unsqueeze(1) - tgt_bbox.unsqueeze(0)).abs().sum(-1)
 
         # Compute the giou cost betwen boxes
-        cost_giou = self.giou_loss(
+        giou_loss = self.giou_loss(
             bbox_cxcywh_to_xyxy(out_bbox.unsqueeze(1)),
             bbox_cxcywh_to_xyxy(tgt_bbox.unsqueeze(0))).squeeze(-1)
+        cost_giou = giou_loss - 1
 
         # Final cost matrix
         C = self.matcher_coeff['class'] * cost_class + \
@@ -175,10 +176,16 @@ class HungarianMatcher(nn.Layer):
         C = C.reshape([bs, num_queries, -1])
         C = [a.squeeze(0) for a in C.chunk(bs)]
         sizes = [a.shape[0] for a in gt_bbox]
-        indices = [
-            linear_sum_assignment(c.split(sizes, -1)[i].numpy())
-            for i, c in enumerate(C)
-        ]
+        if hasattr(paddle.Tensor, "contiguous"):
+            indices = [
+                linear_sum_assignment(c.split(sizes, -1)[i].contiguous().numpy())
+                for i, c in enumerate(C)
+            ]
+        else:
+            indices = [
+                linear_sum_assignment(c.split(sizes, -1)[i].numpy())
+                for i, c in enumerate(C)
+            ]
         return [(paddle.to_tensor(
             i, dtype=paddle.int64), paddle.to_tensor(
                 j, dtype=paddle.int64)) for i, j in indices]

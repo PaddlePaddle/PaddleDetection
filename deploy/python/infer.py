@@ -101,8 +101,10 @@ class Detector(object):
                  enable_mkldnn_bfloat16=False,
                  output_dir='output',
                  threshold=0.5,
-                 delete_shuffle_pass=False):
-        self.pred_config = self.set_config(model_dir)
+                 delete_shuffle_pass=False,
+                 use_fd_format=False):
+        self.pred_config = self.set_config(
+            model_dir, use_fd_format=use_fd_format)
         self.predictor, self.config = load_predictor(
             model_dir,
             self.pred_config.arch,
@@ -125,8 +127,8 @@ class Detector(object):
         self.output_dir = output_dir
         self.threshold = threshold
 
-    def set_config(self, model_dir):
-        return PredictConfig(model_dir)
+    def set_config(self, model_dir, use_fd_format):
+        return PredictConfig(model_dir, use_fd_format=use_fd_format)
 
     def preprocess(self, image_list):
         preprocess_ops = []
@@ -355,7 +357,10 @@ class Detector(object):
         if save_results:
             Path(self.output_dir).mkdir(exist_ok=True)
             self.save_coco_results(
-                img_list, results, use_coco_category=FLAGS.use_coco_category)
+                img_list,
+                results,
+                use_coco_category=FLAGS.use_coco_category,
+                task_type=FLAGS.task_type)
         return results
 
     def predict_image(self,
@@ -424,7 +429,10 @@ class Detector(object):
         if save_results:
             Path(self.output_dir).mkdir(exist_ok=True)
             self.save_coco_results(
-                image_list, results, use_coco_category=FLAGS.use_coco_category)
+                image_list,
+                results,
+                use_coco_category=FLAGS.use_coco_category,
+                task_type=FLAGS.task_type)
         return results
 
     def predict_video(self, video_file, camera_id):
@@ -468,7 +476,11 @@ class Detector(object):
                     break
         writer.release()
 
-    def save_coco_results(self, image_list, results, use_coco_category=False):
+    def save_coco_results(self,
+                          image_list,
+                          results,
+                          use_coco_category=False,
+                          task_type='Detection'):
         bbox_results = []
         mask_results = []
         idx = 0
@@ -482,13 +494,20 @@ class Detector(object):
 
             if 'boxes' in results:
                 boxes = results['boxes'][idx:idx + box_num].tolist()
+                if task_type == 'Rotate':
+                    bbox = [
+                        box[2], box[3], box[4], box[5], box[6], box[7], box[8],
+                        box[9]
+                    ]  # x1, y1, x2, y2, x3, y3, x4, y4
+                else:  # default is 'Detection'
+                    bbox: [box[2], box[3], box[4] - box[2],
+                           box[5] - box[3]]  # xyxy -> xywh
                 bbox_results.extend([{
                     'image_id': img_id,
                     'category_id': coco_clsid2catid[int(box[0])] \
                         if use_coco_category else int(box[0]),
                     'file_name': file_name,
-                    'bbox': [box[2], box[3], box[4] - box[2],
-                         box[5] - box[3]],  # xyxy -> xywh
+                    'bbox': bbox,
                     'score': box[1]} for box in boxes])
 
             if 'masks' in results:
@@ -546,21 +565,21 @@ class DetectorSOLOv2(Detector):
        
     """
 
-    def __init__(
-            self,
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            enable_mkldnn_bfloat16=False,
-            output_dir='./',
-            threshold=0.5, ):
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False,
+                 output_dir='./',
+                 threshold=0.5,
+                 use_fd_format=False):
         super(DetectorSOLOv2, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -574,7 +593,8 @@ class DetectorSOLOv2(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, )
+            threshold=threshold,
+            use_fd_format=use_fd_format)
 
     def predict(self, repeats=1, run_benchmark=False):
         '''
@@ -636,21 +656,21 @@ class DetectorPicoDet(Detector):
         enable_mkldnn_bfloat16 (bool): whether to turn on MKLDNN_BFLOAT16
     """
 
-    def __init__(
-            self,
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            enable_mkldnn_bfloat16=False,
-            output_dir='./',
-            threshold=0.5, ):
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False,
+                 output_dir='./',
+                 threshold=0.5,
+                 use_fd_format=False):
         super(DetectorPicoDet, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -664,7 +684,8 @@ class DetectorPicoDet(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, )
+            threshold=threshold,
+            use_fd_format=use_fd_format)
 
     def postprocess(self, inputs, result):
         # postprocess output of predictor
@@ -731,21 +752,21 @@ class DetectorCLRNet(Detector):
         enable_mkldnn_bfloat16 (bool): whether to turn on MKLDNN_BFLOAT16
     """
 
-    def __init__(
-            self,
-            model_dir,
-            device='CPU',
-            run_mode='paddle',
-            batch_size=1,
-            trt_min_shape=1,
-            trt_max_shape=1280,
-            trt_opt_shape=640,
-            trt_calib_mode=False,
-            cpu_threads=1,
-            enable_mkldnn=False,
-            enable_mkldnn_bfloat16=False,
-            output_dir='./',
-            threshold=0.5, ):
+    def __init__(self,
+                 model_dir,
+                 device='CPU',
+                 run_mode='paddle',
+                 batch_size=1,
+                 trt_min_shape=1,
+                 trt_max_shape=1280,
+                 trt_opt_shape=640,
+                 trt_calib_mode=False,
+                 cpu_threads=1,
+                 enable_mkldnn=False,
+                 enable_mkldnn_bfloat16=False,
+                 output_dir='./',
+                 threshold=0.5,
+                 use_fd_format=False):
         super(DetectorCLRNet, self).__init__(
             model_dir=model_dir,
             device=device,
@@ -759,7 +780,8 @@ class DetectorCLRNet(Detector):
             enable_mkldnn=enable_mkldnn,
             enable_mkldnn_bfloat16=enable_mkldnn_bfloat16,
             output_dir=output_dir,
-            threshold=threshold, )
+            threshold=threshold,
+            use_fd_format=use_fd_format)
 
         deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
         with open(deploy_file) as f:
@@ -867,9 +889,24 @@ class PredictConfig():
         model_dir (str): root path of model.yml
     """
 
-    def __init__(self, model_dir):
+    def __init__(self, model_dir, use_fd_format=False):
         # parsing Yaml config for Preprocess
-        deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
+        fd_deploy_file = os.path.join(model_dir, 'inference.yml')
+        ppdet_deploy_file = os.path.join(model_dir, 'infer_cfg.yml')
+        if use_fd_format:
+            if not os.path.exists(fd_deploy_file) and os.path.exists(
+                    ppdet_deploy_file):
+                raise RuntimeError(
+                    "Non-FD format model detected. Please set `use_fd_format` to False."
+                )
+            deploy_file = fd_deploy_file
+        else:
+            if not os.path.exists(ppdet_deploy_file) and os.path.exists(
+                    fd_deploy_file):
+                raise RuntimeError(
+                    "FD format model detected. Please set `use_fd_format` to False."
+                )
+            deploy_file = ppdet_deploy_file
         with open(deploy_file) as f:
             yml_conf = yaml.safe_load(f)
         self.check_model(yml_conf)
@@ -1121,7 +1158,10 @@ def print_arguments(args):
 
 
 def main():
-    deploy_file = os.path.join(FLAGS.model_dir, 'infer_cfg.yml')
+    if FLAGS.use_fd_format:
+        deploy_file = os.path.join(FLAGS.model_dir, 'inference.yml')
+    else:
+        deploy_file = os.path.join(FLAGS.model_dir, 'infer_cfg.yml')
     with open(deploy_file) as f:
         yml_conf = yaml.safe_load(f)
     arch = yml_conf['arch']
@@ -1146,7 +1186,8 @@ def main():
         enable_mkldnn=FLAGS.enable_mkldnn,
         enable_mkldnn_bfloat16=FLAGS.enable_mkldnn_bfloat16,
         threshold=FLAGS.threshold,
-        output_dir=FLAGS.output_dir)
+        output_dir=FLAGS.output_dir,
+        use_fd_format=FLAGS.use_fd_format)
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:
