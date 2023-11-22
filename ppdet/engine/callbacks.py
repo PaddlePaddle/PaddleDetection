@@ -120,6 +120,8 @@ class LogPrinter(Callback):
                     eta_sec = eta_steps * batch_time.global_avg
                     eta_str = str(datetime.timedelta(seconds=int(eta_sec)))
                     ips = float(batch_size) / batch_time.avg
+                    max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved()}"
+                    max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated()}"
                     fmt = ' '.join([
                         'Epoch: [{}]',
                         '[{' + space_fmt + '}/{}]',
@@ -129,6 +131,8 @@ class LogPrinter(Callback):
                         'batch_cost: {btime}',
                         'data_cost: {dtime}',
                         'ips: {ips:.4f} images/s',
+                        '{max_mem_reserved_str}',
+                        '{max_mem_allocated_str}'
                     ])
                     fmt = fmt.format(
                         epoch_id,
@@ -139,7 +143,9 @@ class LogPrinter(Callback):
                         eta=eta_str,
                         btime=str(batch_time),
                         dtime=str(data_time),
-                        ips=ips)
+                        ips=ips,
+                        max_mem_reserved_str=max_mem_reserved_str,
+                        max_mem_allocated_str=max_mem_allocated_str)
                     logger.info(fmt)
             if mode == 'eval':
                 step_id = status['step_id']
