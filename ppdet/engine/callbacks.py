@@ -120,8 +120,11 @@ class LogPrinter(Callback):
                     eta_sec = eta_steps * batch_time.global_avg
                     eta_str = str(datetime.timedelta(seconds=int(eta_sec)))
                     ips = float(batch_size) / batch_time.avg
-                    max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved()}"
-                    max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated()}"
+                    max_mem_reserved_str = ""
+                    max_mem_allocated_str = ""
+                    if paddle.device.is_compiled_with_cuda():
+                        max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved()}"
+                        max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated()}"
                     fmt = ' '.join([
                         'Epoch: [{}]',
                         '[{' + space_fmt + '}/{}]',
