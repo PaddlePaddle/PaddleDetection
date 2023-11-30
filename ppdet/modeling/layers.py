@@ -518,7 +518,8 @@ class MultiClassNMS(object):
                  nms_eta=1.0,
                  return_index=False,
                  return_rois_num=True,
-                 trt=False):
+                 trt=False,
+                 cpu=False):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
         self.nms_top_k = nms_top_k
@@ -529,6 +530,7 @@ class MultiClassNMS(object):
         self.return_index = return_index
         self.return_rois_num = return_rois_num
         self.trt = trt
+        self.cpu = cpu
 
     def __call__(self, bboxes, score, background_label=-1):
         """
@@ -551,6 +553,8 @@ class MultiClassNMS(object):
         if background_label > -1:
             kwargs.update({'background_label': background_label})
         kwargs.pop('trt')
+        kwargs.pop('cpu')
+
         # TODO(wangxinxin08): paddle version should be develop or 2.3 and above to run nms on tensorrt
         if self.trt and (int(paddle.version.major) == 0 or
                          (int(paddle.version.major) >= 2 and
@@ -563,7 +567,14 @@ class MultiClassNMS(object):
             bbox = paddle.gather_nd(bbox, idx)
             return bbox, bbox_num, None
         else:
-            return ops.multiclass_nms(bboxes, score, **kwargs)
+            if self.cpu:
+                device = paddle.device.get_device()
+                paddle.set_device('cpu')
+                outputs = ops.multiclass_nms(bboxes, score, **kwargs)
+                paddle.set_device(device)
+                return outputs
+            else:
+                return ops.multiclass_nms(bboxes, score, **kwargs)
 
 
 @register
@@ -1339,7 +1350,7 @@ class ConvMixer(nn.Layer):
         Seq, ActBn = nn.Sequential, lambda x: Seq(x, nn.GELU(), nn.BatchNorm2D(dim))
         Residual = type('Residual', (Seq, ),
                         {'forward': lambda self, x: self[0](x) + x})
-        return Seq(* [
+        return Seq(*[
             Seq(Residual(
                 ActBn(
                     nn.Conv2D(
