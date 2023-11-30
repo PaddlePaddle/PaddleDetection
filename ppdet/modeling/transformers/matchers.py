@@ -122,9 +122,10 @@ class HungarianMatcher(nn.Layer):
             out_bbox.unsqueeze(1) - tgt_bbox.unsqueeze(0)).abs().sum(-1)
 
         # Compute the giou cost betwen boxes
-        cost_giou = self.giou_loss(
+        giou_loss = self.giou_loss(
             bbox_cxcywh_to_xyxy(out_bbox.unsqueeze(1)),
             bbox_cxcywh_to_xyxy(tgt_bbox.unsqueeze(0))).squeeze(-1)
+        cost_giou = giou_loss - 1
 
         # Final cost matrix
         C = self.matcher_coeff['class'] * cost_class + \

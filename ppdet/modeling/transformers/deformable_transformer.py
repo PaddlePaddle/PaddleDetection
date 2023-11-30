@@ -535,3 +535,112 @@ class DeformableTransformer(nn.Layer):
                           level_start_index, mask_flatten, query_embed)
 
         return (hs, memory, reference_points)
+
+
+class QRDeformableTransformerDecoder(DeformableTransformerDecoder):
+    def __init__(self, decoder_layer, num_layers,
+                 start_q=None, end_q=None, return_intermediate=False):
+        super(QRDeformableTransformerDecoder, self).__init__(
+            decoder_layer, num_layers, return_intermediate=return_intermediate)
+        self.start_q = start_q
+        self.end_q = end_q
+
+    def forward(self,
+                tgt,
+                reference_points,
+                memory,
+                memory_spatial_shapes,
+                memory_level_start_index,
+                memory_mask=None,
+                query_pos_embed=None):
+
+        if not self.training:
+            return super(QRDeformableTransformerDecoder, self).forward(
+                tgt, reference_points,
+                memory, memory_spatial_shapes,
+                memory_level_start_index,
+                memory_mask=memory_mask,
+                query_pos_embed=query_pos_embed)
+
+        batchsize = tgt.shape[0]
+        query_list_reserve = [tgt]
+        intermediate = []
+        for lid, layer in enumerate(self.layers):
+
+            start_q = self.start_q[lid]
+            end_q = self.end_q[lid]
+            query_list = query_list_reserve.copy()[start_q:end_q]
+
+            # prepare for parallel process
+            output = paddle.concat(query_list, axis=0)
+            fakesetsize = int(output.shape[0] / batchsize)
+            reference_points_tiled = reference_points.tile([fakesetsize, 1, 1, 1])
+
+            memory_tiled = memory.tile([fakesetsize, 1, 1])
+            query_pos_embed_tiled = query_pos_embed.tile([fakesetsize, 1, 1])
+            memory_mask_tiled = memory_mask.tile([fakesetsize, 1])
+
+            output = layer(output, reference_points_tiled, memory_tiled,
+                           memory_spatial_shapes, memory_level_start_index,
+                           memory_mask_tiled, query_pos_embed_tiled)
+
+            for i in range(fakesetsize):
+                query_list_reserve.append(output[batchsize*i:batchsize*(i+1)])
+
+            if self.return_intermediate:
+                for i in range(fakesetsize):
+                    intermediate.append(output[batchsize*i:batchsize*(i+1)])
+
+        if self.return_intermediate:
+            return paddle.stack(intermediate)
+
+        return output.unsqueeze(0)
+
+
+@register
+class QRDeformableTransformer(DeformableTransformer):
+
+    def __init__(self,
+                 num_queries=300,
+                 position_embed_type='sine',
+                 return_intermediate_dec=True,
+                 in_feats_channel=[512, 1024, 2048],
+                 num_feature_levels=4,
+                 num_encoder_points=4,
+                 num_decoder_points=4,
+                 hidden_dim=256,
+                 nhead=8,
+                 num_encoder_layers=6,
+                 num_decoder_layers=6,
+                 dim_feedforward=1024,
+                 dropout=0.1,
+                 activation="relu",
+                 lr_mult=0.1,
+                 pe_temperature=10000,
+                 pe_offset=-0.5,
+                 start_q=None,
+                 end_q=None):
+        super(QRDeformableTransformer, self).__init__(
+                 num_queries=num_queries,
+                 position_embed_type=position_embed_type,
+                 return_intermediate_dec=return_intermediate_dec,
+                 in_feats_channel=in_feats_channel,
+                 num_feature_levels=num_feature_levels,
+                 num_encoder_points=num_encoder_points,
+                 num_decoder_points=num_decoder_points,
+                 hidden_dim=hidden_dim,
+                 nhead=nhead,
+                 num_encoder_layers=num_encoder_layers,
+                 num_decoder_layers=num_decoder_layers,
+                 dim_feedforward=dim_feedforward,
+                 dropout=dropout,
+                 activation=activation,
+                 lr_mult=lr_mult,
+                 pe_temperature=pe_temperature,
+                 pe_offset=pe_offset)
+
+        decoder_layer = DeformableTransformerDecoderLayer(
+            hidden_dim, nhead, dim_feedforward, dropout, activation,
+            num_feature_levels, num_decoder_points)
+        self.decoder = QRDeformableTransformerDecoder(
+            decoder_layer, num_decoder_layers, start_q, end_q, return_intermediate_dec)

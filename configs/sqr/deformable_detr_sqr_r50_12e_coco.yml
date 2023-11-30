@@ -1,0 +1,27 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/deformable_detr_sqr_r50.yml',
+  '_base_/deformable_detr_sqr_reader.yml',
+]
+weights: output/deformable_detr_sqr_r50_12e_coco/model_final
+find_unused_parameters: True
+
+
+# a standard 1x schedule
+epoch: 12
+
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [8, 11]
+    use_warmup: false
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001

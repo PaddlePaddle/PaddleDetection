@@ -1,15 +1,15 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved. 
-#   
-# Licensed under the Apache License, Version 2.0 (the "License");   
-# you may not use this file except in compliance with the License.  
-# You may obtain a copy of the License at   
-#   
-#     http://www.apache.org/licenses/LICENSE-2.0    
-#   
-# Unless required by applicable law or agreed to in writing, software   
-# distributed under the License is distributed on an "AS IS" BASIS, 
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  
-# See the License for the specific language governing permissions and   
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
 # limitations under the License.
 
 from __future__ import absolute_import
@@ -120,6 +120,8 @@ class LogPrinter(Callback):
                     eta_sec = eta_steps * batch_time.global_avg
                     eta_str = str(datetime.timedelta(seconds=int(eta_sec)))
                     ips = float(batch_size) / batch_time.avg
+                    max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved()}"
+                    max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated()}"
                     fmt = ' '.join([
                         'Epoch: [{}]',
                         '[{' + space_fmt + '}/{}]',
@@ -129,6 +131,8 @@ class LogPrinter(Callback):
                         'batch_cost: {btime}',
                         'data_cost: {dtime}',
                         'ips: {ips:.4f} images/s',
+                        '{max_mem_reserved_str}',
+                        '{max_mem_allocated_str}'
                     ])
                     fmt = fmt.format(
                         epoch_id,
@@ -139,7 +143,9 @@ class LogPrinter(Callback):
                         eta=eta_str,
                         btime=str(batch_time),
                         dtime=str(data_time),
-                        ips=ips)
+                        ips=ips,
+                        max_mem_reserved_str=max_mem_reserved_str,
+                        max_mem_allocated_str=max_mem_allocated_str)
                     logger.info(fmt)
             if mode == 'eval':
                 step_id = status['step_id']
@@ -204,6 +210,12 @@ class Checkpointer(Callback):
                             self.best_ap = map_res[key][0]
                             save_name = 'best_model'
                             weight = self.weight.state_dict()
+                            best_metric = {
+                                'metric': abs(self.best_ap),
+                                'epoch': epoch_id + 1
+                            }
+                            save_path = os.path.join(self.save_dir, "best_model.pdstates")
+                            paddle.save(best_metric, save_path)
                         logger.info("Best test {} {} is {:0.3f}.".format(
                             key, eval_func, abs(self.best_ap)))
             if weight:
