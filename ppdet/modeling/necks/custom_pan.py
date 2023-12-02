@@ -24,7 +24,7 @@ from ..backbones.cspresnet import ConvBNLayer, BasicBlock
 from ..shape_spec import ShapeSpec
 from ..initializer import linear_init_
 
-__all__ = ['CustomCSPPAN', 'InstCustomCSPPAN']
+__all__ = ['CustomCSPPAN']
 
 
 def _get_clones(module, N):
@@ -333,10 +333,10 @@ class CustomCSPPAN(nn.Layer):
         assert embed_dim % 4 == 0, 'Embed dimension must be divisible by 4 for 2D sin-cos position embedding'
         pos_dim = embed_dim // 4
         omega = paddle.arange(pos_dim, dtype=paddle.float32) / pos_dim
-        omega = 1. / (temperature ** omega)
+        omega = 1. / (temperature**omega)
 
-        out_w = grid_w.flatten()[..., None] @ omega[None]
-        out_h = grid_h.flatten()[..., None] @ omega[None]
+        out_w = grid_w.flatten()[..., None] @omega[None]
+        out_h = grid_h.flatten()[..., None] @omega[None]
 
         pos_emb = paddle.concat(
             [
@@ -396,161 +396,3 @@ class CustomCSPPAN(nn.Layer):
     @property
     def out_shape(self):
         return [ShapeSpec(channels=c) for c in self._out_channels]
-
-
-class MaskFeatFPN(nn.Layer):
-    def __init__(self,
-                 in_channels=[256, 256, 256],
-                 fpn_strides=[32, 16, 8],
-                 feat_channels=256,
-                 dropout_ratio=0.0,
-                 out_channels=256,
-                 align_corners=False,
-                 act='swish'):
-        super(MaskFeatFPN, self).__init__()
-        assert len(in_channels) == len(fpn_strides)
-        reorder_index = np.argsort(fpn_strides, axis=0)
-        in_channels = [in_channels[i] for i in reorder_index]
-        fpn_strides = [fpn_strides[i] for i in reorder_index]
-        assert min(fpn_strides) == fpn_strides[0]
-        self.reorder_index = reorder_index
-        self.fpn_strides = fpn_strides
-        self.dropout_ratio = dropout_ratio
-        self.align_corners = align_corners
-        if self.dropout_ratio > 0:
-            self.dropout = nn.Dropout2D(dropout_ratio)
-
-        self.scale_heads = nn.LayerList()
-        for i in range(len(fpn_strides)):
-            head_length = max(
-                1, int(np.log2(fpn_strides[i]) - np.log2(fpn_strides[0])))
-            scale_head = []
-            for k in range(head_length):
-                in_c = in_channels[i] if k == 0 else feat_channels
-                scale_head.append(
-                    nn.Sequential(
-                        ConvBNLayer(in_c, feat_channels, 3, 1, padding=1, act=act))
-                )
-                if fpn_strides[i] != fpn_strides[0]:
-                    scale_head.append(
-                        nn.Upsample(
-                            scale_factor=2,
-                            mode='bilinear',
-                            align_corners=align_corners))
-
-            self.scale_heads.append(nn.Sequential(*scale_head))
-
-        self.output_conv = ConvBNLayer(
-            feat_channels, out_channels, 3, 1, padding=1, act=act)
-
-    def forward(self, inputs):
-        x = [inputs[i] for i in self.reorder_index]
-
-        output = self.scale_heads[0](x[0])
-        for i in range(1, len(self.fpn_strides)):
-            output = output + F.interpolate(
-                self.scale_heads[i](x[i]),
-                size=output.shape[2:],
-                mode='bilinear',
-                align_corners=self.align_corners)
-
-        if self.dropout_ratio > 0:
-            output = self.dropout(output)
-        output = self.output_conv(output)
-        return output
-
-
-@register
-@serializable
-class InstCustomCSPPAN(CustomCSPPAN):
-    __shared__ = [
-        'norm_type', 'data_format', 'width_mult', 'depth_mult', 'trt',
-        'eval_size'
-    ]
-
-    def __init__(self,
-                 in_channels=[256, 512, 1024],
-                 out_channels=[1024, 512, 256],
-                 norm_type='bn',
-                 act='leaky',
-                 stage_fn='CSPStage',
-                 block_fn='BasicBlock',
-                 stage_num=1,
-                 block_num=3,
-                 drop_block=False,
-                 block_size=3,
-                 keep_prob=0.9,
-                 spp=False,
-                 data_format='NCHW',
-                 width_mult=1.0,
-                 depth_mult=1.0,
-                 use_alpha=False,
-                 trt=False,
-                 dim_feedforward=2048,
-                 dropout=0.1,
-                 activation='gelu',
-                 nhead=4,
-                 num_layers=4,
-                 attn_dropout=None,
-                 act_dropout=None,
-                 normalize_before=False,
-                 use_trans=False,
-                 eval_size=None,
-                 num_prototypes=32):
-
-        assert len(in_channels) == 4
-        feat0_dim = in_channels.pop(0)
-        super().__init__(
-            in_channels=in_channels,
-            out_channels=out_channels,
-            norm_type=norm_type,
-            act=act,
-            stage_fn=stage_fn,
-            block_fn=block_fn,
-            stage_num=stage_num,
-            block_num=block_num,
-            drop_block=drop_block,
-            block_size=block_size,
-            keep_prob=keep_prob,
-            spp=spp,
-            data_format=data_format,
-            width_mult=width_mult,
-            depth_mult=depth_mult,
-            use_alpha=use_alpha,
-            trt=trt,
-            dim_feedforward=dim_feedforward,
-            dropout=dropout,
-            activation=activation,
-            nhead=nhead,
-            num_layers=num_layers,
-            attn_dropout=attn_dropout,
-            act_dropout=act_dropout,
-            normalize_before=normalize_before,
-            use_trans=use_trans,
-            eval_size=eval_size)
-        self.mask_feat_head = MaskFeatFPN(
-            self._out_channels[::-1],
-            [8, 16, 32],
-            feat_channels=64,
-            out_channels=64,
-            act=act)
-        self.enc_mask_lateral = ConvBNLayer(
-            feat0_dim, 64, 3, 1, padding=1, act=act)
-        self.enc_mask_output = nn.Sequential(
-            ConvBNLayer(
-                64, 64, 3, 1, padding=1, act=act),
-            nn.Conv2D(64, num_prototypes, 1))
-
-    def forward(self, blocks, for_mot=False):
-        feat0 = blocks.pop(0)
-        outs = super(InstCustomCSPPAN, self).forward(
-            blocks, for_mot=for_mot)
-        mask_feat = self.mask_feat_head(outs[::-1])
-        mask_feat = F.interpolate(
-            mask_feat,
-            scale_factor=2,
-            mode='bilinear',
-            align_corners=False)
-        mask_feat += self.enc_mask_lateral(feat0)
-        mask_feat = self.enc_mask_output(mask_feat)
-        return outs, mask_feat

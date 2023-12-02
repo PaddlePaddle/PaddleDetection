@@ -115,9 +115,7 @@ class PPYOLOE(BaseArch):
                     self.inputs['im_shape'], self.inputs['scale_factor'])
 
             else:
-                # bbox, bbox_num, nms_keep_idx = self.yolo_head.post_process(
-                #     yolo_head_outs, self.inputs['scale_factor'])
-                bbox, bbox_num, mask = self.yolo_head.post_process(
+                bbox, bbox_num, nms_keep_idx = self.yolo_head.post_process(
                     yolo_head_outs, self.inputs['scale_factor'])
 
             if self.use_extra_data:
@@ -131,7 +129,7 @@ class PPYOLOE(BaseArch):
                 extra_data['nms_keep_idx'] = nms_keep_idx
                 output = {'bbox': bbox, 'bbox_num': bbox_num, 'extra_data': extra_data}
             else:
-                output = {'bbox': bbox, 'bbox_num': bbox_num, 'mask': mask}
+                output = {'bbox': bbox, 'bbox_num': bbox_num}
 
             return output
 
