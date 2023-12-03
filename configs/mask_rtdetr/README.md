@@ -2,7 +2,7 @@
 
 
 ## 简介
-Mask-RT-DETR是一个实例分割模型。基于RT-DETR和MaskDINO。
+Mask-RT-DETR是[RT-DETR](../rtdetr/README.md)的实例分割版本。
 
 ## 模型库
 |        Model        | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) | Pretrained Model |                      config                      |
@@ -153,7 +153,7 @@ onnxsim mask_rtdetr_hgnetv2_l_6x_coco.onnx mask_rtdetr_hgnetv2_l_6x_coco.onnx \
 ```shell
 trtexec --onnx=./mask_rtdetr_hgnetv2_l_6x_coco.onnx \
         --workspace=4096 \
-        --saveEngine=mask_rtdetr_hgnetv2_l_6x_coco.trt \
+        --saveEngine=./mask_rtdetr_hgnetv2_l_6x_coco.engine \
         --avgRuns=1000 \
         --fp16
 ```
