@@ -312,7 +312,7 @@ def _dump_infer_config(config, path, image_shape, model):
         infer_cfg['min_subgraph_size'] = TRT_MIN_SUBGRAPH[infer_arch]
         arch_state = True
 
-    if infer_arch == 'DETR' and config['with_mask']:
+    if infer_arch == 'DETR' and config.get('with_mask', False):
         infer_cfg['mask'] = True
 
     if not arch_state:

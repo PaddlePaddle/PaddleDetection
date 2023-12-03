@@ -544,6 +544,7 @@ class DETRPostProcess(object):
             index = paddle.stack([batch_ind, index], axis=-1)
             bbox_pred = paddle.gather_nd(bbox_pred, index)
 
+        mask_pred = None
         if self.with_mask:
             assert masks is not None
             masks = paddle.gather_nd(masks, index)
