@@ -389,7 +389,7 @@ def mask_to_box_coordinate(mask,
     y_min = paddle.where(mask, y_mask,
                          paddle.to_tensor(1e8)).flatten(-2).min(-1)
     out_bbox = paddle.stack([x_min, y_min, x_max, y_max], axis=-1)
-    out_bbox *= mask.any(-1).any(-1).any(-1)
+    out_bbox *= mask.any(axis=[1, 2, 3])
     if normalize:
         out_bbox /= paddle.to_tensor([w, h, w, h]).astype(dtype)
 
