@@ -408,7 +408,7 @@ class MaskHybridEncoder(HybridEncoder):
             [hidden_dim] * len(feat_strides),
             feat_strides,
             feat_channels=mask_feat_channels[0],
-            out_channels=mask_feat_channels[0],
+            out_channels=mask_feat_channels[1],
             act=act)
         self.enc_mask_lateral = BaseConv(
             x4_feat_dim, mask_feat_channels[1], 3, 1, act=act)
