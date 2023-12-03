@@ -548,18 +548,19 @@ class DETRPostProcess(object):
         if self.with_mask:
             assert masks is not None
             masks = paddle.gather_nd(masks, index)
-            masks = F.interpolate(
-                masks,
-                scale_factor=self.mask_stride,
-                mode="bilinear",
-                align_corners=False)
-            # TODO: Support prediction with bs>1.
-            # remove padding for input image
-            h, w = im_shape.astype('int32')[0]
-            masks = masks[..., :h, :w]
-            # get pred_mask in the original resolution.
-            img_h = img_h[0].astype('int32')
-            img_w = img_w[0].astype('int32')
+            if self.bbox_decode_type == 'pad':
+                masks = F.interpolate(
+                    masks,
+                    scale_factor=self.mask_stride,
+                    mode="bilinear",
+                    align_corners=False)
+                # TODO: Support prediction with bs>1.
+                # remove padding for input image
+                h, w = im_shape.astype('int32')[0]
+                masks = masks[..., :h, :w]
+                # get pred_mask in the original resolution.
+                img_h = img_h[0].astype('int32')
+                img_w = img_w[0].astype('int32')
             masks = F.interpolate(
                 masks,
                 size=(img_h, img_w),

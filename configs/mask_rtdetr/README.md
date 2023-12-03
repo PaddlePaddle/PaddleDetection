@@ -7,7 +7,7 @@ Mask-RT-DETR是一个实例分割模型。基于RT-DETR和MaskDINO。
 ## 模型库
 |        Model        | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) | Pretrained Model |                      config                      |
 |:-------------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:----------------:|:------------------------------------------------:|
-|   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |        |         |           |          |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
+|   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |        |         |    32     |   120    |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
 
 
 ## 快速开始
@@ -72,7 +72,7 @@ python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml \
 ```shell
 cd PaddleDetection
 python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml \
-              -o weights=${model_params_path} trt=True exclude_post_process=True \
+              -o weights=${model_params_path} trt=True \
               --output_dir=output_inference
 ```
 
@@ -86,6 +86,7 @@ python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coc
 ```shell
 pip install onnx==1.13.0
 pip install paddle2onnx==1.0.5
+pip install onnxsim==0.4.28
 ```
 
 - 转换模型:
@@ -105,11 +106,54 @@ paddle2onnx --model_dir=./output_inference/mask_rtdetr_hgnetv2_l_6x_coco/ \
 - 确保TensorRT的版本>=8.5.1
 - TRT推理可以参考[RT-DETR](https://github.com/lyuwenyu/RT-DETR)的部分代码或者其他网络资源
 
+固定先前导出的ONNX模型的`im_shape`和`scale_factor`两个输入数据，代码如下：
+```python
+# onnx_edit.py
+
+import copy
+
+import onnx
+
+if __name__ == '__main__':
+    model_path = './mask_rtdetr_hgnetv2_l_6x_coco.onnx'
+    model = onnx.load_model(model_path)
+
+    im_shape = onnx.helper.make_tensor(
+        name='im_shape',
+        data_type=onnx.helper.TensorProto.FLOAT,
+        dims=[1, 2],
+        vals=[640, 640])
+    scale_factor = onnx.helper.make_tensor(
+        name='scale_factor',
+        data_type=onnx.helper.TensorProto.FLOAT,
+        dims=[1, 2],
+        vals=[1, 1])
+
+    new_model = copy.deepcopy(model)
+
+    for input in model.graph.input:
+        if input.name == 'im_shape':
+            new_model.graph.input.remove(input)
+            new_model.graph.initializer.append(im_shape)
+
+        if input.name == 'scale_factor':
+            new_model.graph.input.remove(input)
+            new_model.graph.initializer.append(scale_factor)
+
+    onnx.checker.check_model(model, full_check=True)
+    onnx.save_model(new_model, model_path)
+```
+
+使用onnxsim简化onnx模型：
+```shell
+onnxsim mask_rtdetr_hgnetv2_l_6x_coco.onnx mask_rtdetr_hgnetv2_l_6x_coco.onnx \
+        --overwrite-input-shape "image:1,3,640,640"
+```
+
 ```shell
 trtexec --onnx=./mask_rtdetr_hgnetv2_l_6x_coco.onnx \
         --workspace=4096 \
-        --shapes=image:1x3x640x640 \
         --saveEngine=mask_rtdetr_hgnetv2_l_6x_coco.trt \
-        --avgRuns=100 \
+        --avgRuns=1000 \
         --fp16
 ```
