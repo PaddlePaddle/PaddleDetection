@@ -547,6 +547,7 @@ class DETRPostProcess(object):
         mask_pred = None
         if self.with_mask:
             assert masks is not None
+            assert masks.shape[0] == 1
             masks = paddle.gather_nd(masks, index)
             if self.bbox_decode_type == 'pad':
                 masks = F.interpolate(
