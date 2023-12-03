@@ -42,6 +42,7 @@ MaskHybridEncoder:
     dropout: 0.
     activation: 'gelu'
   expansion: 1.0
+  mask_feat_channels: [64, 64]
 
 
 MaskRTDETR:

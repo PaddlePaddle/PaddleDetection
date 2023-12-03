@@ -380,6 +380,7 @@ class MaskHybridEncoder(HybridEncoder):
                  pe_temperature=10000,
                  expansion=1.0,
                  depth_mult=1.0,
+                 mask_feat_channels=[64, 64],
                  act='silu',
                  trt=False,
                  eval_size=None):
@@ -406,15 +407,16 @@ class MaskHybridEncoder(HybridEncoder):
         self.mask_feat_head = MaskFeatFPN(
             [hidden_dim] * len(feat_strides),
             feat_strides,
-            feat_channels=64,
-            out_channels=64,
+            feat_channels=mask_feat_channels[0],
+            out_channels=mask_feat_channels[0],
             act=act)
         self.enc_mask_lateral = BaseConv(
-            x4_feat_dim, 64, 3, 1, act=act)
+            x4_feat_dim, mask_feat_channels[1], 3, 1, act=act)
         self.enc_mask_output = nn.Sequential(
             BaseConv(
-                64, 64, 3, 1, act=act),
-            nn.Conv2D(64, num_prototypes, 1))
+                mask_feat_channels[1],
+                mask_feat_channels[1], 3, 1, act=act),
+            nn.Conv2D(mask_feat_channels[1], num_prototypes, 1))
 
     def forward(self, feats, for_mot=False, is_teacher=False):
         x4_feat = feats.pop(0)
