@@ -372,8 +372,6 @@ def mask_to_box_coordinate(mask,
     """
     assert mask.ndim == 4
     assert format in ["xyxy", "xywh"]
-    if mask.sum() == 0:
-        return paddle.zeros([mask.shape[0], mask.shape[1], 4], dtype=dtype)
 
     h, w = mask.shape[-2:]
     y, x = paddle.meshgrid(
@@ -391,6 +389,7 @@ def mask_to_box_coordinate(mask,
     y_min = paddle.where(mask, y_mask,
                          paddle.to_tensor(1e8)).flatten(-2).min(-1)
     out_bbox = paddle.stack([x_min, y_min, x_max, y_max], axis=-1)
+    out_bbox *= mask.any(-1).any(-1).any(-1)
     if normalize:
         out_bbox /= paddle.to_tensor([w, h, w, h]).astype(dtype)
 

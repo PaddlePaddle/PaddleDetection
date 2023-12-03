@@ -473,8 +473,8 @@ class DETRPostProcess(object):
         self.use_avg_mask_score = use_avg_mask_score
         self.bbox_decode_type = bbox_decode_type
 
-    def _mask_postprocess(self, mask_pred, score_pred, index):
-        mask_score = F.sigmoid(paddle.gather_nd(mask_pred, index))
+    def _mask_postprocess(self, mask_pred, score_pred):
+        mask_score = F.sigmoid(mask_pred)
         mask_pred = (mask_score > self.mask_threshold).astype(mask_score.dtype)
         if self.use_avg_mask_score:
             avg_mask_score = (mask_pred * mask_score).sum([-2, -1]) / (
@@ -544,9 +544,9 @@ class DETRPostProcess(object):
             index = paddle.stack([batch_ind, index], axis=-1)
             bbox_pred = paddle.gather_nd(bbox_pred, index)
 
-        mask_pred = None
         if self.with_mask:
             assert masks is not None
+            masks = paddle.gather_nd(masks, index)
             masks = F.interpolate(
                 masks,
                 scale_factor=self.mask_stride,
@@ -564,7 +564,7 @@ class DETRPostProcess(object):
                 size=(img_h, img_w),
                 mode="bilinear",
                 align_corners=False)
-            mask_pred, scores = self._mask_postprocess(masks, scores, index)
+            mask_pred, scores = self._mask_postprocess(masks, scores)
 
         bbox_pred = paddle.concat(
             [
