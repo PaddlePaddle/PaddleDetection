@@ -559,12 +559,12 @@ class DETRPostProcess(object):
                 # remove padding for input image
                 h, w = im_shape.astype('int32')[0]
                 masks = masks[..., :h, :w]
-                # get pred_mask in the original resolution.
-                img_h = img_h[0].astype('int32')
-                img_w = img_w[0].astype('int32')
+            # get pred_mask in the original resolution.
+            img_h = img_h[0].astype('int32')
+            img_w = img_w[0].astype('int32')
             masks = F.interpolate(
                 masks,
-                size=(img_h, img_w),
+                size=[img_h, img_w],
                 mode="bilinear",
                 align_corners=False)
             mask_pred, scores = self._mask_postprocess(masks, scores)
