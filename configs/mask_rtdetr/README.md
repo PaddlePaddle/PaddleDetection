@@ -13,7 +13,7 @@ Mask RT-DETR is an instance segmentation version of [RT DETR](../rtdetr/README.m
 ## Model Zoo
 |        Model        | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) | Pretrained Model |                      config                      |
 |:-------------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:----------------:|:------------------------------------------------:|
-|   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |        |  45.7   |    32     |   120    |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
+|   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |  51.3  |  45.7   |    32     |   120    |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
 
 
 ## Getting Start
@@ -204,3 +204,13 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 
 **Notes:**
 - TensorRT will perform optimization for the current hardware platform according to the definition of the network, generate an inference engine and serialize it into a file. This inference engine is only applicable to the current hardware hardware platform. If your hardware and software platform has not changed, you can set `use_static=True` in [enable_tensorrt_engine](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/infer.py#L660). In this way, the serialized file generated will be saved in the `output_inference` folder, and the saved serialized file will be loaded the next time when TensorRT is executed.
+
+
+## More Usage
+
+### Setting the Model Weight Saving Metric
+When using the COCO-style evaluation metric for instance segmentation tasks, if the inference results contain both `box` and `mask`, the default metric for saving the best model weight is `box ap`. You can change the saving metric to `mask ap` by adding the `target_metrics` parameter in the configuration file and assigning it to `mask`. For a specific configuration file example, please refer to [mask_rtdetr_r50vd.yml](./_base_/mask_rtdetr_r50vd.yml).
+
+### Setting the Number of Queries
+- The number of queries in the post-processing can be adjusted by modifying the `num_top_queries` parameter of `DETRPostProcess`. The default value of `num_top_queries` for Mask RT-DETR post-processing is 100.
+- The number of queries in the Query Selection part can be adjusted by modifying the `num_queries` parameter of `MaskRTDETR`. The default value of `num_queries` for Mask RT-DETR is 300. Since the classification loss of Mask RT-DETR aligns the mask IoU and the confidence, we can set the `num_queries` of Mask RT-DETR to 100 and directly load the weights trained with `num_queries` of 300. This can improve the inference speed with little loss of accuracy.

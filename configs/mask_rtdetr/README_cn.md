@@ -13,7 +13,7 @@ Mask-RT-DETR是[RT-DETR](../rtdetr/README.md)的实例分割版本。
 ## 模型库
 |        Model        | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) | Pretrained Model |                      config                      |
 |:-------------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:----------------:|:------------------------------------------------:|
-|   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |        |  45.7   |    32     |   120    |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
+|   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |  51.3  |  45.7   |    32     |   120    |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
 
 
 ## 使用说明
@@ -203,3 +203,13 @@ CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inferenc
 **注意：**
 - TensorRT会根据网络的定义，执行针对当前硬件平台的优化，生成推理引擎并序列化为文件。该推理引擎只适用于当前软硬件平台。如果你的软硬件平台没有发生变化，你可以设置[enable_tensorrt_engine](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/infer.py#L660)的参数`use_static=True`，这样生成的序列化文件将会保存在`output_inference`文件夹下，下次执行TensorRT时将加载保存的序列化文件。
 
+
+## 更多用法
+
+### 模型权重保存指标的设定
+在实例分割任务中，如果使用COCO风格的评测指标，且推理结果中同时包含`box`和`mask`, 那么默认的模型权重保存指标是`box ap`。如果想要将保存指标改为`mask ap`，可以在配置文件中添加`target_metrics`参数，并将其赋值为`mask`。具体的配置文件示例可以参考[mask_rtdetr_r50vd.yml](./_base_/mask_rtdetr_r50vd.yml)。
+
+### Query数量的设定
+
+- 后处理中Query数量的设定可以通过修改`DETRPostProcess`的`num_top_queries`参数来调整。Mask RT-DETR后处理的`num_top_queries`默认值为100。
+- Query选择部分Query数量的设定可以通过修改`MaskRTDETR`的`num_queries`参数来调整。Mask RT-DETR的`num_queries`默认值为300。由于Mask RT-DETR的分类损失考虑了mask IoU和置信度的一致性，我们可以将Mask RT-DETR的`num_queries`设置为100，并直接加载在`num_queries`为300时训练的权重。这样可以在精度损失不大的情况下，提高推理速度。
