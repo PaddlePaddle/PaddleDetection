@@ -125,7 +125,7 @@ paddle2onnx --model_dir output_inference/mask_rtdetr_hgnetv2_l_6x_coco --model_f
 
 ```
 
-Fix the previously exported ONNX model's `im_shape` and `scale_factor` two input data, code as follows
+Fix the previously exported ONNX model's `im_shape` and `scale_factor` two input data, code as follows：
 ```python
 # onnx_edit.py
 
@@ -163,7 +163,7 @@ if __name__ == '__main__':
     onnx.save_model(new_model, model_path)
 ```
 
-Simplify the onnx model using onnxsim
+Simplify the onnx model using onnxsim：
 
 ```shell
 pip install onnxsim
