@@ -123,8 +123,8 @@ class LogPrinter(Callback):
                     max_mem_reserved_str = ""
                     max_mem_allocated_str = ""
                     if paddle.device.is_compiled_with_cuda():
-                        max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved()}"
-                        max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated()}"
+                        max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved() // (1024 ** 2)} MB"
+                        max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated() // (1024 ** 2)} MB"
                     fmt = ' '.join([
                         'Epoch: [{}]',
                         '[{' + space_fmt + '}/{}]',
