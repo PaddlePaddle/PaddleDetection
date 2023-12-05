@@ -52,7 +52,7 @@ python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml \
               -o weights=${model_params_path}
 ```
 
-- 测试:
+- 推理:
 
 ```shell
 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml \
@@ -78,8 +78,18 @@ python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coc
 
 </details>
 
+<details open>
+<summary>2. 使用Paddle Inference进行推理 </summary>
+
+```shell
+python deploy/python/infer.py --model_dir=output_inference/mask_rtdetr_hgnetv2_l_6x_coco --image_file=demo/000000014439_640x640.jpg --run_mode=paddle --device=gpu 
+```
+
+</details>
+
+
 <details>
-<summary>2. 转换模型至ONNX </summary>
+<summary>3. 转换模型至ONNX </summary>
 
 - 安装[Paddle2ONNX](https://github.com/PaddlePaddle/Paddle2ONNX) 和 ONNX
 
@@ -101,7 +111,7 @@ paddle2onnx --model_dir=./output_inference/mask_rtdetr_hgnetv2_l_6x_coco/ \
 </details>
 
 <details>
-<summary>3. 转换成TensorRT（可选） </summary>
+<summary>4. 转换成TensorRT（可选） </summary>
 
 - 确保TensorRT的版本>=8.5.1
 - TRT推理可以参考[RT-DETR](https://github.com/lyuwenyu/RT-DETR)的部分代码或者其他网络资源
