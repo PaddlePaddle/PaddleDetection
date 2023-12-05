@@ -1,131 +1,130 @@
-English | [简体中文](README_cn.md)
+简体中文 | [English](README.md)
 
 # Mask RT-DETR
 
-## Table of Contents
-- [Introduction](#Introduction)
-- [Model Zoo](#Model Zoo)
-- [Getting Start](#Getting Start)
+## 内容
+- [简介](#简介)
+- [模型库](#模型库)
+- [使用说明](#使用说明)
 
-## Introduction
-Mask RT-DETR is an instance segmentation version of [RT DETR](../rtdetr/README.md).
+## 简介
+Mask-RT-DETR是[RT-DETR](../rtdetr/README.md)的实例分割版本。
 
-## Model Zoo
+## 模型库
 |        Model        | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) | Pretrained Model |                      config                      |
 |:-------------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:----------------:|:------------------------------------------------:|
 |   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |        |  45.7   |    32     |   120    |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
 
 
-## Getting Start
+## 使用说明
 
-### Datasets and Metrics
+### 数据集和评价指标
 
-PaddleDetection team provides **COCO dataset** , decompress and place it under `PaddleDetection/dataset/`:
+下载PaddleDetection团队提供的**COCO数据**，并解压放置于`PaddleDetection/dataset/`下：
 
 ```
 wget https://bj.bcebos.com/v1/paddledet/data/coco.tar
 # tar -xvf coco.tar
 ```
 
-**Note:**
-  - For the format of COCO style dataset, please refer to [format-data](https://cocodataset.org/#format-data) and [format-results](https://cocodataset.org/#format-results).
-  - For the evaluation metric of COCO, please refer to [detection-eval](https://cocodataset.org/#detection-eval), and install  [cocoapi](https://github.com/cocodataset/cocoapi) at first.
+**注意:**
+ - COCO风格格式，请参考 [format-data](https://cocodataset.org/#format-data) 和 [format-results](https://cocodataset.org/#format-results)。
+ - COCO风格评测指标，请参考 [detection-eval](https://cocodataset.org/#detection-eval) ，并首先安装 [cocoapi](https://github.com/cocodataset/cocoapi)。
 
-### Custom dataset
+### 自定义数据集
 
-1.For the annotation of custom dataset, please refer to [DetAnnoTools](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/DetAnnoTools_en.md);
+1.自定义数据集的标注制作，请参考 [DetAnnoTools](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/DetAnnoTools.md);
+2.自定义数据集的训练准备，请参考 [PrepareDataSet](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/PrepareDetDataSet.md).
 
-2.For training preparation of custom dataset，please refer to [PrepareDataSet](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/tutorials/data/PrepareDetDataSet_en.md).
 
+### 训练
 
-### Training
-
-Training Mask RT-DETR with following command
+请执行以下指令训练Mask RT-DETR
 
 ```bash
-# training on a single GPU
+# 单卡GPU上训练
 export CUDA_VISIBLE_DEVICES=0
 python tools/train.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --eval
 
-# training on multi GPUs
+# 多卡GPU上训练
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --amp --eval
 ```
-**Notes:**
-- If you need to evaluate while training, please add `--eval`.
-- Mask RT-DETR supports mixed precision training, please add `--amp`.
-- PaddleDetection supports multi-machine distributed training, you can refer to [DistributedTraining tutorial](../../docs/tutorials/DistributedTraining_en.md).
+**注意:**
+- 如果需要边训练边评估，请添加`--eval`.
+- Mask RT-DETR支持混合精度训练，请添加`--amp`.
+- PaddleDetection支持多机训练，可以参考[多机训练教程](../../docs/tutorials/DistributedTraining_cn.md).
 
+### 评估
 
-### Evaluation
-
-Evaluating Mask RT-DETR on COCO val2017 dataset in single GPU with following commands:
+执行以下命令在单个GPU上评估COCO val2017数据集
 
 ```bash
 CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path}
 ```
 
-For evaluation on COCO test-dev2017 dataset, please download COCO test-dev2017 dataset from [COCO dataset download](https://cocodataset.org/#download) and decompress to COCO dataset directory and configure `EvalDataset` like `configs/ppyolo/ppyolo_test.yml`.
+在coco test-dev2017上评估，请先从[COCO数据集下载](https://cocodataset.org/#download)下载COCO test-dev2017数据集，然后解压到COCO数据集文件夹并像`configs/ppyolo/ppyolo_test.yml`一样配置`EvalDataset`。
 
-### Inference
+### 推理
 
-Inference images in single GPU with following commands, use `--infer_img` to inference a single image and `--infer_dir` to inference all images in the directory.
+使用以下命令在单张GPU上预测图片，使用`--infer_img`推理单张图片以及使用`--infer_dir`推理文件中的所有图片。
 
 
 ```bash
-# inference single image
+# 推理单张图片
 CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} --infer_img=demo/000000014439_640x640.jpg
 
-# inference all images in the directory
+# 推理文件中的所有图片
 CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} --infer_dir=demo
 ```
 
-### Exporting models
+### 模型导出
 
-For deployment on GPU or speed testing, model should be first exported to inference model using `tools/export_model.py`.
+Mask RT-DETR在GPU上部署或者速度测试需要通过`tools/export_model.py`导出模型。
 
-**Exporting Mask RT-DETR for Paddle Inference without TensorRT**, use following command
+当你**使用Paddle Inference但不使用TensorRT**时，运行以下的命令导出模型
 
 ```bash
 python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path}
 ```
 
-**Exporting Mask RT-DETR for Paddle Inference with TensorRT** for better performance, use following command with extra `-o trt=True` setting.
+当你**使用Paddle Inference且使用TensorRT**时，需要指定`-o trt=True`来导出模型。
 
 ```bash
 python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} trt=True
 ```
 
-If you want to export Mask RT-DETR model to **ONNX format**, use following command refer to [PaddleDetection Model Export as ONNX Format Tutorial](../../deploy/EXPORT_ONNX_MODEL_en.md).
+如果你想将PP-YOLOE模型导出为**ONNX格式**，参考
+[PaddleDetection模型导出为ONNX格式教程](../../deploy/EXPORT_ONNX_MODEL.md)，运行以下命令：
 
 ```bash
 
-# export inference model
+# 导出推理模型
 python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
 
-# install paddle2onnx
+# 安装paddle2onnx
 pip install paddle2onnx
 
-# convert to onnx
+# 转换成onnx格式
 paddle2onnx --model_dir output_inference/mask_rtdetr_hgnetv2_l_6x_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 16 --save_file mask_rtdetr_hgnetv2_l_6x_coco.onnx
 ```
 
-**Notes:** ONNX model only supports batch_size=1 now
+**注意：** ONNX模型目前只支持batch_size=1
 
-### Speed testing
+### 速度测试
 
-**Using Paddle Inference with TensorRT** to test speed, run following command
+**使用 ONNX 和 TensorRT** 进行测速，执行以下命令：
 
 ```bash
-# export inference model with trt=True
+# 导出模型
 python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
 
-# convert to onnx
+# 转化成ONNX格式
 paddle2onnx --model_dir output_inference/mask_rtdetr_hgnetv2_l_6x_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 16 --save_file mask_rtdetr_hgnetv2_l_6x_coco.onnx
 
 ```
 
-Fix the previously exported ONNX model's `im_shape` and `scale_factor` two input data, code as follows
+固定先前导出的ONNX模型的`im_shape`和`scale_factor`两个输入数据，代码如下：
 ```python
 # onnx_edit.py
 
@@ -163,44 +162,44 @@ if __name__ == '__main__':
     onnx.save_model(new_model, model_path)
 ```
 
-Simplify the onnx model using onnxsim
-
+使用onnxsim简化onnx模型：
 ```shell
 pip install onnxsim
 onnxsim mask_rtdetr_hgnetv2_l_6x_coco.onnx mask_rtdetr_hgnetv2_l_6x_coco.onnx --overwrite-input-shape "image:1,3,640,640"
 ```
 
 ```shell
-# trt inference using fp16 and batch_size=1
+# 测试速度，半精度，batch_size=1
 trtexec --onnx=./mask_rtdetr_hgnetv2_l_6x_coco.onnx --saveEngine=./mask_rtdetr_hgnetv2_l_6x_coco.engine --workspace=4096 --avgRuns=1000 --fp16
 ```
 
 
-### Deployment
+### 部署
 
-Mask RT-DETR can be deployed by following approaches:
+Mask RT-DETR可以使用以下方式进行部署：
   - Paddle Inference [Python](../../deploy/python) & [C++](../../deploy/cpp)
 
-Next, we will introduce how to use Paddle Inference to deploy Mask RT-DETR models in TensorRT FP16 mode.
+接下来，我们将介绍Mask RT-DETR如何使用Paddle Inference在TensorRT FP16模式下部署
 
-First, refer to [Paddle Inference Docs](https://www.paddlepaddle.org.cn/inference/master/user_guides/download_lib.html#python), download and install packages corresponding to CUDA, CUDNN and TensorRT version.
+首先，参考[Paddle Inference文档](https://www.paddlepaddle.org.cn/inference/master/user_guides/download_lib.html#python)，下载并安装与你的CUDA, CUDNN和TensorRT相应的wheel包。
 
-Then, Exporting Mask RT-DETR for Paddle Inference **with TensorRT**, use following command.
+然后，运行以下命令导出模型
 
 ```bash
 python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
 ```
 
-Finally, inference in TensorRT FP16 mode.
+最后，使用TensorRT FP16进行推理
 
 ```bash
-# inference single image
+# 推理单张图片
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/mask_rtdetr_hgnetv2_l_6x_coco --image_file=demo/000000014439_640x640.jpg --device=gpu --run_mode=trt_fp16
 
-# inference all images in the directory
+# 推理文件夹下的所有图片
 CUDA_VISIBLE_DEVICES=0 python deploy/python/infer.py --model_dir=output_inference/mask_rtdetr_hgnetv2_l_6x_coco --image_dir=demo/ --device=gpu  --run_mode=trt_fp16
 
 ```
 
-**Notes:**
-- TensorRT will perform optimization for the current hardware platform according to the definition of the network, generate an inference engine and serialize it into a file. This inference engine is only applicable to the current hardware hardware platform. If your hardware and software platform has not changed, you can set `use_static=True` in [enable_tensorrt_engine](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/infer.py#L660). In this way, the serialized file generated will be saved in the `output_inference` folder, and the saved serialized file will be loaded the next time when TensorRT is executed.
+**注意：**
+- TensorRT会根据网络的定义，执行针对当前硬件平台的优化，生成推理引擎并序列化为文件。该推理引擎只适用于当前软硬件平台。如果你的软硬件平台没有发生变化，你可以设置[enable_tensorrt_engine](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.4/deploy/python/infer.py#L660)的参数`use_static=True`，这样生成的序列化文件将会保存在`output_inference`文件夹下，下次执行TensorRT时将加载保存的序列化文件。
+
