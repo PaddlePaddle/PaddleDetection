@@ -1,6 +1,5 @@
 
 Global:
-  reader_config: configs/ppyoloe_plus_reader.yml
   include_nms: True
   Evaluation: True
   model_dir: ./ppyoloe_plus_crn_x_80e_coco  
