@@ -2,7 +2,7 @@
 Global:
   include_nms: True
   Evaluation: True
-  model_dir: ./rtdetr_hgnetv2_l_6x_coco/
+  model_dir: ./models/rtdetr_hgnetv2_l_6x_coco/
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 
@@ -16,7 +16,6 @@ QuantAware:
   quantize_op_types:
   - conv2d
   - depthwise_conv2d
-  - matmul_v2
 
 TrainConfig:
   train_iter: 200

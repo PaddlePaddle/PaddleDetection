@@ -1,7 +1,7 @@
 Global:
   include_nms: True
   Evaluation: True
-  model_dir: ./picodet_s_320_coco_lcnet/
+  model_dir: ./models/picodet_s_320_coco_lcnet/
   model_filename: model.pdmodel
   params_filename: model.pdiparams
 
@@ -11,12 +11,12 @@ Distillation:
 
 QuantAware:
   use_pact: true
+  onnx_format: true
   activation_quantize_type: 'moving_average_abs_max'
   weight_bits: 8
   activation_bits: 8
   quantize_op_types:
   - conv2d
-  - depthwise_conv2d
 
 TrainConfig:
   train_iter: 16000
