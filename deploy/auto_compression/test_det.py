@@ -69,7 +69,7 @@ def argsparser():
     parser.add_argument(
         "--use_dynamic_shape",
         type=bool,
-        default=True,
+        default=False,
         help="Whether use dynamic shape or not.")
     parser.add_argument(
         "--use_mkldnn",
@@ -84,6 +84,18 @@ def argsparser():
         type=bool,
         default=True,
         help="Whether include nms or not.")
+    parser.add_argument(
+        "--use_multi_img_for_dynamic_shape_collect", 
+        type=bool, 
+        default=True, 
+        help="Whether it is necessary to use multiple images to collect shape infomation,\
+        When the image sizes in the data set are different, it needs to be set to True.")
+    
+    parser.add_argument(
+        "--delete_pass_name", 
+        default=None,
+        type=str, 
+        help="Pass that need to be deleted during the ir optimization process")
 
     return parser
 
@@ -199,7 +211,43 @@ def draw_box(image_file, results, class_label, threshold=0.5):
             thickness=2, )
     return srcimg
 
+def find_images_with_bounding_size(loader):
+    max_length_index = -1
+    max_width_index = -1
+    min_length_index = -1
+    min_width_index = -1
 
+    max_length = float('-inf')
+    max_width = float('-inf')
+    min_length = float('inf')
+    min_width = float('inf')
+    for idx, data in enumerate(loader):
+        data_all = {k: np.array(v) for k, v in data.items()}
+        # print(idx)
+        h,w = data_all["im_shape"][0]
+        # print(h, w)
+        if int(w)==800 and h > max_length:
+            max_length = h
+            max_length_index = idx
+        if int(h)==800 and w > max_width:
+            max_width = w
+            max_width_index = idx
+        if h < min_length:
+            min_length = h
+            min_length_index = idx
+        if w < min_width:
+            min_width = w
+            min_width_index = idx
+    print(f"Found max image length: {max_length}, index: {max_length_index}")
+    print(f"Found max image width: {max_width}, index: {max_width_index}")
+    print(f"Found min image length: {min_length}, index: {min_length_index}")
+    print(f"Found min image width: {min_width}, index: {min_width_index}")
+
+    roidbs = loader.dataset.roidbs
+    subset = loader.dataset
+    subset.roidbs = [roidbs[i] for i in [max_length_index, max_width_index, min_length_index, min_width_index]]
+    return subset
+    
 def load_predictor(
         model_dir,
         precision="fp32",
@@ -249,8 +297,10 @@ def load_predictor(
         if use_mkldnn:
             config.enable_mkldnn()
             if precision == "int8":
-                config.enable_mkldnn_int8(
-                    {"conv2d", "depthwise_conv2d", "transpose2", "pool2d"})
+                if "picodet_s" in FLAGS.config:
+                    config.enable_mkldnn_int8({"conv2d"})
+                else:
+                    config.enable_mkldnn_int8({"conv2d", "depthwise_conv2d"})
 
     precision_map = {
         "int8": Config.Precision.Int8,
@@ -259,7 +309,7 @@ def load_predictor(
     }
     if precision in precision_map.keys() and use_trt:
         config.enable_tensorrt_engine(
-            workspace_size=(1 << 25) * batch_size,
+            workspace_size=(1 << 30) * batch_size,
             max_batch_size=batch_size,
             min_subgraph_size=min_subgraph_size,
             precision_mode=precision_map[precision],
@@ -274,12 +324,19 @@ def load_predictor(
                                                            True)
                 print("trt set dynamic shape done!")
             else:
+                config.disable_gpu()
+                config.set_cpu_math_library_num_threads(10)
                 config.collect_shape_range_info(dynamic_shape_file)
                 print("Start collect dynamic shape...")
                 rerun_flag = True
 
-    # enable shared memory
-    config.enable_memory_optim()
+    if "dino" in FLAGS.config:
+        config.exp_disable_tensorrt_ops(["reshape2", "slice", "stack", "elementwise_add"])
+    if "rtdetr" in FLAGS.config:
+        config.delete_pass("fc_mkldnn_pass")
+        config.delete_pass("fc_act_mkldnn_fuse_pass")
+    if FLAGS.delete_pass_name is not None:
+        config.delete_pass(FLAGS.delete_pass_name)
     predictor = create_predictor(config)
     return predictor, rerun_flag
 
@@ -363,13 +420,28 @@ def eval(predictor, val_loader, metric, rerun_flag=False):
         np_boxes = boxes_tensor.copy_to_cpu()
         if FLAGS.include_nms:
             np_boxes_num = boxes_num.copy_to_cpu()
-        if rerun_flag:
-            return
+        # if rerun_flag:
+        #     return
         end_time = time.time()
         timed = end_time - start_time
         time_min = min(time_min, timed)
         time_max = max(time_max, timed)
         predict_time += timed
+        if rerun_flag:
+            if FLAGS.use_multi_img_for_dynamic_shape_collect:
+                if batch_id == 3:
+                    print(
+                        "***** Collect dynamic shape done, Please rerun the program to get correct results. *****"
+                    )
+                    return
+                else:
+                    continue
+            else:
+                print(
+                    "***** Collect dynamic shape done, Please rerun the program to get correct results. *****"
+                )
+                return
+
         if not FLAGS.include_nms:
             postprocess = PPYOLOEPostProcess(
                 score_threshold=0.3, nms_threshold=0.6)
@@ -419,20 +491,29 @@ def main():
         reader_cfg = load_config(FLAGS.config)
 
         dataset = reader_cfg["EvalDataset"]
-        global val_loader
+        # global val_loader
         val_loader = create("EvalReader")(reader_cfg["EvalDataset"],
                                           reader_cfg["worker_num"],
                                           return_list=True)
-        clsid2catid = {v: k for k, v in dataset.catid2clsid.items()}
+
+        if rerun_flag:
+            sub_dataset = find_images_with_bounding_size(val_loader)
+            batch_sampler = paddle.io.BatchSampler(
+                sub_dataset, batch_size=1, shuffle=True, drop_last=False)
+            val_loader = paddle.io.DataLoader(
+                dataset=sub_dataset,
+                batch_sampler=batch_sampler,
+                collate_fn=val_loader._batch_transforms,
+                num_workers=1,
+                return_list=True
+            )
+
+        clsid2catid = {v: k for k, v in dataset.catid2clsid.items()}   
         anno_file = dataset.get_anno()
         metric = COCOMetric(
             anno_file=anno_file, clsid2catid=clsid2catid, IouType="bbox")
         eval(predictor, val_loader, metric, rerun_flag=rerun_flag)
 
-    if rerun_flag:
-        print(
-            "***** Collect dynamic shape done, Please rerun the program to get correct results. *****"
-        )
 
 
 if __name__ == "__main__":
