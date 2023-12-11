@@ -6,14 +6,15 @@
 - [简介](#简介)
 - [模型库](#模型库)
 - [使用说明](#使用说明)
+- [更多用法](#更多用法)
 
 ## 简介
 Mask-RT-DETR是[RT-DETR](../rtdetr/README.md)的实例分割版本。
 
 ## 模型库
-|        Model        | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) | Pretrained Model |                      config                      |
-|:-------------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:----------------:|:------------------------------------------------:|
-|   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |  51.3  |  45.7   |    32     |   120    |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
+|     Model      | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                    Pretrained Model                                    |                   config                    |
+|:--------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:--------------------------------------------------------------------------------------:|:-------------------------------------------:|
+| Mask-RT-DETR-L |  6x   | HGNetv2  |     640     |  51.3  |  45.7   |    32     |   120    |          90           | [model](https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](mask_rtdetr_hgnetv2_l_6x_coco.yml) |
 
 
 ## 使用说明
@@ -60,7 +61,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/mas
 执行以下命令在单个GPU上评估COCO val2017数据集
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path}
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams
 ```
 
 在coco test-dev2017上评估，请先从[COCO数据集下载](https://cocodataset.org/#download)下载COCO test-dev2017数据集，然后解压到COCO数据集文件夹并像`configs/ppyolo/ppyolo_test.yml`一样配置`EvalDataset`。
@@ -72,10 +73,10 @@ CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_h
 
 ```bash
 # 推理单张图片
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} --infer_img=demo/000000014439_640x640.jpg
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams --infer_img=demo/000000014439_640x640.jpg
 
 # 推理文件中的所有图片
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} --infer_dir=demo
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams --infer_dir=demo
 ```
 
 ### 模型导出
@@ -85,13 +86,13 @@ Mask RT-DETR在GPU上部署或者速度测试需要通过`tools/export_model.py`
 当你**使用Paddle Inference但不使用TensorRT**时，运行以下的命令导出模型
 
 ```bash
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path}
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams
 ```
 
 当你**使用Paddle Inference且使用TensorRT**时，需要指定`-o trt=True`来导出模型。
 
 ```bash
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} trt=True
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams trt=True
 ```
 
 如果你想将PP-YOLOE模型导出为**ONNX格式**，参考
@@ -100,7 +101,7 @@ python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coc
 ```bash
 
 # 导出推理模型
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams trt=True
 
 # 安装paddle2onnx
 pip install paddle2onnx
@@ -117,7 +118,7 @@ paddle2onnx --model_dir output_inference/mask_rtdetr_hgnetv2_l_6x_coco --model_f
 
 ```bash
 # 导出模型
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams trt=True
 
 # 转化成ONNX格式
 paddle2onnx --model_dir output_inference/mask_rtdetr_hgnetv2_l_6x_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 16 --save_file mask_rtdetr_hgnetv2_l_6x_coco.onnx
@@ -158,7 +159,7 @@ if __name__ == '__main__':
             new_model.graph.input.remove(input)
             new_model.graph.initializer.append(scale_factor)
 
-    onnx.checker.check_model(model, full_check=True)
+    onnx.checker.check_model(new_model, full_check=True)
     onnx.save_model(new_model, model_path)
 ```
 
@@ -186,7 +187,7 @@ Mask RT-DETR可以使用以下方式进行部署：
 然后，运行以下命令导出模型
 
 ```bash
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams trt=True
 ```
 
 最后，使用TensorRT FP16进行推理

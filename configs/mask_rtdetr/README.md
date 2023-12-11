@@ -3,17 +3,18 @@ English | [简体中文](README_cn.md)
 # Mask RT-DETR
 
 ## Table of Contents
-- [Introduction](#Introduction)
-- [Model Zoo](#Model Zoo)
-- [Getting Start](#Getting Start)
+- [Introduction](#introduction)
+- [Model Zoo](#model-zoo)
+- [Getting Start](#getting-start)
+- [More Usage](#more-usage)
 
 ## Introduction
 Mask RT-DETR is an instance segmentation version of [RT DETR](../rtdetr/README.md).
 
 ## Model Zoo
-|        Model        | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) | Pretrained Model |                      config                      |
-|:-------------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:----------------:|:------------------------------------------------:|
-|   Mask-RT-DETR-L    |  6x   | HGNetv2  |     640     |  51.3  |  45.7   |    32     |   120    |          90           |                  |   [config](mask_rtdetr_hgnetv2_l_6x_coco.yml)    |
+|     Model      | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                    Pretrained Model                                    |                   config                    |
+|:--------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:--------------------------------------------------------------------------------------:|:-------------------------------------------:|
+| Mask-RT-DETR-L |  6x   | HGNetv2  |     640     |  51.3  |  45.7   |    32     |   120    |          90           | [model](https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](mask_rtdetr_hgnetv2_l_6x_coco.yml) |
 
 
 ## Getting Start
@@ -62,7 +63,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/mas
 Evaluating Mask RT-DETR on COCO val2017 dataset in single GPU with following commands:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path}
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams
 ```
 
 For evaluation on COCO test-dev2017 dataset, please download COCO test-dev2017 dataset from [COCO dataset download](https://cocodataset.org/#download) and decompress to COCO dataset directory and configure `EvalDataset` like `configs/ppyolo/ppyolo_test.yml`.
@@ -74,10 +75,10 @@ Inference images in single GPU with following commands, use `--infer_img` to inf
 
 ```bash
 # inference single image
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} --infer_img=demo/000000014439_640x640.jpg
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams --infer_img=demo/000000014439_640x640.jpg
 
 # inference all images in the directory
-CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} --infer_dir=demo
+CUDA_VISIBLE_DEVICES=0 python tools/infer.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams --infer_dir=demo
 ```
 
 ### Exporting models
@@ -87,13 +88,13 @@ For deployment on GPU or speed testing, model should be first exported to infere
 **Exporting Mask RT-DETR for Paddle Inference without TensorRT**, use following command
 
 ```bash
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path}
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams
 ```
 
 **Exporting Mask RT-DETR for Paddle Inference with TensorRT** for better performance, use following command with extra `-o trt=True` setting.
 
 ```bash
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=${model_params_path} trt=True
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams trt=True
 ```
 
 If you want to export Mask RT-DETR model to **ONNX format**, use following command refer to [PaddleDetection Model Export as ONNX Format Tutorial](../../deploy/EXPORT_ONNX_MODEL_en.md).
@@ -101,7 +102,7 @@ If you want to export Mask RT-DETR model to **ONNX format**, use following comma
 ```bash
 
 # export inference model
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams trt=True
 
 # install paddle2onnx
 pip install paddle2onnx
@@ -118,7 +119,7 @@ paddle2onnx --model_dir output_inference/mask_rtdetr_hgnetv2_l_6x_coco --model_f
 
 ```bash
 # export inference model with trt=True
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams trt=True
 
 # convert to onnx
 paddle2onnx --model_dir output_inference/mask_rtdetr_hgnetv2_l_6x_coco --model_filename model.pdmodel --params_filename model.pdiparams --opset_version 16 --save_file mask_rtdetr_hgnetv2_l_6x_coco.onnx
@@ -159,7 +160,7 @@ if __name__ == '__main__':
             new_model.graph.input.remove(input)
             new_model.graph.initializer.append(scale_factor)
 
-    onnx.checker.check_model(model, full_check=True)
+    onnx.checker.check_model(new_model, full_check=True)
     onnx.save_model(new_model, model_path)
 ```
 
@@ -188,7 +189,7 @@ First, refer to [Paddle Inference Docs](https://www.paddlepaddle.org.cn/inferenc
 Then, Exporting Mask RT-DETR for Paddle Inference **with TensorRT**, use following command.
 
 ```bash
-python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=${model_params_path} trt=True
+python tools/export_model.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --output_dir=output_inference -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams trt=True
 ```
 
 Finally, inference in TensorRT FP16 mode.
