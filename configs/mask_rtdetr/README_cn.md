@@ -12,9 +12,9 @@
 Mask-RT-DETR是[RT-DETR](../rtdetr/README.md)的实例分割版本。
 
 ## 模型库
-|     Model      | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                    Pretrained Model                                    |                   config                    |
-|:--------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:--------------------------------------------------------------------------------------:|:-------------------------------------------:|
-| Mask-RT-DETR-L |  6x   | HGNetv2  |     640     |  52.9  |  45.7   |    32     |   120    |          90           | [model](https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](mask_rtdetr_hgnetv2_l_6x_coco.yml) |
+|     Model      | Epoch | Backbone | Input shape | Box AP<sup>val<br>0.5:0.95 | Mask AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Mask AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                    Pretrained Model                                    |                   config                    |
+|:--------------:|:-----:|:--------:|:-----------:|:--------------------------:|:---------------------------:|:---------------------------:|:----------------------------:|:---------:|:--------:|:---------------------:|:--------------------------------------------------------------------------------------:|:-------------------------------------------:|
+| Mask-RT-DETR-L |  6x   | HGNetv2  |     640     |            52.9            |            45.7             |            53.6             |             46.5             |    32     |   120    |          90           | [model](https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](mask_rtdetr_hgnetv2_l_6x_coco.yml) |
 
 
 ## 使用说明
@@ -45,7 +45,7 @@ wget https://bj.bcebos.com/v1/paddledet/data/coco.tar
 ```bash
 # 单卡GPU上训练
 export CUDA_VISIBLE_DEVICES=0
-python tools/train.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --eval
+python tools/train.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --amp --eval
 
 # 多卡GPU上训练
 export CUDA_VISIBLE_DEVICES=0,1,2,3
@@ -61,7 +61,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/mas
 执行以下命令在单个GPU上评估COCO val2017数据集
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams --amp
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams 
 ```
 
 在coco test-dev2017上评估，请先从[COCO数据集下载](https://cocodataset.org/#download)下载COCO test-dev2017数据集，然后解压到COCO数据集文件夹并像`configs/ppyolo/ppyolo_test.yml`一样配置`EvalDataset`。

@@ -12,9 +12,9 @@ English | [简体中文](README_cn.md)
 Mask RT-DETR is an instance segmentation version of [RT DETR](../rtdetr/README.md).
 
 ## Model Zoo
-|     Model      | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                    Pretrained Model                                    |                   config                    |
-|:--------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:--------------------------------------------------------------------------------------:|:-------------------------------------------:|
-| Mask-RT-DETR-L |  6x   | HGNetv2  |     640     |  52.9  |  45.7   |    32     |   120    |          90           | [model](https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](mask_rtdetr_hgnetv2_l_6x_coco.yml) |
+|     Model      | Epoch | Backbone | Input shape | Box AP<sup>val<br>0.5:0.95 | Mask AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Mask AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                    Pretrained Model                                    |                   config                    |
+|:--------------:|:-----:|:--------:|:-----------:|:--------------------------:|:---------------------------:|:---------------------------:|:----------------------------:|:---------:|:--------:|:---------------------:|:--------------------------------------------------------------------------------------:|:-------------------------------------------:|
+| Mask-RT-DETR-L |  6x   | HGNetv2  |     640     |            52.9            |            45.7             |            53.6             |             46.5             |    32     |   120    |          90           | [model](https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](mask_rtdetr_hgnetv2_l_6x_coco.yml) |
 
 
 ## Getting Start
@@ -46,7 +46,7 @@ Training Mask RT-DETR with following command
 ```bash
 # training on a single GPU
 export CUDA_VISIBLE_DEVICES=0
-python tools/train.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --eval
+python tools/train.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml --amp --eval
 
 # training on multi GPUs
 export CUDA_VISIBLE_DEVICES=0,1,2,3
@@ -63,7 +63,7 @@ python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/mas
 Evaluating Mask RT-DETR on COCO val2017 dataset in single GPU with following commands:
 
 ```bash
-CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams --amp
+CUDA_VISIBLE_DEVICES=0 python tools/eval.py -c configs/mask_rtdetr/mask_rtdetr_hgnetv2_l_6x_coco.yml -o weights=https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams 
 ```
 
 For evaluation on COCO test-dev2017 dataset, please download COCO test-dev2017 dataset from [COCO dataset download](https://cocodataset.org/#download) and decompress to COCO dataset directory and configure `EvalDataset` like `configs/ppyolo/ppyolo_test.yml`.
