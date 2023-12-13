@@ -12,9 +12,9 @@ English | [简体中文](README_cn.md)
 Mask RT-DETR is an instance segmentation version of [RT DETR](../rtdetr/README.md).
 
 ## Model Zoo
-|     Model      | Epoch | Backbone | Input shape | Box AP<sup>val<br>0.5:0.95 | Mask AP<sup>val<br>0.5:0.95 | Box AP<sup>test<br>0.5:0.95 | Mask AP<sup>test<br>0.5:0.95 | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                    Pretrained Model                                    |                   config                    |
-|:--------------:|:-----:|:--------:|:-----------:|:--------------------------:|:---------------------------:|:---------------------------:|:----------------------------:|:---------:|:--------:|:---------------------:|:--------------------------------------------------------------------------------------:|:-------------------------------------------:|
-| Mask-RT-DETR-L |  6x   | HGNetv2  |     640     |                            |                             |                             |                              |    32     |   120    |          90           | [model](https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](mask_rtdetr_hgnetv2_l_6x_coco.yml) |
+|     Model      | Epoch | Backbone | Input shape | Box AP | Mask AP | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                    Pretrained Model                                    |                   config                    |
+|:--------------:|:-----:|:--------:|:-----------:|:------:|:-------:|:---------:|:--------:|:---------------------:|:--------------------------------------------------------------------------------------:|:-------------------------------------------:|
+| Mask-RT-DETR-L |  6x   | HGNetv2  |     640     |  51.2  |  45.7   |    32     |   120    |          90           | [model](https://paddledet.bj.bcebos.com/models/mask_rtdetr_hgnetv2_l_6x_coco.pdparams) | [config](mask_rtdetr_hgnetv2_l_6x_coco.yml) |
 
 
 ## Getting Start
