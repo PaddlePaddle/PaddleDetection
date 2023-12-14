@@ -455,6 +455,7 @@ class DETRPostProcess(object):
                  dual_groups=0,
                  use_focal_loss=False,
                  with_mask=False,
+                 mask_stride=4,
                  mask_threshold=0.5,
                  use_avg_mask_score=False,
                  bbox_decode_type='origin'):
@@ -467,19 +468,20 @@ class DETRPostProcess(object):
         self.dual_groups = dual_groups
         self.use_focal_loss = use_focal_loss
         self.with_mask = with_mask
+        self.mask_stride = mask_stride
         self.mask_threshold = mask_threshold
         self.use_avg_mask_score = use_avg_mask_score
         self.bbox_decode_type = bbox_decode_type
 
-    def _mask_postprocess(self, mask_pred, score_pred, index):
-        mask_score = F.sigmoid(paddle.gather_nd(mask_pred, index))
+    def _mask_postprocess(self, mask_pred, score_pred):
+        mask_score = F.sigmoid(mask_pred)
         mask_pred = (mask_score > self.mask_threshold).astype(mask_score.dtype)
         if self.use_avg_mask_score:
             avg_mask_score = (mask_pred * mask_score).sum([-2, -1]) / (
                 mask_pred.sum([-2, -1]) + 1e-6)
             score_pred *= avg_mask_score
 
-        return mask_pred[0].astype('int32'), score_pred
+        return mask_pred.flatten(0, 1).astype('int32'), score_pred
 
     def __call__(self, head_out, im_shape, scale_factor, pad_shape):
         """
@@ -545,21 +547,27 @@ class DETRPostProcess(object):
         mask_pred = None
         if self.with_mask:
             assert masks is not None
-            masks = F.interpolate(
-                masks, scale_factor=4, mode="bilinear", align_corners=False)
-            # TODO: Support prediction with bs>1.
-            # remove padding for input image
-            h, w = im_shape.astype('int32')[0]
-            masks = masks[..., :h, :w]
+            assert masks.shape[0] == 1
+            masks = paddle.gather_nd(masks, index)
+            if self.bbox_decode_type == 'pad':
+                masks = F.interpolate(
+                    masks,
+                    scale_factor=self.mask_stride,
+                    mode="bilinear",
+                    align_corners=False)
+                # TODO: Support prediction with bs>1.
+                # remove padding for input image
+                h, w = im_shape.astype('int32')[0]
+                masks = masks[..., :h, :w]
             # get pred_mask in the original resolution.
             img_h = img_h[0].astype('int32')
             img_w = img_w[0].astype('int32')
             masks = F.interpolate(
                 masks,
-                size=(img_h, img_w),
+                size=[img_h, img_w],
                 mode="bilinear",
                 align_corners=False)
-            mask_pred, scores = self._mask_postprocess(masks, scores, index)
+            mask_pred, scores = self._mask_postprocess(masks, scores)
 
         bbox_pred = paddle.concat(
             [
