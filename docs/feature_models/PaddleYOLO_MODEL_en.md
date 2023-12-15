@@ -21,7 +21,7 @@
     - [**Pipeline**](#pipeline)
     - [CustomDataset](#customdataset)
       - [preparation：](#preparation)
-      - [fintune：](#fintune)
+      - [finetune：](#finetune)
       - [Predict and export:](#predict-and-export)
 
 ## Introduction
@@ -365,21 +365,21 @@ paddle2onnx --model_dir output_inference/${job_name} --model_filename model.pdmo
 2.For training preparation of custom dataset，please refer to[PrepareDataSet](../tutorials/PrepareDataSet.md).
 
 
-#### fintune：
+#### finetune：
 
-In addition to changing the path of the dataset, it is generally recommended to load **the COCO pre training weight of the corresponding model** to fintune, which will converge faster and achieve higher accuracy, such as：
+In addition to changing the path of the dataset, it is generally recommended to load **the COCO pre training weight of the corresponding model** to finetune, which will converge faster and achieve higher accuracy, such as：
 
 ```base
-# fintune with single GPU：
+# finetune with single GPU：
 # CUDA_VISIBLE_DEVICES=0 python tools/train.py -c ${config} --eval --amp -o pretrain_weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 
-# fintune with multi GPU：
+# finetune with multi GPU：
 python -m paddle.distributed.launch --log_dir=./log_dir --gpus 0,1,2,3,4,5,6,7 tools/train.py -c ${config} --eval --amp -o pretrain_weights=https://paddledet.bj.bcebos.com/models/ppyoloe_crn_l_300e_coco.pdparams
 ```
 
 **Note:**
-- The fintune training will show that the channels of the last layer of the head classification branch is not matched, which is a normal situation, because the number of custom dataset is generally inconsistent with that of COCO dataset;
-- In general, the number of epochs for fintune training can be set less, and the lr setting is also smaller, such as 1/10. The highest accuracy may occur in one of the middle epochs;
+- The finetune training will show that the channels of the last layer of the head classification branch is not matched, which is a normal situation, because the number of custom dataset is generally inconsistent with that of COCO dataset;
+- In general, the number of epochs for finetune training can be set less, and the lr setting is also smaller, such as 1/10. The highest accuracy may occur in one of the middle epochs;
 
 #### Predict and export:
 
