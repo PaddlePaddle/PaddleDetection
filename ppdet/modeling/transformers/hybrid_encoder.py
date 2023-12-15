@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import numpy as np
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
@@ -26,7 +26,7 @@ from ..layers import MultiHeadAttention
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 
-__all__ = ['HybridEncoder']
+__all__ = ['HybridEncoder', 'MaskHybridEncoder']
 
 
 class CSPRepLayer(nn.Layer):
@@ -299,3 +299,138 @@ class HybridEncoder(nn.Layer):
                 channels=self.hidden_dim, stride=self.feat_strides[idx])
             for idx in range(len(self.in_channels))
         ]
+
+
+class MaskFeatFPN(nn.Layer):
+    def __init__(self,
+                 in_channels=[256, 256, 256],
+                 fpn_strides=[32, 16, 8],
+                 feat_channels=256,
+                 dropout_ratio=0.0,
+                 out_channels=256,
+                 align_corners=False,
+                 act='swish'):
+        super(MaskFeatFPN, self).__init__()
+        assert len(in_channels) == len(fpn_strides)
+        reorder_index = np.argsort(fpn_strides, axis=0)
+        in_channels = [in_channels[i] for i in reorder_index]
+        fpn_strides = [fpn_strides[i] for i in reorder_index]
+        assert min(fpn_strides) == fpn_strides[0]
+        self.reorder_index = reorder_index
+        self.fpn_strides = fpn_strides
+        self.dropout_ratio = dropout_ratio
+        self.align_corners = align_corners
+        if self.dropout_ratio > 0:
+            self.dropout = nn.Dropout2D(dropout_ratio)
+
+        self.scale_heads = nn.LayerList()
+        for i in range(len(fpn_strides)):
+            head_length = max(
+                1, int(np.log2(fpn_strides[i]) - np.log2(fpn_strides[0])))
+            scale_head = []
+            for k in range(head_length):
+                in_c = in_channels[i] if k == 0 else feat_channels
+                scale_head.append(
+                    nn.Sequential(
+                        BaseConv(in_c, feat_channels, 3, 1, act=act))
+                )
+                if fpn_strides[i] != fpn_strides[0]:
+                    scale_head.append(
+                        nn.Upsample(
+                            scale_factor=2,
+                            mode='bilinear',
+                            align_corners=align_corners))
+
+            self.scale_heads.append(nn.Sequential(*scale_head))
+
+        self.output_conv = BaseConv(
+            feat_channels, out_channels, 3, 1, act=act)
+
+    def forward(self, inputs):
+        x = [inputs[i] for i in self.reorder_index]
+
+        output = self.scale_heads[0](x[0])
+        for i in range(1, len(self.fpn_strides)):
+            output = output + F.interpolate(
+                self.scale_heads[i](x[i]),
+                size=output.shape[2:],
+                mode='bilinear',
+                align_corners=self.align_corners)
+
+        if self.dropout_ratio > 0:
+            output = self.dropout(output)
+        output = self.output_conv(output)
+        return output
+
+
+@register
+@serializable
+class MaskHybridEncoder(HybridEncoder):
+    __shared__ = ['depth_mult', 'act', 'trt', 'eval_size', 'num_prototypes']
+    __inject__ = ['encoder_layer']
+
+    def __init__(self,
+                 in_channels=[256, 512, 1024, 2048],
+                 feat_strides=[4, 8, 16, 32],
+                 hidden_dim=256,
+                 use_encoder_idx=[3],
+                 num_encoder_layers=1,
+                 encoder_layer='TransformerLayer',
+                 num_prototypes=32,
+                 pe_temperature=10000,
+                 expansion=1.0,
+                 depth_mult=1.0,
+                 mask_feat_channels=[64, 64],
+                 act='silu',
+                 trt=False,
+                 eval_size=None):
+        assert len(in_channels) == len(feat_strides)
+        x4_feat_dim = in_channels.pop(0)
+        x4_feat_stride = feat_strides.pop(0)
+        use_encoder_idx = [i - 1 for i in use_encoder_idx]
+        assert x4_feat_stride == 4
+
+        super(MaskHybridEncoder, self).__init__(
+            in_channels=in_channels,
+            feat_strides=feat_strides,
+            hidden_dim=hidden_dim,
+            use_encoder_idx=use_encoder_idx,
+            num_encoder_layers=num_encoder_layers,
+            encoder_layer=encoder_layer,
+            pe_temperature=pe_temperature,
+            expansion=expansion,
+            depth_mult=depth_mult,
+            act=act,
+            trt=trt,
+            eval_size=eval_size)
+
+        self.mask_feat_head = MaskFeatFPN(
+            [hidden_dim] * len(feat_strides),
+            feat_strides,
+            feat_channels=mask_feat_channels[0],
+            out_channels=mask_feat_channels[1],
+            act=act)
+        self.enc_mask_lateral = BaseConv(
+            x4_feat_dim, mask_feat_channels[1], 3, 1, act=act)
+        self.enc_mask_output = nn.Sequential(
+            BaseConv(
+                mask_feat_channels[1],
+                mask_feat_channels[1], 3, 1, act=act),
+            nn.Conv2D(mask_feat_channels[1], num_prototypes, 1))
+
+    def forward(self, feats, for_mot=False, is_teacher=False):
+        x4_feat = feats.pop(0)
+
+        enc_feats = super(MaskHybridEncoder, self).forward(
+            feats, for_mot=for_mot, is_teacher=is_teacher)
+
+        mask_feat = self.mask_feat_head(enc_feats)
+        mask_feat = F.interpolate(
+            mask_feat,
+            scale_factor=2,
+            mode='bilinear',
+            align_corners=False)
+        mask_feat += self.enc_mask_lateral(x4_feat)
+        mask_feat = self.enc_mask_output(mask_feat)
+
+        return enc_feats, mask_feat

@@ -521,6 +521,9 @@ class MaskDINOHead(nn.Layer):
             out_masks = paddle.concat(
                 [enc_out_masks.unsqueeze(0), dec_out_masks])
 
+            inputs['gt_segm'] = [gt_segm.astype(out_masks.dtype)
+                                 for gt_segm in inputs['gt_segm']]
+
             return self.loss(
                 out_bboxes,
                 out_logits,

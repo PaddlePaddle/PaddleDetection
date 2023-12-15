@@ -204,6 +204,9 @@ class Checkpointer(Callback):
                             key = 'keypoint'
                         else:
                             key = 'mask'
+
+                        key = self.model.cfg.get('target_metrics', key)
+
                         if key not in map_res:
                             logger.warning("Evaluation results empty, this may be due to " \
                                         "training iterations being too few or not " \
