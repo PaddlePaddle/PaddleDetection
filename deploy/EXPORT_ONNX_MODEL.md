@@ -38,7 +38,7 @@ python tools/export_model.py -c configs/yolov3/yolov3_darknet53_270e_coco.yml \
 ```
 导出后的模型保存在`inference_model/yolov3_darknet53_270e_coco/`目录中，结构如下
 ```
-yolov3_darknet
+yolov3_darknet53_270e_coco
   ├── infer_cfg.yml          # 模型配置文件信息
   ├── model.pdiparams        # 静态图模型参数
   ├── model.pdiparams.info   # 参数额外信息，一般无需关注
