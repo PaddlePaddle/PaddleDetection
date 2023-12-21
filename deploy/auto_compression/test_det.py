@@ -28,6 +28,16 @@ from ppdet.metrics import COCOMetric
 from post_process import PPYOLOEPostProcess
 
 
+def str_to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in ('True', 'true'):
+        return True
+    elif value.lower() in ('False', 'false'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 def argsparser():
     """
     argsparser func
@@ -47,12 +57,12 @@ def argsparser():
         help="path of datset and reader config.")
     parser.add_argument(
         "--benchmark",
-        type=bool,
+        type=str_to_bool,
         default=False,
         help="Whether run benchmark or not.")
     parser.add_argument(
         "--use_trt",
-        type=bool,
+        type=str_to_bool,
         default=False,
         help="Whether use TensorRT or not.")
     parser.add_argument(
@@ -68,12 +78,12 @@ def argsparser():
     )
     parser.add_argument(
         "--use_dynamic_shape",
-        type=bool,
+        type=str_to_bool,
         default=False,
         help="Whether use dynamic shape or not.")
     parser.add_argument(
         "--use_mkldnn",
-        type=bool,
+        type=str_to_bool,
         default=False,
         help="Whether use mkldnn or not.")
     parser.add_argument(
@@ -81,12 +91,12 @@ def argsparser():
     parser.add_argument("--img_shape", type=int, default=640, help="input_size")
     parser.add_argument(
         '--include_nms',
-        type=bool,
+        type=str_to_bool,
         default=True,
         help="Whether include nms or not.")
     parser.add_argument(
         "--use_multi_img_for_dynamic_shape_collect", 
-        type=bool, 
+        type=str_to_bool, 
         default=True, 
         help="Whether it is necessary to use multiple images to collect shape infomation,\
         When the image sizes in the data set are different, it needs to be set to True.")
