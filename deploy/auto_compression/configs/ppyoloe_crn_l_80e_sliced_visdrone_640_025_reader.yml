@@ -1,7 +1,7 @@
 metric: COCO
 num_classes: 10
 
-# Datset configuration
+# Dataset configuration
 TrainDataset:
   !COCODataSet
     image_dir: train_images_640_025
