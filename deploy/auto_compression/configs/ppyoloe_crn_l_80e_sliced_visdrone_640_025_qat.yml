@@ -1,6 +1,5 @@
 
 Global:
-  reader_config: configs/ppyoloe_crn_l_80e_sliced_visdrone_640_025_reader.yml
   input_list: ['image', 'scale_factor']
   arch: YOLO
   include_nms: True

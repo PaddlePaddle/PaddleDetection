@@ -41,7 +41,7 @@ def argsparser():
         default=None,
         help="image path, if set image_file, it will not eval coco.")
     parser.add_argument(
-        "--reader_config",
+        "--config",
         type=str,
         default=None,
         help="path of datset and reader config.")
@@ -416,7 +416,7 @@ def main():
             warmup=warmup,
             repeats=repeats)
     else:
-        reader_cfg = load_config(FLAGS.reader_config)
+        reader_cfg = load_config(FLAGS.config)
 
         dataset = reader_cfg["EvalDataset"]
         global val_loader

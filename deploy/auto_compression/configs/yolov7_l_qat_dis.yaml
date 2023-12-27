@@ -1,6 +1,5 @@
 
 Global:
-  reader_config: configs/yolov5_reader.yml
   include_nms: True
   Evaluation: True
   model_dir: ./yolov7_l_300e_coco
