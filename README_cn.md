@@ -107,6 +107,19 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 <p>PaddleDetection官方交流群二维码</p>
 </div>
 
+## 📖 技术交流合作
+
+- 飞桨低代码开发工具（PaddleX）—— 面向国内外主流AI硬件的飞桨精选模型一站式开发工具。包含如下核心优势：
+  - 【产业高精度模型库】：覆盖10个主流AI任务 40+精选模型，丰富齐全。
+  - 【特色模型产线】：提供融合大小模型的特色模型产线，精度更高，效果更好。
+  - 【低代码开发模式】：图形化界面支持统一开发范式，便捷高效。
+  - 【私有化部署多硬件支持】：适配国内外主流AI硬件，支持本地纯离线使用，满足企业安全保密需要。
+
+- PaddleX官网地址：https://aistudio.baidu.com/intro/paddlex
+
+- PaddleX官方交流频道：https://aistudio.baidu.com/community/channel/610
+
+
 - **🎈社区近期活动**
   - **🔥PaddleDetection v2.6版本更新解读**
 
