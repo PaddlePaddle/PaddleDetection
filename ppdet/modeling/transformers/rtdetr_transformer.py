@@ -495,7 +495,7 @@ class RTDETRTransformer(nn.Layer):
                     end=w, dtype=dtype))
             grid_xy = paddle.stack([grid_x, grid_y], -1)
 
-            valid_WH = paddle.to_tensor([h, w]).astype(dtype)
+            valid_WH = paddle.to_tensor([w, h]).astype(dtype)
             grid_xy = (grid_xy.unsqueeze(0) + 0.5) / valid_WH
             wh = paddle.ones_like(grid_xy) * grid_size * (2.0**lvl)
             anchors.append(
