@@ -21,8 +21,9 @@ from __future__ import print_function
 
 import inspect
 import math
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageOps
 import numpy as np
+import random
 import cv2
 from copy import deepcopy
 
@@ -195,7 +196,7 @@ def blend(image1, image2, factor):
     return np.clip(temp, a_min=0, a_max=255).astype(np.uint8)
 
 
-def cutout(image, pad_size, replace=0):
+def cutout(image, bboxes, pad_size, replace=0, threshold=0.5):
     """Apply cutout (https://arxiv.org/abs/1708.04552) to image.
 
     This operation applies a (2*pad_size x 2*pad_size) mask of zeros to
@@ -210,6 +211,8 @@ def cutout(image, pad_size, replace=0):
             (2*pad_size x 2*pad_size).
         replace: What pixel value to fill in the image in the area that has
             the cutout mask applied to it.
+        threshold: float, Calculate the proportion of cut area in the box,
+            and if the cut area is less than the threshold, it will be retained
 
     Returns:
         An image Tensor that is of type uint8.
@@ -217,6 +220,9 @@ def cutout(image, pad_size, replace=0):
         img = cv2.imread( "/home/vis/gry/train/img_data/test.jpg", cv2.COLOR_BGR2RGB )
         new_img = cutout(img, pad_size=50, replace=0)
     """
+    if not (bboxes.size > 0):
+        return image, bboxes
+
     image_height, image_width = image.shape[0], image.shape[1]
 
     cutout_center_height = np.random.randint(low=0, high=image_height)
@@ -232,6 +238,15 @@ def cutout(image, pad_size, replace=0):
         image_width - (left_pad + right_pad)
     ]
     padding_dims = [[lower_pad, upper_pad], [left_pad, right_pad]]
+
+    cut_box = [
+        left_pad, lower_pad, cutout_center_width + pad_size,
+        cutout_center_height + pad_size
+    ]
+    overlapping_iou = _cut_iou_calculate(cut_box, bboxes, image_height,
+                                         image_width)
+    bboxes = bboxes[overlapping_iou < threshold]
+
     mask = np.pad(np.zeros(
         cutout_shape, dtype=image.dtype),
                   padding_dims,
@@ -244,7 +259,7 @@ def cutout(image, pad_size, replace=0):
         np.ones_like(
             image, dtype=image.dtype) * replace,
         image)
-    return image.astype(np.uint8)
+    return image.astype(np.uint8), bboxes
 
 
 def solarize(image, threshold=128):
@@ -272,21 +287,27 @@ def color(image, factor):
 
 
 # refer to https://github.com/4uiiurz1/pytorch-auto-augment/blob/024b2eac4140c38df8342f09998e307234cafc80/auto_augment.py#L197
-def contrast(img, factor):
-    img = ImageEnhance.Contrast(Image.fromarray(img)).enhance(factor)
-    return np.array(img)
+def contrast(image, factor):
+    image = ImageEnhance.Contrast(Image.fromarray(image)).enhance(factor)
+    return np.array(image)
 
 
 def brightness(image, factor):
     """Equivalent of PIL Brightness."""
-    degenerate = np.zeros_like(image)
-    return blend(degenerate, image, factor)
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = ImageEnhance.Brightness(image)
+    image = image.enhance(factor)
+    return np.array(image)
 
 
 def posterize(image, bits):
     """Equivalent of PIL Posterize."""
     shift = 8 - bits
-    return np.left_shift(np.right_shift(image, shift), shift)
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = ImageOps.posterize(image, shift)
+    return np.array(image)
 
 
 def rotate(image, degrees, replace):
@@ -531,6 +552,9 @@ def _apply_bbox_augmentation(image, bbox, augmentation_func, *args):
     # Get the sub-tensor that is the image within the bounding box region.
     bbox_content = image[min_y:max_y + 1, min_x:max_x + 1, :]
 
+    if bbox_content.shape[0] == 0 or bbox_content.shape[1] == 0:
+        return image
+
     # Apply the augmentation function to the bbox portion of the image.
     augmented_bbox_content = augmentation_func(bbox_content, *args)
 
@@ -543,15 +567,15 @@ def _apply_bbox_augmentation(image, bbox, augmentation_func, *args):
         constant_values=1)
 
     # Create a mask that will be used to zero out a part of the original image.
-    mask_tensor = np.zeros_like(bbox_content)
+    mask_array = np.zeros_like(bbox_content)
 
-    mask_tensor = np.pad(mask_tensor,
-                         [[min_y, (image_height - 1) - max_y],
-                          [min_x, (image_width - 1) - max_x], [0, 0]],
-                         'constant',
-                         constant_values=1)
+    mask_array = np.pad(mask_array,
+                        [[min_y, (image_height - 1) - max_y],
+                         [min_x, (image_width - 1) - max_x], [0, 0]],
+                        'constant',
+                        constant_values=1)
     # Replace the old bbox content with the new augmented content.
-    image = image * mask_tensor + augmented_bbox_content
+    image = image * mask_array + augmented_bbox_content
     return image.astype(np.uint8)
 
 
@@ -560,10 +584,10 @@ def _concat_bbox(bbox, bboxes):
 
     # Note if all elements in bboxes are -1 (_INVALID_BOX), then this means
     # we discard bboxes and start the bboxes Tensor with the current bbox.
-    bboxes_sum_check = np.sum(bboxes)
-    bbox = np.expand_dims(bbox, 0)
+    bboxes_sum_check = np.sum(bboxes, axis=-1)
+    bbox = bbox[np.newaxis, ...]
     # This check will be true when it is an _INVALID_BOX
-    if _equal(bboxes_sum_check, -4):
+    if np.any(bboxes_sum_check == -4.0):
         bboxes = bbox
     else:
         bboxes = np.concatenate([bboxes, bbox], 0)
@@ -646,7 +670,9 @@ def _apply_multi_bbox_augmentation(image, bboxes, prob, aug_func,
 
     # If the bboxes are empty, then just give it _INVALID_BOX. The result
     # will be thrown away.
-    bboxes = np.array((_INVALID_BOX)) if bboxes.size == 0 else bboxes
+    gt_with_crowd = np.array(
+        [[-1.0, -1.0]]) if bboxes.size == 0 else bboxes[:, 4:]
+    bboxes = np.array((_INVALID_BOX)) if bboxes.size == 0 else bboxes[:, :4]
 
     assert bboxes.shape[1] == 4, "bboxes.shape[1] must be 4!!!!"
 
@@ -692,19 +718,17 @@ def _apply_multi_bbox_augmentation(image, bboxes, prob, aug_func,
         final_bboxes = new_bboxes
     else:
         final_bboxes = bboxes
-    return image, final_bboxes
+    return image, np.concatenate([final_bboxes, gt_with_crowd], 1)
 
 
 def _apply_multi_bbox_augmentation_wrapper(image, bboxes, prob, aug_func,
                                            func_changes_bbox, *args):
     """Checks to be sure num bboxes > 0 before calling inner function."""
     num_bboxes = len(bboxes)
-    new_image = deepcopy(image)
-    new_bboxes = deepcopy(bboxes)
     if num_bboxes != 0:
-        new_image, new_bboxes = _apply_multi_bbox_augmentation(
-            new_image, new_bboxes, prob, aug_func, func_changes_bbox, *args)
-    return new_image, new_bboxes
+        image, bboxes = _apply_multi_bbox_augmentation(
+            image, bboxes, prob, aug_func, func_changes_bbox, *args)
+    return image, bboxes
 
 
 def rotate_only_bboxes(image, bboxes, prob, degrees, replace):
@@ -809,6 +833,7 @@ def _rotate_bbox(bbox, image_height, image_width, degrees):
     min_x = int(image_width * (bbox[1] - 0.5))
     max_y = -int(image_height * (bbox[2] - 0.5))
     max_x = int(image_width * (bbox[3] - 0.5))
+    gt_class, is_crowd = bbox[4], bbox[5]
     coordinates = np.stack([[min_y, min_x], [min_y, max_x], [max_y, min_x],
                             [max_y, max_x]]).astype(np.float32)
     # Rotate the coordinates according to the rotation matrix clockwise if
@@ -824,10 +849,13 @@ def _rotate_bbox(bbox, image_height, image_width, degrees):
     max_y = -(float(np.min(new_coords[0, :])) / image_height - 0.5)
     max_x = float(np.max(new_coords[1, :])) / image_width + 0.5
 
+    if max_x < 0. or min_x > 1.0 or max_y < 0. or min_y > 1.0:
+        return None
+
     # Clip the bboxes to be sure the fall between [0, 1].
     min_y, min_x, max_y, max_x = _clip_bbox(min_y, min_x, max_y, max_x)
     min_y, min_x, max_y, max_x = _check_bbox_area(min_y, min_x, max_y, max_x)
-    return np.stack([min_y, min_x, max_y, max_x])
+    return np.stack([min_y, min_x, max_y, max_x, gt_class, is_crowd])
 
 
 def rotate_with_bboxes(image, bboxes, degrees, replace):
@@ -839,24 +867,32 @@ def rotate_with_bboxes(image, bboxes, degrees, replace):
     # pylint:disable=g-long-lambda
     wrapped_rotate_bbox = lambda bbox: _rotate_bbox(bbox, image_height, image_width, degrees)
     # pylint:enable=g-long-lambda
-    new_bboxes = np.zeros_like(bboxes)
-    for idx in range(len(bboxes)):
-        new_bboxes[idx] = wrapped_rotate_bbox(bboxes[idx])
-    return image, new_bboxes
+    bboxes = np.array([
+        box for box in list(map(wrapped_rotate_bbox, bboxes)) if box is not None
+    ])
+    return image, bboxes
 
 
 def translate_x(image, pixels, replace):
     """Equivalent of PIL Translate in X dimension."""
-    image = Image.fromarray(wrap(image))
-    image = image.transform(image.size, Image.AFFINE, (1, 0, pixels, 0, 1, 0))
-    return unwrap(np.array(image), replace)
+    if not isinstance(replace, tuple):
+        replace = tuple(replace)
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = image.transform(
+        image.size, Image.AFFINE, (1, 0, pixels, 0, 1, 0), fillcolor=replace)
+    return np.array(image)
 
 
 def translate_y(image, pixels, replace):
     """Equivalent of PIL Translate in Y dimension."""
-    image = Image.fromarray(wrap(image))
-    image = image.transform(image.size, Image.AFFINE, (1, 0, 0, 0, 1, pixels))
-    return unwrap(np.array(image), replace)
+    if not isinstance(replace, tuple):
+        replace = tuple(replace)
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = image.transform(
+        image.size, Image.AFFINE, (1, 0, 0, 0, 1, pixels), fillcolor=replace)
+    return np.array(image)
 
 
 def _shift_bbox(bbox, image_height, image_width, pixels, shift_horizontal):
@@ -880,6 +916,7 @@ def _shift_bbox(bbox, image_height, image_width, pixels, shift_horizontal):
     min_x = int(float(image_width) * bbox[1])
     max_y = int(float(image_height) * bbox[2])
     max_x = int(float(image_width) * bbox[3])
+    gt_class, is_crowd = bbox[4], bbox[5]
 
     if shift_horizontal:
         min_x = np.maximum(0, min_x - pixels)
@@ -894,10 +931,14 @@ def _shift_bbox(bbox, image_height, image_width, pixels, shift_horizontal):
     max_y = float(max_y) / float(image_height)
     max_x = float(max_x) / float(image_width)
 
+    # Out of bounds.
+    if max_x < 0. or min_x > 1.0 or max_y < 0. or min_y > 1.0:
+        return None
+
     # Clip the bboxes to be sure the fall between [0, 1].
     min_y, min_x, max_y, max_x = _clip_bbox(min_y, min_x, max_y, max_x)
     min_y, min_x, max_y, max_x = _check_bbox_area(min_y, min_x, max_y, max_x)
-    return np.stack([min_y, min_x, max_y, max_x])
+    return np.stack([min_y, min_x, max_y, max_x, gt_class, is_crowd])
 
 
 def translate_bbox(image, bboxes, pixels, replace, shift_horizontal):
@@ -918,6 +959,8 @@ def translate_bbox(image, bboxes, pixels, replace, shift_horizontal):
         image by pixels. The second element of the tuple is bboxes, where now
         the coordinates will be shifted to reflect the shifted image.
     """
+    if not isinstance(replace, tuple):
+        replace = tuple(replace)
     if shift_horizontal:
         image = translate_x(image, pixels, replace)
     else:
@@ -928,11 +971,10 @@ def translate_bbox(image, bboxes, pixels, replace, shift_horizontal):
     # pylint:disable=g-long-lambda
     wrapped_shift_bbox = lambda bbox: _shift_bbox(bbox, image_height, image_width, pixels, shift_horizontal)
     # pylint:enable=g-long-lambda
-    new_bboxes = deepcopy(bboxes)
-    num_bboxes = len(bboxes)
-    for idx in range(num_bboxes):
-        new_bboxes[idx] = wrapped_shift_bbox(bboxes[idx])
-    return image.astype(np.uint8), new_bboxes
+    bboxes = np.array([
+        box for box in list(map(wrapped_shift_bbox, bboxes)) if box is not None
+    ])
+    return image.astype(np.uint8), bboxes
 
 
 def shear_x(image, level, replace):
@@ -941,9 +983,16 @@ def shear_x(image, level, replace):
     # with a matrix form of:
     # [1    level
     #    0    1].
-    image = Image.fromarray(wrap(image))
-    image = image.transform(image.size, Image.AFFINE, (1, level, 0, 0, 1, 0))
-    return unwrap(np.array(image), replace)
+    if not isinstance(replace, tuple):
+        replace = tuple(replace)
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = image.transform(
+        image.size,
+        Image.AFFINE, (1, level, 0, 0, 1, 0),
+        Image.BICUBIC,
+        fillcolor=replace)
+    return np.array(image)
 
 
 def shear_y(image, level, replace):
@@ -952,9 +1001,16 @@ def shear_y(image, level, replace):
     # with a matrix form of:
     # [1    0
     #    level    1].
-    image = Image.fromarray(wrap(image))
-    image = image.transform(image.size, Image.AFFINE, (1, 0, 0, level, 1, 0))
-    return unwrap(np.array(image), replace)
+    if not isinstance(replace, tuple):
+        replace = tuple(replace)
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = image.transform(
+        image.size,
+        Image.AFFINE, (1, 0, 0, level, 1, 0),
+        Image.BICUBIC,
+        fillcolor=replace)
+    return np.array(image)
 
 
 def _shear_bbox(bbox, image_height, image_width, level, shear_horizontal):
@@ -979,6 +1035,7 @@ def _shear_bbox(bbox, image_height, image_width, level, shear_horizontal):
     min_x = int(image_width * bbox[1])
     max_y = int(image_height * bbox[2])
     max_x = int(image_width * bbox[3])
+    gt_class, is_crowd = bbox[4], bbox[5]
     coordinates = np.stack(
         [[min_y, min_x], [min_y, max_x], [max_y, min_x], [max_y, max_x]])
     coordinates = coordinates.astype(np.float32)
@@ -998,10 +1055,13 @@ def _shear_bbox(bbox, image_height, image_width, level, shear_horizontal):
     max_y = float(np.max(new_coords[0, :])) / image_height
     max_x = float(np.max(new_coords[1, :])) / image_width
 
+    if max_x < 0. or min_x > 1.0 or max_y < 0. or min_y > 1.0:
+        return None
+
     # Clip the bboxes to be sure the fall between [0, 1].
     min_y, min_x, max_y, max_x = _clip_bbox(min_y, min_x, max_y, max_x)
     min_y, min_x, max_y, max_x = _check_bbox_area(min_y, min_x, max_y, max_x)
-    return np.stack([min_y, min_x, max_y, max_x])
+    return np.stack([min_y, min_x, max_y, max_x, gt_class, is_crowd])
 
 
 def shear_with_bboxes(image, bboxes, level, replace, shear_horizontal):
@@ -1033,105 +1093,35 @@ def shear_with_bboxes(image, bboxes, level, replace, shear_horizontal):
     # pylint:disable=g-long-lambda
     wrapped_shear_bbox = lambda bbox: _shear_bbox(bbox, image_height, image_width, level, shear_horizontal)
     # pylint:enable=g-long-lambda
-    new_bboxes = deepcopy(bboxes)
-    num_bboxes = len(bboxes)
-    for idx in range(num_bboxes):
-        new_bboxes[idx] = wrapped_shear_bbox(bboxes[idx])
-    return image.astype(np.uint8), new_bboxes
+    bboxes = np.array([
+        box for box in list(map(wrapped_shear_bbox, bboxes)) if box is not None
+    ])
+    return image, bboxes
 
 
 def autocontrast(image):
-    """Implements Autocontrast function from PIL.
-
-    Args:
-        image: A 3D uint8 tensor.
-
-    Returns:
-        The image after it has had autocontrast applied to it and will be of type
-        uint8.
-    """
-
-    def scale_channel(image):
-        """Scale the 2D image using the autocontrast rule."""
-        # A possibly cheaper version can be done using cumsum/unique_with_counts
-        # over the histogram values, rather than iterating over the entire image.
-        # to compute mins and maxes.
-        lo = float(np.min(image))
-        hi = float(np.max(image))
-
-        # Scale the image, making the lowest value 0 and the highest value 255.
-        def scale_values(im):
-            scale = 255.0 / (hi - lo)
-            offset = -lo * scale
-            im = im.astype(np.float32) * scale + offset
-            img = np.clip(im, a_min=0, a_max=255.0)
-            return im.astype(np.uint8)
-
-        result = scale_values(image) if hi > lo else image
-        return result
-
-    # Assumes RGB for now.    Scales each channel independently
-    # and then stacks the result.
-    s1 = scale_channel(image[:, :, 0])
-    s2 = scale_channel(image[:, :, 1])
-    s3 = scale_channel(image[:, :, 2])
-    image = np.stack([s1, s2, s3], 2)
-    return image
+    """Implements Autocontrast function from PIL."""
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = ImageOps.autocontrast(image)
+    return np.array(image)
 
 
 def sharpness(image, factor):
     """Implements Sharpness function from PIL."""
-    orig_image = image
-    image = image.astype(np.float32)
-    # Make image 4D for conv operation.
-    # SMOOTH PIL Kernel.
-    kernel = np.array([[1, 1, 1], [1, 5, 1], [1, 1, 1]], dtype=np.float32) / 13.
-    result = cv2.filter2D(image, -1, kernel).astype(np.uint8)
-
-    # Blend the final result.
-    return blend(result, orig_image, factor)
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = ImageEnhance.Sharpness(image).enhance(1 + factor * random.choice(
+        [-1, 1]))
+    return np.array(image)
 
 
 def equalize(image):
     """Implements Equalize function from PIL using."""
-
-    def scale_channel(im, c):
-        """Scale the data in the channel to implement equalize."""
-        im = im[:, :, c].astype(np.int32)
-        # Compute the histogram of the image channel.
-        histo, _ = np.histogram(im, range=[0, 255], bins=256)
-
-        # For the purposes of computing the step, filter out the nonzeros.
-        nonzero = np.where(np.not_equal(histo, 0))
-        nonzero_histo = np.reshape(np.take(histo, nonzero), [-1])
-        step = (np.sum(nonzero_histo) - nonzero_histo[-1]) // 255
-
-        def build_lut(histo, step):
-            # Compute the cumulative sum, shifting by step // 2
-            # and then normalization by step.
-            lut = (np.cumsum(histo) + (step // 2)) // step
-            # Shift lut, prepending with 0.
-            lut = np.concatenate([[0], lut[:-1]], 0)
-            # Clip the counts to be in range.    This is done
-            # in the C code for image.point.
-            return np.clip(lut, a_min=0, a_max=255).astype(np.uint8)
-
-        # If step is zero, return the original image.    Otherwise, build
-        # lut from the full histogram and step and then index from it.
-        if step == 0:
-            result = im
-        else:
-            result = np.take(build_lut(histo, step), im)
-
-        return result.astype(np.uint8)
-
-    # Assumes RGB for now.    Scales each channel independently
-    # and then stacks the result.
-    s1 = scale_channel(image, 0)
-    s2 = scale_channel(image, 1)
-    s3 = scale_channel(image, 2)
-    image = np.stack([s1, s2, s3], 2)
-    return image
+    if isinstance(image, np.ndarray):
+        image = Image.fromarray(np.uint8(image))
+    image = ImageOps.equalize(image)
+    return np.array(image)
 
 
 def wrap(image):
@@ -1184,7 +1174,29 @@ def unwrap(image, replace):
     return image.astype(np.uint8)
 
 
-def _cutout_inside_bbox(image, bbox, pad_fraction):
+def _cut_iou_calculate(cut_area, box, image_height, image_width):
+    x_min1, y_min1, x_max1, y_max1 = cut_area
+    y_min2 = np.int32(box[:, 0] * image_height)
+    x_min2 = np.int32(box[:, 1] * image_width)
+    y_max2 = np.int32(box[:, 2] * image_height)
+    x_max2 = np.int32(box[:, 3] * image_width)
+
+    x_min_overlap = np.maximum(x_min1, x_min2)
+    y_min_overlap = np.maximum(y_min1, y_min2)
+    x_max_overlap = np.minimum(x_max1, x_max2)
+    y_max_overlap = np.minimum(y_max1, y_max2)
+
+    width_overlap = np.maximum(0, x_max_overlap - x_min_overlap)
+    height_overlap = np.maximum(0, y_max_overlap - y_min_overlap)
+
+    area_overlap = width_overlap * height_overlap
+    area_box = (x_max2 - x_min2) * (y_max2 - y_min2) + 1e-8
+    iou = area_overlap / area_box
+
+    return iou
+
+
+def _cutout_inside_bbox(image, bbox, pad_fraction, bboxes, threshold=0.5):
     """Generates cutout mask and the mean pixel value of the bbox.
 
     First a location is randomly chosen within the image as the center where the
@@ -1199,6 +1211,9 @@ def _cutout_inside_bbox(image, bbox, pad_fraction):
             in reference to the size of the original bbox. If pad_fraction is 0.25,
             then the cutout mask will be of shape
             (0.25 * bbox height, 0.25 * bbox width).
+        bboxes: GT labels, 
+        threshold: float, Calculate the proportion of cut area in the box,
+            and if the cut area is less than the threshold, it will be retained
 
     Returns:
         A tuple. Fist element is a tensor of the same shape as image where each
@@ -1251,10 +1266,20 @@ def _cutout_inside_bbox(image, bbox, pad_fraction):
 
     mask = np.expand_dims(mask, 2)
     mask = np.tile(mask, [1, 1, 3])
-    return mask, mean
+    # xyxy
+    cut_box = [
+        left_pad, lower_pad, cutout_center_width + pad_size_width,
+        cutout_center_height + pad_size_height
+    ]
+    # Calculate the proportion of cut area in the box,
+    # and if the cut area is less than the threshold, it will be retained
+    overlapping_iou = _cut_iou_calculate(cut_box, bboxes, image_height,
+                                         image_width)
+    bboxes = bboxes[overlapping_iou < threshold]
+    return mask, mean, bboxes
 
 
-def bbox_cutout(image, bboxes, pad_fraction, replace_with_mean):
+def bbox_cutout(image, bboxes, pad_fraction, replace_with_mean, threshold=0.5):
     """Applies cutout to the image according to bbox information.
 
     This is a cutout variant that using bbox information to make more informed
@@ -1275,6 +1300,8 @@ def bbox_cutout(image, bboxes, pad_fraction, replace_with_mean):
             we set the value to be 128. If replace_with_mean is True then we find
             the mean pixel values across the channel dimension and use those to fill
             in where the cutout mask is applied.
+        threshold: float, Calculate the proportion of cut area in the box,
+            and if the cut area is less than the threshold, it will be retained
 
     Returns:
         A tuple. First element is a tensor of the same shape as image that has
@@ -1282,17 +1309,18 @@ def bbox_cutout(image, bboxes, pad_fraction, replace_with_mean):
         that will be unchanged.
     """
 
-    def apply_bbox_cutout(image, bboxes, pad_fraction):
+    def apply_bbox_cutout(image, bboxes, pad_fraction, threshold=threshold):
         """Applies cutout to a single bounding box within image."""
         # Choose a single bounding box to apply cutout to.
         random_index = np.random.randint(0, bboxes.shape[0], dtype=np.int32)
         # Select the corresponding bbox and apply cutout.
-        chosen_bbox = np.take(bboxes, random_index, axis=0)
-        mask, mean = _cutout_inside_bbox(image, chosen_bbox, pad_fraction)
+        chosen_bbox = bboxes[random_index]
+        mask, mean, bboxes = _cutout_inside_bbox(
+            image, chosen_bbox, pad_fraction, bboxes, threshold=threshold)
 
         # When applying cutout we either set the pixel value to 128 or to the mean
         # value inside the bbox.
-        replace = mean if replace_with_mean else [128] * 3
+        replace = mean if replace_with_mean else 128
 
         # Apply the cutout mask to the image. Where the mask is 0 we fill it with
         # `replace`.
@@ -1301,11 +1329,11 @@ def bbox_cutout(image, bboxes, pad_fraction, replace_with_mean):
             np.ones_like(
                 image, dtype=image.dtype) * replace,
             image).astype(image.dtype)
-        return image
+        return image, bboxes
 
     # Check to see if there are boxes, if so then apply boxcutout.
     if len(bboxes) != 0:
-        image = apply_bbox_cutout(image, bboxes, pad_fraction)
+        image, bboxes = apply_bbox_cutout(image, bboxes, pad_fraction)
 
     return image, bboxes
 
@@ -1457,8 +1485,6 @@ def _parse_policy_info(name, prob, level, replace_value, augmentation_hparams):
 
     # Add in replace arg if it is required for the function that is being called.
     if 'replace' in inspect.getfullargspec(func)[0]:
-        # Make sure replace is the final argument
-        assert 'replace' == inspect.getfullargspec(func)[0][-1]
         args = tuple(list(args) + [replace_value])
 
     # Add bboxes as the second positional argument for the function if it does
