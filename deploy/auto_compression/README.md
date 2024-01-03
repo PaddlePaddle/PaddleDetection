@@ -42,8 +42,8 @@
 
 | 模型 | 策略 | TRT-mAP | GPU 耗时(ms) | MKLDNN-mAP | CPU 耗时(ms) | 配置文件 | 模型 |
 |:------:|:------:|:------:|:------:|:------:|:------:|:------:|:------:|
-| PP-YOLOE+_crn_l_80e | Baseline |    52.88    |   12.4   |  52.88  |  522.6  |  [config](../../configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml)  | 待上传 |
-| PP-YOLOE+_crn_l_80e | 量化蒸馏 | 52.52 | 7.2 | 52.65 | 539.5 | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/deploy/auto_compression/configs/ppyoloe_plus_l_qat_dis.yaml) | 待上传 |
+| PP-YOLOE+_crn_l_80e | Baseline |    52.88    |   12.4   |  52.88  |  522.6  |  [config](../../configs/ppyoloe/ppyoloe_plus_crn_l_80e_coco.yml)  | [model](https://paddledet.bj.bcebos.com/deploy/act/ppyoloe/ppyoloe_plus_crn_l_80e_coco.tar.gz) |
+| PP-YOLOE+_crn_l_80e | 量化蒸馏 | 52.52 | 7.2 | 52.65 | 539.5 | [config](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/deploy/auto_compression/configs/ppyoloe_plus_l_qat_dis.yaml) | [model](https://paddledet.bj.bcebos.com/deploy/act/ppyoloe/ppyoloe_plus_crn_l_80e_coco_qat.zip) |
 
 - PP-YOLOE+_crn_l_80e mAP的指标在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 - 上表测试环境：Tesla V100，Intel(R) Xeon(R) Gold 6271C，使用12线程测试，TensorRT 8.0.3.4，CUDA 11.2，Paddle2.5，batch_size=1。
@@ -81,8 +81,8 @@
 
 |        模型        |   策略   | TRT-mAP | GPU 耗时(ms) | MKLDNN-mAP | ARM CPU 耗时(ms) |                           配置文件                           |                             模型                             |
 | :----------------: | :------: | :-----: | :----------: | :--------: | :--------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| PicoDet_s_320LCNet | Baseline |  29.06  |     3.6      |   29.06    |       42.0       | [config](../../configs/picodet/picodet_s_320_coco_lcnet.yml) | 待上传 |
-| PicoDet_s_320LCNet | 量化蒸馏 |  28.82  |     3.3      |   28.58    |       46.7       | [config](./configs/picodet_s_320_lcnet_qat_dis.yaml) | 待上传 |
+| PicoDet_s_320LCNet | Baseline |  29.06  |     3.6      |   29.06    |       42.0       | [config](../../configs/picodet/picodet_s_320_coco_lcnet.yml) | [model](https://paddledet.bj.bcebos.com/deploy/act/picodet/picodet_s_320_coco_lcnet.tar.gz) |
+| PicoDet_s_320LCNet | 量化蒸馏 |  28.82  |     3.3      |   28.58    |       46.7       | [config](./configs/picodet_s_320_lcnet_qat_dis.yaml) | [model](https://paddledet.bj.bcebos.com/deploy/act/picodet/picodet_s_320_coco_lcnet_qat.zip) |
 
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
 - 上表测试环境：Tesla V100，Intel(R) Xeon(R) Gold 6271C，使用12线程测试，TensorRT 8.0.3.4，CUDA 11.2，Paddle2.5，batch_size=1。
@@ -110,8 +110,8 @@
 
 |       模型        |   策略   | TRT-mAP | GPU 耗时(ms) | MKLDNN-mAP | ARM CPU 耗时(ms) |                           配置文件                           |                             模型                             |
 | :---------------: | :------: | :-----: | :----------: | :--------: | :--------------: | :----------------------------------------------------------: | :----------------------------------------------------------: |
-| RT-DETR-HGNetv2-L | Baseline |  53.09  |     32.7     |   52.54    |      3392.0      | [config](../../configs/rtdetr/rtdetr_hgnetv2_l_6x_coco.yml) | 待上传 |
-| RT-DETR-HGNetv2-L | 量化蒸馏 |  52.92  |     24.8     |   52.95    |      966.2       | [config](./configs/rtdetr_hgnetv2_l_qat_dis.yaml) | 待上传 |
+| RT-DETR-HGNetv2-L | Baseline |  53.09  |     32.7     |   52.54    |      3392.0      | [config](../../configs/rtdetr/rtdetr_hgnetv2_l_6x_coco.yml) | [model](https://paddledet.bj.bcebos.com/deploy/act/rtdetr/rtdetr_hgnetv2_l_6x_coco.tar.gz) |
+| RT-DETR-HGNetv2-L | 量化蒸馏 |  52.92  |     24.8     |   52.95    |      966.2       | [config](./configs/rtdetr_hgnetv2_l_qat_dis.yaml) | [model](https://paddledet.bj.bcebos.com/deploy/act/rtdetr/rtdetr_hgnetv2_l_6x_coco_qat.zip) |
 
 - 上表测试环境：V100，Intel(R) Xeon(R) Gold 6271C，TensorRT 8.0.3.4，CUDA 11.2，Paddle2.5，batch_size=1。
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
@@ -120,8 +120,8 @@
 
 | 模型                 |   策略   | TRT-mAP | GPU 耗时(ms) | MKLDNN-mAP | ARM CPU 耗时(ms) | 配置文件 |                             模型                             |
 |:------------------:|:--------:|:--------:|:--------:|:--------:|:--------:|:----:|:----:|
-| DINO-R50-4scale-2x | Baseline |   50.82   |   147.7   |   待补充    |   待补充    | [config](../../configs/dino/dino_r50_4scale_2x_coco.yml)  | 待上传  |
-| DINO-R50-4scale-2x | 量化蒸馏 |   50.72   |   127.9   |   待补充    |   待补充    |  [config](./configs/dino_r50_4scale_2x_qat_dis.yaml) | 待上传  |
+| DINO-R50-4scale-2x | Baseline |   50.82   |   147.7   |   待补充    |   待补充    | [config](../../configs/dino/dino_r50_4scale_2x_coco.yml)  | [model](https://paddledet.bj.bcebos.com/deploy/act/dino/dino_r50_4scale_2x_coco.tar.gz)  |
+| DINO-R50-4scale-2x | 量化蒸馏 |   50.72   |   127.9   |   待补充    |   待补充    |  [config](./configs/dino_r50_4scale_2x_qat_dis.yaml) | [model](https://paddledet.bj.bcebos.com/deploy/act/dino/dino_r50_4scale_2x_coco_qat.zip)  |
 
 - 上表测试环境：Tesla V100，TensorRT 8.0.3.4，Paddle2.5，CUDA 11.2，batch_size=1。
 - mAP的指标均在COCO val2017数据集中评测得到，IoU=0.5:0.95。
