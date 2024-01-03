@@ -122,19 +122,16 @@ class LogPrinter(Callback):
                     ips = float(batch_size) / batch_time.avg
                     max_mem_reserved_str = ""
                     max_mem_allocated_str = ""
-                    if paddle.device.is_compiled_with_cuda():
-                        max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved() // (1024 ** 2)} MB"
-                        max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated() // (1024 ** 2)} MB"
+                    print_mem_info = self.model.cfg.get("print_mem_info", False)
+                    if print_mem_info:
+                        if paddle.device.is_compiled_with_cuda():
+                            max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved() // (1024 ** 2)} MB"
+                            max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated() // (1024 ** 2)} MB"
                     fmt = ' '.join([
-                        'Epoch: [{}]',
-                        '[{' + space_fmt + '}/{}]',
-                        'learning_rate: {lr:.6f}',
-                        '{meters}',
-                        'eta: {eta}',
-                        'batch_cost: {btime}',
-                        'data_cost: {dtime}',
-                        'ips: {ips:.4f} images/s',
-                        '{max_mem_reserved_str}',
+                        'Epoch: [{}]', '[{' + space_fmt + '}/{}]',
+                        'learning_rate: {lr:.6f}', '{meters}', 'eta: {eta}',
+                        'batch_cost: {btime}', 'data_cost: {dtime}',
+                        'ips: {ips:.4f} images/s', '{max_mem_reserved_str}',
                         '{max_mem_allocated_str}'
                     ])
                     fmt = fmt.format(
@@ -220,7 +217,8 @@ class Checkpointer(Callback):
                                 'metric': abs(self.best_ap),
                                 'epoch': epoch_id + 1
                             }
-                            save_path = os.path.join(self.save_dir, "best_model.pdstates")
+                            save_path = os.path.join(self.save_dir,
+                                                     "best_model.pdstates")
                             paddle.save(best_metric, save_path)
                         logger.info("Best test {} {} is {:0.3f}.".format(
                             key, eval_func, abs(self.best_ap)))
