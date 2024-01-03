@@ -430,8 +430,6 @@ def eval(predictor, val_loader, metric, rerun_flag=False):
         np_boxes = boxes_tensor.copy_to_cpu()
         if FLAGS.include_nms:
             np_boxes_num = boxes_num.copy_to_cpu()
-        # if rerun_flag:
-        #     return
         end_time = time.time()
         timed = end_time - start_time
         time_min = min(time_min, timed)
