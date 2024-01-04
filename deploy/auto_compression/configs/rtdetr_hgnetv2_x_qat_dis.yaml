@@ -1,6 +1,5 @@
 
 Global:
-  reader_config: configs/rtdetr_reader.yml
   include_nms: True
   Evaluation: True
   model_dir: ./rtdetr_hgnetv2_x_6x_coco/

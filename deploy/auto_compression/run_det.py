@@ -29,7 +29,13 @@ from paddleslim.common.dataloader import get_feed_vars
 def argsparser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        '--config_path',
+        '--config',
+        type=str,
+        default=None,
+        help="path of data config.",
+        required=True)
+    parser.add_argument(
+        '--act_config_path',
         type=str,
         default=None,
         help="path of compression strategy config.",
@@ -124,10 +130,10 @@ def eval_function(exe, compiled_test_program, test_feed_names, test_fetch_list):
 
 def main():
     global global_config
-    all_config = load_slim_config(FLAGS.config_path)
+    all_config = load_slim_config(FLAGS.act_config_path)
     assert "Global" in all_config, "Key 'Global' not found in config file."
     global_config = all_config["Global"]
-    reader_cfg = load_config(global_config['reader_config'])
+    reader_cfg = load_config(FLAGS.config) # compact PaddleX
 
     train_loader = create('EvalReader')(reader_cfg['TrainDataset'],
                                         reader_cfg['worker_num'],
