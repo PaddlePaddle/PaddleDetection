@@ -30,7 +30,7 @@ warnings.filterwarnings('ignore')
 import paddle
 
 from ppdet.core.workspace import create, load_config, merge_config
-from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_intel_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.engine import Trainer, Trainer_ARSL, init_parallel_env
 from ppdet.metrics.coco_utils import json_eval_results
@@ -180,6 +180,10 @@ def main():
     if 'use_mlu' not in cfg:
         cfg.use_mlu = False
 
+    # disable intel_gpu in config by default
+    if 'use_intel_gpu' not in cfg:
+        cfg.use_intel_gpu = False
+
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
     elif cfg.use_npu:
@@ -188,6 +192,8 @@ def main():
         place = paddle.set_device('xpu')
     elif cfg.use_mlu:
         place = paddle.set_device('mlu')
+    elif cfg.use_intel_gpu:
+        place = paddle.set_device('intel_gpu')
     else:
         place = paddle.set_device('cpu')
 
@@ -199,6 +205,7 @@ def main():
     check_npu(cfg.use_npu)
     check_xpu(cfg.use_xpu)
     check_mlu(cfg.use_mlu)
+    check_intel_gpu(cfg.use_intel_gpu)
     check_version()
 
     run(FLAGS, cfg)
