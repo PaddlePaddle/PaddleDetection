@@ -21,7 +21,7 @@ from setuptools import find_packages, setup
 
 # ==============  version definition  ==============
 
-PPDET_VERSION = "0.0.0"
+PPDET_VERSION = "2.7.0"
 
 
 def parse_version():
