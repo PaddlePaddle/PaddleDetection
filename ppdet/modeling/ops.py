@@ -426,7 +426,7 @@ def prior_box(input,
         min_max_aspect_ratios_order,
         name,
     )
-    
+
 
 @paddle.jit.not_to_static
 def multiclass_nms(bboxes,
