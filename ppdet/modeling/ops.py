@@ -412,9 +412,20 @@ def prior_box(input,
                     clip=True,
                     flip=True)
     """
-    return paddle.vision.ops.prior_box(input, image, min_sizes, max_sizes,
-                                       aspect_ratios, variance, flip, clip, steps,
-                                       offset, min_max_aspect_ratios_order, name)
+    return paddle.vision.ops.prior_box(
+        input,
+        image,
+        min_sizes,
+        max_sizes,
+        aspect_ratios,
+        variance,
+        flip,
+        clip,
+        steps,
+        offset,
+        min_max_aspect_ratios_order,
+        name,
+    )
     
 
 @paddle.jit.not_to_static
