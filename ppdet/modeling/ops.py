@@ -459,10 +459,8 @@ def prior_box(input,
             'offset': offset,
             'min_max_aspect_ratios_order': min_max_aspect_ratios_order
         }
-
         if cur_max_sizes is not None:
             attrs['max_sizes'] = cur_max_sizes
-
         box = helper.create_variable_for_type_inference(dtype)
         var = helper.create_variable_for_type_inference(dtype)
         helper.append_op(
