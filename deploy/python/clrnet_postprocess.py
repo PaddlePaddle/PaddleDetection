@@ -142,7 +142,7 @@ class CLRNetPostProcess(object):
             if start > 0:
                 mask = ((lane_xs[:start] >= 0.) &
                         (lane_xs[:start] <= 1.)).cpu().detach().numpy()[::-1]
-                mask = ~((mask.cumprod()[::-1]).astype(np.bool))
+                mask = ~((mask.cumprod()[::-1]).astype(np.bool_))
                 lane_xs[:start][mask] = -2
             if end < len(self.prior_ys) - 1:
                 lane_xs[end + 1:] = -2
