@@ -150,7 +150,7 @@ class SSDLoss(nn.Layer):
             loc_loss = F.smooth_l1_loss(location, targets_bbox, reduction='sum')
             loc_loss = loc_loss * self.loc_loss_weight
         else:
-            loc_loss = paddle.zeros([1])
+            loc_loss = paddle.zeros([])
 
         # Compute confidence loss.
         conf_loss = F.cross_entropy(scores, targets_label, reduction="none")

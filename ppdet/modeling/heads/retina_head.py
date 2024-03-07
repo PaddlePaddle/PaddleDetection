@@ -175,7 +175,7 @@ class RetinaHead(nn.Layer):
             cls_pred, cls_tar, reduction='sum') / avg_factor
 
         if reg_pred.shape[0] == 0:
-            reg_loss = paddle.zeros([1])
+            reg_loss = paddle.zeros([])
             reg_loss.stop_gradient = False
         else:
             reg_loss = self.loss_bbox(

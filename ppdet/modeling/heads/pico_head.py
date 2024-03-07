@@ -734,8 +734,8 @@ class PicoHeadV2(GFLHead):
                 weight=weight_targets.expand([-1, 4]).reshape([-1]),
                 avg_factor=4.0)
         else:
-            loss_bbox = paddle.zeros([1])
-            loss_dfl = paddle.zeros([1])
+            loss_bbox = paddle.zeros([])
+            loss_dfl = paddle.zeros([])
 
         avg_factor = flatten_assigned_scores.sum()
         if paddle.distributed.get_world_size() > 1:
