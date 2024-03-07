@@ -375,12 +375,12 @@ class YOLOXHead(nn.Layer):
                     pred_bboxes_pos, assigned_bboxes_pos, reduction='sum')
                 loss_l1 /= num_pos
             else:
-                loss_l1 = paddle.zeros([1])
+                loss_l1 = paddle.zeros([])
                 loss_l1.stop_gradient = False
         else:
-            loss_cls = paddle.zeros([1])
-            loss_iou = paddle.zeros([1])
-            loss_l1 = paddle.zeros([1])
+            loss_cls = paddle.zeros([])
+            loss_iou = paddle.zeros([])
+            loss_l1 = paddle.zeros([])
             loss_cls.stop_gradient = False
             loss_iou.stop_gradient = False
             loss_l1.stop_gradient = False
