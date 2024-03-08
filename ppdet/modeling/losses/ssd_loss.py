@@ -124,7 +124,7 @@ class SSDLoss(nn.Layer):
                 [pos.shape[1] * mine_neg_ratio])
             num_negs.append(num_neg)
         num_negs = paddle.stack(num_negs).expand_as(idx_rank)
-        neg_mask = (idx_rank < num_negs).astype(conf_loss.dtype)
+        neg_mask = (idx_rank.astype(num_negs.dtype) < num_negs).astype(conf_loss.dtype)
 
         return (neg_mask + pos).astype('bool')
 

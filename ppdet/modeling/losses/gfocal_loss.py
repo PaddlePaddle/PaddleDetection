@@ -75,7 +75,7 @@ def quality_focal_loss(pred, target, beta=2.0, use_sigmoid=True):
 
     loss_pos = func(
         pred, score, reduction='none') * scale_factor_new.abs().pow(beta)
-    loss = loss * paddle.logical_not(pos_mask) + loss_pos * pos_mask
+    loss = loss * paddle.logical_not(pos_mask).astype(loss.dtype) + loss_pos * pos_mask
     loss = loss.sum(axis=1)
     return loss
 

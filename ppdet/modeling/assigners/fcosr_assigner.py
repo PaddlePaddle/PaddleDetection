@@ -193,7 +193,7 @@ class FCOSRAssigner(nn.Layer):
         # assigned target
         batch_ind = paddle.arange(
             end=batch_size, dtype=gt_labels.dtype).unsqueeze(-1)
-        assigned_gt_index = assigned_gt_index + batch_ind * num_max_boxes
+        assigned_gt_index = assigned_gt_index + (batch_ind * num_max_boxes).astype(assigned_gt_index.dtype)
         assigned_labels = paddle.gather(
             gt_labels.flatten(), assigned_gt_index.flatten(), axis=0)
         assigned_labels = assigned_labels.reshape([batch_size, num_anchors])

@@ -187,11 +187,11 @@ class S2ANetAnchorGenerator(nn.Layer):
         h_ratios = paddle.sqrt(self.ratios)
         w_ratios = 1 / h_ratios
         if self.scale_major:
-            ws = (w * w_ratios[:] * self.scales[:]).reshape([-1])
-            hs = (h * h_ratios[:] * self.scales[:]).reshape([-1])
+            ws = (w * w_ratios[:] * self.scales[:].astype(w_ratios.dtype)).reshape([-1])
+            hs = (h * h_ratios[:] * self.scales[:].astype(h_ratios.dtype)).reshape([-1])
         else:
-            ws = (w * self.scales[:] * w_ratios[:]).reshape([-1])
-            hs = (h * self.scales[:] * h_ratios[:]).reshape([-1])
+            ws = (w * self.scales[:].astype(w_ratios.dtype) * w_ratios[:]).reshape([-1])
+            hs = (h * self.scales[:].astype(h_ratios.dtype) * h_ratios[:]).reshape([-1])
 
         base_anchors = paddle.stack(
             [

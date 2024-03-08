@@ -184,7 +184,7 @@ class DIouLoss(GIoULoss):
 
         intsctk = (xkis2 - xkis1) * (ykis2 - ykis1)
         intsctk = intsctk * paddle.greater_than(
-            xkis2, xkis1) * paddle.greater_than(ykis2, ykis1)
+            xkis2, xkis1).astype(intsctk.dtype) * paddle.greater_than(ykis2, ykis1).astype(intsctk.dtype)
         unionk = (x2 - x1) * (y2 - y1) + (x2g - x1g) * (y2g - y1g
                                                         ) - intsctk + self.eps
         iouk = intsctk / unionk
