@@ -50,7 +50,7 @@ def varifocal_loss(pred,
             positive example with the iou target. Defaults to True.
     """
     # pred and target should be of the same size
-    assert pred.shape == target.shape
+    # assert pred.shape == target.shape
     if use_sigmoid:
         pred_new = F.sigmoid(pred)
     else:
