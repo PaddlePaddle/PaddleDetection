@@ -113,7 +113,7 @@ class RotatedTaskAlignedAssigner(nn.Layer):
         # select topk largest alignment metrics pred bbox as candidates
         # for each gt, [B, n, L]
         is_in_topk = gather_topk_anchors(
-            alignment_metrics * is_in_gts, self.topk, topk_mask=pad_gt_mask)
+            alignment_metrics * is_in_gts.astype(alignment_metrics.dtype), self.topk, topk_mask=pad_gt_mask)
 
         # select positive sample, [B, n, L]
         mask_positive = is_in_topk * is_in_gts * pad_gt_mask
