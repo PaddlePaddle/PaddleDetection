@@ -281,7 +281,7 @@ class TTFHead(nn.Layer):
         base_loc.stop_gradient = True
 
         pred_boxes = paddle.concat(
-            [0 - pred_wh[:, 0:2, :, :] + base_loc, pred_wh[:, 2:4] + base_loc],
+            [0 - pred_wh[:, 0:2, :, :] + base_loc.astype(pred_wh.dtype), pred_wh[:, 2:4] + base_loc.astype(pred_wh.dtype)],
             axis=1)
         pred_boxes = paddle.transpose(pred_boxes, [0, 2, 3, 1])
         boxes = paddle.transpose(box_target, [0, 2, 3, 1])
