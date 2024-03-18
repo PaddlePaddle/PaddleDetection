@@ -116,7 +116,7 @@ class RotatedTaskAlignedAssigner(nn.Layer):
             alignment_metrics * is_in_gts.astype(alignment_metrics.dtype), self.topk, topk_mask=pad_gt_mask)
 
         # select positive sample, [B, n, L]
-        mask_positive = is_in_topk * is_in_gts * pad_gt_mask
+        mask_positive = is_in_topk * is_in_gts.astype(is_in_topk.dtype) * pad_gt_mask
 
         # if an anchor box is assigned to multiple gts,
         # the one with the highest iou will be selected, [B, n, L]

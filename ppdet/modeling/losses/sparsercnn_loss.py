@@ -95,7 +95,7 @@ class SparseRCNNLoss(nn.Layer):
         # prepare one_hot target.
         target_classes = target_classes.flatten(start_axis=0, stop_axis=1)
         class_ids = paddle.arange(0, self.num_classes)
-        labels = (target_classes.unsqueeze(-1) == class_ids).astype("float32")
+        labels = (target_classes.unsqueeze(-1) == class_ids.astype(target_classes.dtype)).astype("float32")
         labels.stop_gradient = True
 
         # comp focal loss.
