@@ -378,7 +378,7 @@ class PPYOLOERHead(nn.Layer):
             loss_dfl = self._df_loss(pred_angle_pos, assigned_angle_pos)
         else:
             loss_iou = pred_bboxes.sum() * 0.
-            loss_dfl = paddle.zeros([])
+            loss_dfl = paddle.zeros([1])
 
         return loss_iou, loss_dfl
 
