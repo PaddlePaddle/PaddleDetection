@@ -221,7 +221,7 @@ class S2ANetAnchorGenerator(nn.Layer):
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         shifts = paddle.stack([shift_xx, shift_yy, shift_xx, shift_yy], axis=-1)
 
-        all_anchors = self.base_anchors[:, :] + shifts[:, :]
+        all_anchors = self.base_anchors[:, :] + shifts[:, :].astype(self.base_anchors.dtype)
         all_anchors = all_anchors.cast(paddle.float32).reshape(
             [feat_h * feat_w, 4])
         all_anchors = self.rect2rbox(all_anchors)
