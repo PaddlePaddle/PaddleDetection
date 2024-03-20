@@ -172,6 +172,7 @@ class PicoDet():
 
             srcimg = net.detect(img)
             save_path = str(result_path / img_path.name.replace(".png", ".jpg"))
+            srcimg = cv2.cvtColor(srcimg, cv2.COLOR_RGB2BGR)
             cv2.imwrite(save_path, srcimg)
 
 
