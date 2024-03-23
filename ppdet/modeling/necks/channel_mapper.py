@@ -116,7 +116,7 @@ class ChannelMapper(nn.Layer):
     def init_weights(self):
         """Initialize the transformer weights."""
         for p in self.parameters():
-            if p.rank() > 1:
+            if p.dim() > 1:
                 xavier_uniform_(p)
                 if hasattr(p, 'bias') and p.bias is not None:
                     constant_(p.bais)
