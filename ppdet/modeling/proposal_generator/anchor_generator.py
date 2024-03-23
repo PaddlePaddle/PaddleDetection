@@ -51,7 +51,8 @@ class AnchorGenerator(nn.Layer):
                  aspect_ratios=[0.5, 1.0, 2.0],
                  strides=[16.0],
                  variance=[1.0, 1.0, 1.0, 1.0],
-                 offset=0.):
+                 offset=0.,
+                 data_format='NCHW'):
         super(AnchorGenerator, self).__init__()
         self.anchor_sizes = anchor_sizes
         self.aspect_ratios = aspect_ratios
@@ -59,6 +60,7 @@ class AnchorGenerator(nn.Layer):
         self.variance = variance
         self.cell_anchors = self._calculate_anchors(len(strides))
         self.offset = offset
+        self.data_format = data_format
 
     def _broadcast_params(self, params, num_features):
         if not isinstance(params[0], (list, tuple)):  # list[float]
@@ -117,7 +119,14 @@ class AnchorGenerator(nn.Layer):
         return anchors
 
     def forward(self, input):
-        grid_sizes = [paddle.shape(feature_map)[-2:] for feature_map in input]
+        if self.data_format == 'NHWC':
+            start_index = 1
+            end_index = 3
+        else:
+            start_index = 2
+            end_index = 4
+
+        grid_sizes = [paddle.shape(feature_map)[start_index:end_index] for feature_map in input]
         anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)
         return anchors_over_all_feature_maps
 

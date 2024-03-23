@@ -69,6 +69,7 @@ coverage.xml
 dataset/coco/annotations
 dataset/coco/train2017
 dataset/coco/val2017
+dataset/coco/labels
 dataset/voc/VOCdevkit
 dataset/fruit/fruit-detection/
 dataset/voc/test.txt

@@ -1,0 +1,10 @@
+# use with FLAGS_cudnn_batchnorm_spatial_persistent=1 to speedup training
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1x.yml',
+  '_base_/mask_rcnn_r50_nhwc.yml',
+  '_base_/mask_reader.yml',
+]
+weights: output/mask_rcnn_r50_1x_coco/model_final
+amp: true

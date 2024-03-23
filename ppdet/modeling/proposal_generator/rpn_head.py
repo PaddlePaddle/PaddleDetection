@@ -33,7 +33,7 @@ class RPNFeat(nn.Layer):
         out_channel (int): Output channel
     """
 
-    def __init__(self, in_channel=1024, out_channel=1024):
+    def __init__(self, in_channel=1024, out_channel=1024, data_format="NCHW"):
         super(RPNFeat, self).__init__()
         # rpn feat is shared with each level
         self.rpn_conv = nn.Conv2D(
@@ -42,7 +42,8 @@ class RPNFeat(nn.Layer):
             kernel_size=3,
             padding=1,
             weight_attr=paddle.ParamAttr(initializer=Normal(
-                mean=0., std=0.01)))
+                mean=0., std=0.01)),
+            data_format=data_format)
         self.rpn_conv.skip_quant = True
 
     def forward(self, feats):
@@ -78,7 +79,8 @@ class RPNHead(nn.Layer):
                  test_proposal=_get_class_default_kwargs(ProposalGenerator),
                  in_channel=1024,
                  export_onnx=False,
-                 loss_rpn_bbox=None):
+                 loss_rpn_bbox=None,
+                 data_format="NCHW"):
         super(RPNHead, self).__init__()
         self.anchor_generator = anchor_generator
         self.rpn_target_assign = rpn_target_assign
@@ -96,7 +98,7 @@ class RPNHead(nn.Layer):
         self.loss_rpn_bbox = loss_rpn_bbox
 
         num_anchors = self.anchor_generator.num_anchors
-        self.rpn_feat = RPNFeat(in_channel, in_channel)
+        self.rpn_feat = RPNFeat(in_channel, in_channel, data_format=data_format)
         # rpn head is shared with each level
         # rpn roi classification scores
         self.rpn_rois_score = nn.Conv2D(
@@ -105,8 +107,10 @@ class RPNHead(nn.Layer):
             kernel_size=1,
             padding=0,
             weight_attr=paddle.ParamAttr(initializer=Normal(
-                mean=0., std=0.01)))
+                mean=0., std=0.01)),
+            data_format=data_format)
         self.rpn_rois_score.skip_quant = True
+        self.data_format = data_format
 
         # rpn roi bbox regression deltas
         self.rpn_rois_delta = nn.Conv2D(
@@ -115,7 +119,8 @@ class RPNHead(nn.Layer):
             kernel_size=1,
             padding=0,
             weight_attr=paddle.ParamAttr(initializer=Normal(
-                mean=0., std=0.01)))
+                mean=0., std=0.01)),
+            data_format=data_format)
         self.rpn_rois_delta.skip_quant = True
 
     @classmethod
@@ -133,6 +138,9 @@ class RPNHead(nn.Layer):
         for rpn_feat in rpn_feats:
             rrs = self.rpn_rois_score(rpn_feat)
             rrd = self.rpn_rois_delta(rpn_feat)
+            if self.data_format == "NHWC":
+                rrs = rrs.transpose([0, 3, 1, 2])
+                rrd = rrd.transpose([0, 3, 1, 2])
             scores.append(rrs)
             deltas.append(rrd)
 
