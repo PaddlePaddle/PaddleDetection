@@ -19,18 +19,21 @@ import cv2
 import math
 import numpy as np
 import PIL
-from PIL import Image, ImageDraw, ImageFile
+from PIL import Image, ImageDraw, ImageFile, ImageFont
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-def imagedraw_textsize_c(draw, text):
+from ppdet.utils.download import get_path
+
+
+def imagedraw_textsize_c(draw, text, font=None):
     if int(PIL.__version__.split('.')[0]) < 10:
-        tw, th = draw.textsize(text)
+        tw, th = draw.textsize(text, font=font)
     else:
-        left, top, right, bottom = draw.textbbox((0, 0), text)
+        left, top, right, bottom = draw.textbbox((0, 0), text, font=font)
         tw, th = right - left, bottom - top
 
     return tw, th
-    
+
 
 def visualize_box_mask(im, results, labels, threshold=0.5):
     """
@@ -134,6 +137,11 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
     Returns:
         im (PIL.Image.Image): visualized image
     """
+    font_url = "https://paddledet.bj.bcebos.com/simfang.ttf"
+    font_path, _ = get_path(font_url, "~/.cache/paddle/")
+    font_size = 18
+    font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
+
     draw_thickness = min(im.size) // 320
     draw = ImageDraw.Draw(im)
     clsid2color = {}
@@ -169,10 +177,10 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
 
         # draw label
         text = "{} {:.4f}".format(labels[clsid], score)
-        tw, th = imagedraw_textsize_c(draw, text)
+        tw, th = imagedraw_textsize_c(draw, text, font=font)
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
-        draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
+        draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255), font=font)
     return im
 
 
@@ -399,7 +407,7 @@ def visualize_action(im,
                 id_action_dict[pid] = id_action_dict.get(pid, [])
                 id_action_dict[pid].append(action_type)
         for mot_box in mot_boxes:
-            # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h] 
+            # mot_box is a format with [mot_id, class, score, xmin, ymin, w, h]
             if mot_box[0] in id_action_dict:
                 text_position = (int(mot_box[3] + mot_box[5] * 0.75),
                                  int(mot_box[4] - 10))
