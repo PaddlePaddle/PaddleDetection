@@ -34,7 +34,9 @@ python ./tools/export_model.py \
 pip install onnx>=1.10.0
 pip install paddle2onnx
 pip install onnx-simplifier
-pip install onnx-graphsurgeon --index-url https://pypi.ngc.nvidia.com
+# for more information on installing onnx_graphsurgeon
+# please visit: https://github.com/NVIDIA/TensorRT/tree/main/tools/onnx-graphsurgeon
+python3 -m pip install onnx_graphsurgeon --index-url https://pypi.ngc.nvidia.com
 # if use cuda-python infer, please install it
 pip install cuda-python
 # if use cupy infer, please install it
