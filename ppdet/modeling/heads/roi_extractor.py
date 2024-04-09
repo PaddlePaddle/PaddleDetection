@@ -59,7 +59,8 @@ class RoIAlign(nn.Layer):
                  canonical_size=224,
                  start_level=0,
                  end_level=3,
-                 aligned=False):
+                 aligned=False,
+                 data_format='NCHW'):
         super(RoIAlign, self).__init__()
         self.resolution = resolution
         self.spatial_scale = _to_list(spatial_scale)
@@ -69,12 +70,17 @@ class RoIAlign(nn.Layer):
         self.start_level = start_level
         self.end_level = end_level
         self.aligned = aligned
+        self.data_format = data_format
 
     @classmethod
     def from_config(cls, cfg, input_shape):
         return {'spatial_scale': [1. / i.stride for i in input_shape]}
 
     def forward(self, feats, roi, rois_num):
+        if self.data_format == 'NHWC':
+            for i in range(len(feats)):
+                feats[i] = paddle.transpose(feats[i], [0, 3, 1, 2])
+        
         roi = paddle.concat(roi) if len(roi) > 1 else roi[0]
         if len(feats) == 1:
             rois_feat = paddle.vision.ops.roi_align(

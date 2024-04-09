@@ -40,7 +40,8 @@ class MaskFeat(nn.Layer):
                  in_channel=256,
                  out_channel=256,
                  num_convs=4,
-                 norm_type=None):
+                 norm_type=None,
+                 data_format='NCHW'):
         super(MaskFeat, self).__init__()
         self.num_convs = num_convs
         self.in_channel = in_channel
@@ -62,7 +63,8 @@ class MaskFeat(nn.Layer):
                         stride=1,
                         norm_type=self.norm_type,
                         initializer=KaimingNormal(fan_in=fan_conv),
-                        skip_quant=True))
+                        skip_quant=True,
+                        data_format=data_format))
                 mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
         else:
             for i in range(self.num_convs):
@@ -73,7 +75,8 @@ class MaskFeat(nn.Layer):
                     kernel_size=3,
                     padding=1,
                     weight_attr=paddle.ParamAttr(
-                        initializer=KaimingNormal(fan_in=fan_conv)))
+                        initializer=KaimingNormal(fan_in=fan_conv)),
+                    data_format=data_format)
                 conv.skip_quant = True
                 mask_conv.add_sublayer(conv_name, conv)
                 mask_conv.add_sublayer(conv_name + 'act', nn.ReLU())
@@ -85,7 +88,8 @@ class MaskFeat(nn.Layer):
                 kernel_size=2,
                 stride=2,
                 weight_attr=paddle.ParamAttr(
-                    initializer=KaimingNormal(fan_in=fan_deconv))))
+                    initializer=KaimingNormal(fan_in=fan_deconv)),
+                data_format=data_format))
         mask_conv.add_sublayer('conv5_mask' + 'act', nn.ReLU())
         self.upsample = mask_conv
 
@@ -125,9 +129,11 @@ class MaskHead(nn.Layer):
                  mask_assigner='MaskAssigner',
                  num_classes=80,
                  share_bbox_feat=False,
-                 export_onnx=False):
+                 export_onnx=False,
+                 data_format='NCHW'):
         super(MaskHead, self).__init__()
         self.num_classes = num_classes
+        self.data_format = data_format
         self.export_onnx = export_onnx
 
         self.roi_extractor = roi_extractor
@@ -144,7 +150,7 @@ class MaskHead(nn.Layer):
             out_channels=self.num_classes,
             kernel_size=1,
             weight_attr=paddle.ParamAttr(initializer=KaimingNormal(
-                fan_in=self.num_classes)))
+                fan_in=self.num_classes)), data_format=data_format)
         self.mask_fcn_logits.skip_quant = True
 
     @classmethod
@@ -161,6 +167,9 @@ class MaskHead(nn.Layer):
         }
 
     def get_loss(self, mask_logits, mask_label, mask_target, mask_weight):
+        if self.data_format == 'NHWC':
+            mask_logits = mask_logits.transpose([0, 3, 1, 2])
+
         mask_label = F.one_hot(mask_label, self.num_classes).unsqueeze([2, 3])
         mask_label = paddle.expand_as(mask_label, mask_logits)
         mask_label.stop_gradient = True
@@ -215,6 +224,8 @@ class MaskHead(nn.Layer):
             bbox = [rois[:, 2:]]
             labels = rois[:, 0].cast('int32')
             rois_feat = self.roi_extractor(body_feats, bbox, rois_num)
+            if self.data_format == 'NHWC':
+                rois_feat = rois_feat.transpose([0, 2, 3, 1])
             if self.share_bbox_feat:
                 assert feat_func is not None
                 rois_feat = feat_func(rois_feat)
@@ -222,14 +233,24 @@ class MaskHead(nn.Layer):
             mask_feat = self.head(rois_feat)
             mask_logit = self.mask_fcn_logits(mask_feat)
             if self.num_classes == 1:
-                mask_out = F.sigmoid(mask_logit)[:, 0, :, :]
+                if self.data_format == 'NHWC':
+                    mask_out = F.sigmoid(mask_logit)[:, :, :, 0]
+                else:
+                    mask_out = F.sigmoid(mask_logit)[:, 0, :, :]
             else:
                 num_masks = paddle.shape(mask_logit)[0]
                 index = paddle.arange(num_masks).cast('int32')
                 mask_out = mask_logit[index, labels]
                 mask_out_shape = paddle.shape(mask_out)
+
+                if self.data_format == 'NHWC':
+                    h = mask_out_shape[1]
+                    w = mask_out_shape[2]
+                else:
+                    h = mask_out_shape[2]
+                    w = mask_out_shape[3]
                 mask_out = paddle.reshape(mask_out, [
-                    paddle.shape(index), mask_out_shape[-2], mask_out_shape[-1]
+                    paddle.shape(index), h, w
                 ])
                 mask_out = F.sigmoid(mask_out)
         return mask_out

@@ -51,8 +51,9 @@ class MaskRCNN(BaseArch):
                  mask_head,
                  bbox_post_process,
                  mask_post_process,
-                 neck=None):
-        super(MaskRCNN, self).__init__()
+                 neck=None,
+                 data_format="NCHW"):
+        super(MaskRCNN, self).__init__(data_format=data_format)
         self.backbone = backbone
         self.neck = neck
         self.rpn_head = rpn_head

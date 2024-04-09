@@ -177,6 +177,7 @@ class BBoxHead(nn.Layer):
         cot_classes (int): The number of base classes
         loss_cot (object): The module of Label-cotuning
         use_cot(bool): whether to use Label-cotuning 
+        data_format (str): The data format of input image, NCHW or NHWC
     """
 
     def __init__(self,
@@ -191,7 +192,8 @@ class BBoxHead(nn.Layer):
                  loss_normalize_pos=False,
                  cot_classes=None,
                  loss_cot='COTLoss',
-                 use_cot=False):
+                 use_cot=False,
+                 data_format="NCHW"):
         super(BBoxHead, self).__init__()
         self.head = head
         self.roi_extractor = roi_extractor
@@ -214,7 +216,7 @@ class BBoxHead(nn.Layer):
                 in_channel,
                 self.num_classes + 1,
                 weight_attr=paddle.ParamAttr(initializer=Normal(
-                    mean=0.0, std=0.01)))
+                    mean=0.0, std=0.01)), data_format=data_format)
             
             self.bbox_score = nn.Linear(
                 in_channel,
@@ -238,6 +240,7 @@ class BBoxHead(nn.Layer):
         self.bbox_delta.skip_quant = True
         self.assigned_label = None
         self.assigned_rois = None
+        self.data_format = data_format
 
     def init_cot_head(self, relationship):
         self.cot_relation = relationship
@@ -269,10 +272,16 @@ class BBoxHead(nn.Layer):
             self.assigned_targets = targets
 
         rois_feat = self.roi_extractor(body_feats, rois, rois_num)
+        if self.data_format == "NHWC":
+            rois_feat = rois_feat.transpose([0, 2, 3, 1])
+
         bbox_feat = self.head(rois_feat)
         if self.with_pool:
-            feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1)
-            feat = paddle.squeeze(feat, axis=[2, 3])
+            feat = F.adaptive_avg_pool2d(bbox_feat, output_size=1, data_format=self.data_format)
+            if self.data_format == "NHWC":
+                feat = paddle.squeeze(feat, axis=[1, 2])
+            else:
+                feat = paddle.squeeze(feat, axis=[2, 3])
         else:
             feat = bbox_feat
         if self.use_cot:
