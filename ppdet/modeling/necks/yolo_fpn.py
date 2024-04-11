@@ -26,7 +26,7 @@ __all__ = ['YOLOv3FPN', 'PPYOLOFPN', 'PPYOLOTinyFPN', 'PPYOLOPAN', 'YOLOCSPPAN']
 
 
 def add_coord(x, data_format):
-    b = paddle.shape(x)[0]
+    b = x.shape[0]
     if data_format == 'NCHW':
         h, w = x.shape[2], x.shape[3]
     else:

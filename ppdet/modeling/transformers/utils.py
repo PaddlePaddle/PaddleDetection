@@ -115,7 +115,7 @@ def deformable_attention_core_func(value, value_spatial_shapes,
 
 
 def get_valid_ratio(mask):
-    _, H, W = paddle.shape(mask)
+    _, H, W = mask.shape
     valid_ratio_h = paddle.sum(mask[:, :, 0], 1) / H
     valid_ratio_w = paddle.sum(mask[:, 0, :], 1) / W
     # [b, 2]

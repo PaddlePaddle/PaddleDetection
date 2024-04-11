@@ -360,7 +360,7 @@ class DINOTransformer(nn.Layer):
         spatial_shapes = []
         valid_ratios = []
         for i, feat in enumerate(proj_feats):
-            bs, _, h, w = paddle.shape(feat)
+            bs, _, h, w = feat.shape
             spatial_shapes.append(paddle.stack([h, w]))
             # [b,c,h,w] -> [b,h*w,c]
             feat_flatten.append(feat.flatten(2).transpose([0, 2, 1]))

@@ -136,7 +136,7 @@ class FasterRCNN(BaseArch):
         if self.neck is not None:
             body_feats = self.neck(body_feats)
         rois = [roi for roi in data['gt_bbox']]
-        rois_num = paddle.concat([paddle.shape(roi)[0:1] for roi in rois])
+        rois_num = paddle.concat([roi.shape[0:1] for roi in rois])
 
         preds, _ = self.bbox_head(body_feats, rois, rois_num, None, cot=True)
         return preds

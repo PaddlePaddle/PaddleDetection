@@ -37,11 +37,11 @@ class BertEmbeddings(nn.Layer):
         self.dropout = nn.Dropout(dropout_prob)
 
     def forward(self, x, token_type_ids=None, position_ids=None):
-        seq_len = paddle.shape(x)[1]
+        seq_len = x.shape[1]
         if position_ids is None:
             position_ids = paddle.arange(seq_len).unsqueeze(0).expand_as(x)
         if token_type_ids is None:
-            token_type_ids = paddle.zeros(paddle.shape(x))
+            token_type_ids = paddle.zeros(x.shape)
 
         word_embs = self.word_embeddings(x)
         position_embs = self.position_embeddings(position_ids)
@@ -82,7 +82,7 @@ class BertSelfAttention(nn.Layer):
         key = self.key(x)
         value = self.value(x)
 
-        query_dim1, query_dim2 = paddle.shape(query)[:-1]
+        query_dim1, query_dim2 = query.shape[:-1]
         new_shape = [
             query_dim1, query_dim2, self.num_attention_heads,
             self.attention_head_size
@@ -102,7 +102,7 @@ class BertSelfAttention(nn.Layer):
 
         context = paddle.matmul(attention_value, value).transpose(perm=(0, 2, 1,
                                                                         3))
-        ctx_dim1, ctx_dim2 = paddle.shape(context)[:-2]
+        ctx_dim1, ctx_dim2 = context.shape[:-2]
         new_context_shape = [
             ctx_dim1,
             ctx_dim2,
@@ -303,7 +303,7 @@ class METROEncoder(nn.Layer):
             module.bias.set_value(paddle.zeros(shape=module.bias.shape))
 
     def forward(self, x):
-        batchsize, seq_len = paddle.shape(x)[:2]
+        batchsize, seq_len = x.shape[:2]
         input_ids = paddle.zeros((batchsize, seq_len), dtype="int64")
         position_ids = paddle.arange(
             seq_len, dtype="int64").unsqueeze(0).expand_as(input_ids)

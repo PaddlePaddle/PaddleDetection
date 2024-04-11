@@ -34,7 +34,7 @@ def drop_path(x, drop_prob=0., training=False):
     if drop_prob == 0. or not training:
         return x
     keep_prob = paddle.to_tensor(1 - drop_prob, dtype=x.dtype)
-    shape = (paddle.shape(x)[0], ) + (1, ) * (x.ndim - 1)
+    shape = (x.shape[0], ) + (1, ) * (x.ndim - 1)
     random_tensor = keep_prob + paddle.rand(shape, dtype=x.dtype)
     random_tensor = paddle.floor(random_tensor)  # binarize
     output = x.divide(keep_prob) * random_tensor
@@ -85,7 +85,7 @@ def window_partition(x, window_size):
         windows: windows after partition with [B * num_windows, window_size, window_size, C].
         (Hp, Wp): padded height and width before partition
     """
-    B, H, W, C = paddle.shape(x)
+    B, H, W, C = x.shape
 
     pad_h = (window_size - H % window_size) % window_size
     pad_w = (window_size - W % window_size) % window_size
@@ -116,7 +116,7 @@ def window_unpartition(x, pad_hw, num_hw, hw):
     Hp, Wp = pad_hw
     num_h, num_w = num_hw
     H, W = hw
-    B, window_size, _, C = paddle.shape(x)
+    B, window_size, _, C = x.shape
     B = B // (num_h * num_w)
     x = x.reshape([B, num_h, num_w, window_size, window_size, C])
     x = x.transpose([0, 1, 3, 2, 4, 5]).reshape([B, Hp, Wp, C])

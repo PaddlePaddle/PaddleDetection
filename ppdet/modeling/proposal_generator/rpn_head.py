@@ -179,20 +179,20 @@ class RPNHead(nn.Layer):
             onnx_rpn_prob = paddle.concat(onnx_rpn_prob_list).flatten()
 
             onnx_top_n = paddle.to_tensor(onnx_post_nms_top_n).cast('int32')
-            onnx_num_rois = paddle.shape(onnx_rpn_prob)[0].cast('int32')
+            onnx_num_rois = onnx_rpn_prob.shape[0].cast('int32')
             k = paddle.minimum(onnx_top_n, onnx_num_rois)
             onnx_topk_prob, onnx_topk_inds = paddle.topk(onnx_rpn_prob, k)
             onnx_topk_rois = paddle.gather(onnx_rpn_rois, onnx_topk_inds)
             # TODO(wangguanzhong): Now bs_rois_collect in export_onnx is moved outside conditional branch
             # due to problems in dy2static of paddle. Will fix it when updating paddle framework.
             # bs_rois_collect = [onnx_topk_rois]
-            # bs_rois_num_collect = paddle.shape(onnx_topk_rois)[0]
+            # bs_rois_num_collect = onnx_topk_rois.shape[0]
 
         else:
             bs_rois_collect = []
             bs_rois_num_collect = []
 
-            batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
+            batch_size = paddle.slice(im_shape.shape, [0], [0], [1])
 
             # Generate proposals for each level and each batch.
             # Discard batch-computing to avoid sorting bbox cross different batches.
@@ -216,7 +216,7 @@ class RPNHead(nn.Layer):
                     rpn_rois = paddle.concat(rpn_rois_list)
                     rpn_prob = paddle.concat(rpn_prob_list).flatten()
 
-                    num_rois = paddle.shape(rpn_prob)[0].cast('int32')
+                    num_rois = rpn_prob.shape[0].cast('int32')
                     if num_rois > post_nms_top_n:
                         topk_prob, topk_inds = paddle.topk(rpn_prob,
                                                            post_nms_top_n)
@@ -229,13 +229,13 @@ class RPNHead(nn.Layer):
                     topk_prob = rpn_prob_list[0].flatten()
 
                 bs_rois_collect.append(topk_rois)
-                bs_rois_num_collect.append(paddle.shape(topk_rois)[0:1])
+                bs_rois_num_collect.append(topk_rois.shape[0:1])
 
             bs_rois_num_collect = paddle.concat(bs_rois_num_collect)
 
         if self.export_onnx:
             output_rois = [onnx_topk_rois]
-            output_rois_num = paddle.shape(onnx_topk_rois)[0]
+            output_rois_num = onnx_topk_rois.shape[0]
         else:
             output_rois = bs_rois_collect
             output_rois_num = bs_rois_num_collect
