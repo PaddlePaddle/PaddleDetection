@@ -192,7 +192,7 @@ class RPNHead(nn.Layer):
             bs_rois_collect = []
             bs_rois_num_collect = []
 
-            batch_size = paddle.slice(im_shape.shape, [0], [0], [1])
+            batch_size = im_shape.shape[0]
 
             # Generate proposals for each level and each batch.
             # Discard batch-computing to avoid sorting bbox cross different batches.
