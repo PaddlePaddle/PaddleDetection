@@ -467,7 +467,7 @@ class SOLOv2Head(nn.Layer):
         inds = paddle.nonzero(inds)
         cate_preds = paddle.reshape(cate_preds, shape=[-1])
         # Prevent empty and increase fake data
-        ind_a = paddle.cast(kernel_preds.shape[0:1], 'int64')
+        ind_a = paddle.cast(paddle.shape(kernel_preds)[0:1], 'int64')
         ind_b = paddle.zeros(shape=[1], dtype='int64')
         inds_end = paddle.unsqueeze(paddle.concat([ind_a, ind_b]), 0)
         inds = paddle.concat([inds, inds_end])
@@ -513,9 +513,9 @@ class SOLOv2Head(nn.Layer):
         keep = paddle.squeeze(keep, axis=[1])
         # Prevent empty and increase fake data
         keep_other = paddle.concat(
-            [keep, paddle.cast(sum_masks.shape[0:1] - 1, 'int64')])
+            [keep, paddle.cast(paddle.shape(sum_masks)[0:1] - 1, 'int64')])
         keep_scores = paddle.concat(
-            [keep, paddle.cast(sum_masks.shape[0:1], 'int64')])
+            [keep, paddle.cast(paddle.shape(sum_masks)[0:1], 'int64')])
         cate_scores_end = paddle.zeros(shape=[1], dtype='float32')
         cate_scores = paddle.concat([cate_scores, cate_scores_end])
 
