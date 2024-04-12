@@ -301,7 +301,7 @@ class CascadeHead(BBoxHead):
                     keep = paddle.zeros([1], dtype='int32')
                 clip_box = paddle.gather(clip_box, keep)
             rois.append(clip_box)
-        rois_num = paddle.concat([r.shape[0:1] for r in rois])
+        rois_num = [r.shape[0] for r in rois]
         return rois, rois_num
 
     def _get_pred_bbox(self, deltas, proposals, weights):
