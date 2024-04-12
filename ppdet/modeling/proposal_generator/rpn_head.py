@@ -216,7 +216,7 @@ class RPNHead(nn.Layer):
                     rpn_rois = paddle.concat(rpn_rois_list)
                     rpn_prob = paddle.concat(rpn_prob_list).flatten()
 
-                    num_rois = rpn_prob.shape[0].cast('int32')
+                    num_rois = rpn_prob.shape[0]
                     if num_rois > post_nms_top_n:
                         topk_prob, topk_inds = paddle.topk(rpn_prob,
                                                            post_nms_top_n)
