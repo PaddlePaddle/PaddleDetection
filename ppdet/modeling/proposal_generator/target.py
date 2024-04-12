@@ -237,7 +237,7 @@ def generate_proposal_target(rpn_rois,
         tgt_bboxes.append(sampled_bbox)
         rois_with_gt.append(rois_per_image)
         tgt_gt_inds.append(sampled_gt_ind)
-        new_rois_num.append(sampled_inds.shape[0:1])
+        new_rois_num.append(paddle.shape(sampled_inds)[0:1])
     new_rois_num = paddle.concat(new_rois_num)
     return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num
 
@@ -380,7 +380,7 @@ def generate_mask_target(gt_segms, rois, labels_int32, sampled_gt_inds,
 
         mask_index.append(fg_inds)
         mask_rois.append(fg_rois)
-        mask_rois_num.append(fg_rois.shape[0:1])
+        mask_rois_num.append(paddle.shape(fg_rois)[0:1])
         tgt_classes.append(fg_classes)
         tgt_masks.append(tgt_mask)
         tgt_weights.append(weight)
@@ -672,7 +672,7 @@ def libra_generate_proposal_target(rpn_rois,
         rois_with_gt.append(rois_per_image)
         sampled_max_overlaps.append(sampled_overlap)
         tgt_gt_inds.append(sampled_gt_ind)
-        new_rois_num.append(sampled_inds.shape[0:1])
+        new_rois_num.append(paddle.shape(sampled_inds)[0:1])
     new_rois_num = paddle.concat(new_rois_num)
     # rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num
     return rois_with_gt, tgt_labels, tgt_bboxes, tgt_gt_inds, new_rois_num

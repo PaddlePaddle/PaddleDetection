@@ -228,9 +228,8 @@ class MaskHead(nn.Layer):
                 index = paddle.arange(num_masks).cast('int32')
                 mask_out = mask_logit[index, labels]
                 mask_out_shape = mask_out.shape
-                mask_out = paddle.reshape(mask_out, [
-                    index.shape, mask_out_shape[-2], mask_out_shape[-1]
-                ])
+                mask_out = paddle.reshape(mask_out, 
+                    index.shape + mask_out_shape[-2] + mask_out_shape[-1])
                 mask_out = F.sigmoid(mask_out)
         return mask_out
 
