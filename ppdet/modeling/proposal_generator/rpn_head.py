@@ -229,9 +229,7 @@ class RPNHead(nn.Layer):
                     topk_prob = rpn_prob_list[0].flatten()
 
                 bs_rois_collect.append(topk_rois)
-                bs_rois_num_collect.append(topk_rois.shape[0:1])
-
-            bs_rois_num_collect = paddle.concat(bs_rois_num_collect)
+                bs_rois_num_collect.append(topk_rois.shape[0])
 
         if self.export_onnx:
             output_rois = [onnx_topk_rois]
