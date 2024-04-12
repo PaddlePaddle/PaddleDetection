@@ -449,7 +449,7 @@ class CWDFeatureLoss(nn.Layer):
             self.align = None
 
     def distill_softmax(self, x, tau):
-        _, _, w, h = paddle.shape(x)
+        _, _, w, h = x.shape
         x = paddle.reshape(x, [-1, w * h])
         x /= tau
         return F.softmax(x, axis=1)
@@ -556,7 +556,7 @@ class FGDFeatureLoss(nn.Layer):
                 weight_attr=zeros_init))
 
     def spatial_channel_attention(self, x, t=0.5):
-        shape = paddle.shape(x)
+        shape = x.shape
         N, C, H, W = shape
         _f = paddle.abs(x)
         spatial_map = paddle.reshape(

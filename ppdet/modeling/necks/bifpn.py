@@ -152,7 +152,7 @@ class BiFPNCell(nn.Layer):
             if i == 0:
                 lateral_feats.append(feature)
             else:
-                shape = paddle.shape(feature)
+                shape = feature.shape
                 up_feature = F.interpolate(
                     up_feature, size=[shape[2], shape[3]])
                 lateral_feature = self._feature_fusion_cell(

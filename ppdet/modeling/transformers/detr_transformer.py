@@ -322,7 +322,7 @@ class DETRTransformer(nn.Layer):
         """
         # use last level feature map
         src_proj = self.input_proj(src[-1])
-        bs, c, h, w = paddle.shape(src_proj)
+        bs, c, h, w = src_proj.shape
         # flatten [B, C, H, W] to [B, HxW, C]
         src_flatten = src_proj.flatten(2).transpose([0, 2, 1])
         if src_mask is not None:

@@ -36,7 +36,7 @@ def orthographic_projection(X, camera):
     """
     camera = camera.reshape((-1, 1, 3))
     X_trans = X[:, :, :2] + camera[:, :, 1:]
-    shape = paddle.shape(X_trans)
+    shape = X_trans.shape
     X_2d = (camera[:, :, 0] * X_trans.reshape((shape[0], -1))).reshape(shape)
     return X_2d
 

@@ -201,7 +201,7 @@ class YOLOFHead(nn.Layer):
         objectness = self.object_pred(conv_reg_feat)
         bboxes_reg = self.bbox_pred(conv_reg_feat)
 
-        N, C, H, W = paddle.shape(cls_logits)[:]
+        N, C, H, W = cls_logits.shape[:]
         cls_logits = cls_logits.reshape((N, self.na, self.num_classes, H, W))
         objectness = objectness.reshape((N, self.na, 1, H, W))
         norm_cls_logits = cls_logits + objectness - paddle.log(
