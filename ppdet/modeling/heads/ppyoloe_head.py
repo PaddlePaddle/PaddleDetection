@@ -168,6 +168,14 @@ class PPYOLOEHead(nn.Layer):
             self.anchor_points = anchor_points
             self.stride_tensor = stride_tensor
 
+    def m_avg_pool2d(self, feat, w, h):
+        batch_size, channels, _, _ = feat.shape
+        feat_flat = paddle.reshape(feat, [batch_size, channels, -1])
+        feat_mean = paddle.mean(feat_flat, axis=2)
+        feat_mean = paddle.reshape(
+            feat_mean, [batch_size, channels, w, h])
+        return feat_mean
+
     def forward_train(self, feats, targets, aux_pred=None):
         anchors, anchor_points, num_anchors_list, stride_tensor = \
             generate_anchors_for_grid_cell(
@@ -176,7 +184,8 @@ class PPYOLOEHead(nn.Layer):
 
         cls_score_list, reg_distri_list = [], []
         for i, feat in enumerate(feats):
-            avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
+            # avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
+            avg_feat = self.m_avg_pool2d(feat, 1, 1)
             cls_logit = self.pred_cls[i](self.stem_cls[i](feat, avg_feat) +
                                          feat)
             reg_distri = self.pred_reg[i](self.stem_reg[i](feat, avg_feat))
@@ -231,7 +240,8 @@ class PPYOLOEHead(nn.Layer):
         for i, feat in enumerate(feats):
             _, _, h, w = feat.shape
             l = h * w
-            avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
+            # avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))
+            avg_feat = self.m_avg_pool2d(feat, 1, 1)
             cls_logit = self.pred_cls[i](self.stem_cls[i](feat, avg_feat) +
                                          feat)
             reg_dist = self.pred_reg[i](self.stem_reg[i](feat, avg_feat))
