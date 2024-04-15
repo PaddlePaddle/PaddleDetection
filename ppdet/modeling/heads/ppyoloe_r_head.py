@@ -137,7 +137,7 @@ class PPYOLOERHead(nn.Layer):
         if self.trt:
             anchor_points = []
             for feat, stride in zip(feats, self.fpn_strides):
-                _, _, h, w = feat.shape
+                _, _, h, w = paddle.shape(feat)
                 anchor, _ = anchor_generator(
                     feat,
                     stride * 4,
@@ -156,7 +156,7 @@ class PPYOLOERHead(nn.Layer):
             stride_tensor = []
             num_anchors_list = []
             for feat, stride in zip(feats, self.fpn_strides):
-                _, _, h, w = feat.shape
+                _, _, h, w = paddle.shape(feat)
                 shift_x = (paddle.arange(end=w) + 0.5) * stride
                 shift_y = (paddle.arange(end=h) + 0.5) * stride
                 shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
@@ -210,7 +210,7 @@ class PPYOLOERHead(nn.Layer):
         cls_score_list, reg_box_list = [], []
         anchor_points, _, _ = self._generate_anchors(feats)
         for i, (feat, stride) in enumerate(zip(feats, self.fpn_strides)):
-            b, _, h, w = feat.shape
+            b, _, h, w = paddle.shape(feat)
             l = h * w
             # cls
             avg_feat = F.adaptive_avg_pool2d(feat, (1, 1))

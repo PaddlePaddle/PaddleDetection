@@ -146,7 +146,7 @@ def _calc_obj_loss(output, obj, tobj, gt_box, batch_size, anchors, num_classes,
     #    Get obj_mask by tobj(holds gt_score), calculate objectness loss
     max_iou = paddle.max(iou, axis=-1)
     iou_mask = paddle.cast(max_iou <= ignore_thresh, dtype="float32")
-    output_shape = output.shape
+    output_shape = paddle.shape(output)
     an_num = len(anchors) // 2
     iou_mask = paddle.reshape(iou_mask, (-1, an_num, output_shape[2],
                                          output_shape[3]))

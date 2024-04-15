@@ -103,7 +103,7 @@ class FPN(nn.Layer):
         output1 = self.conv1_fpn(input[0])
         output2 = self.conv2_fpn(input[1])
         up2 = F.upsample(
-            output2, size=output1.shape[-2:], mode='nearest')
+            output2, size=paddle.shape(output1)[-2:], mode='nearest')
         output1 = paddle.add(output1, up2)
         output1 = self.conv3_fpn(output1)
         return output1, output2

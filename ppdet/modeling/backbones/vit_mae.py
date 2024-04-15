@@ -181,7 +181,7 @@ class Attention(nn.Layer):
         return attn.reshape([B, h * w, h * w])
 
     def forward(self, x):
-        B, H, W, C = x.shape
+        B, H, W, C = paddle.shape(x)
 
         if self.q_bias is not None:
             qkv_bias = paddle.concat(
@@ -567,7 +567,7 @@ class VisionTransformer2D(nn.Layer):
 
     def forward(self, inputs):
         x = self.patch_embed(inputs['image']).transpose([0, 2, 3, 1])
-        B, Hp, Wp, _ = x.shape
+        B, Hp, Wp, _ = paddle.shape(x)
 
         if self.use_abs_pos:
             x = x + self.get_2d_sincos_position_embedding(Hp, Wp)

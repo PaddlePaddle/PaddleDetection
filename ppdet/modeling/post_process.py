@@ -242,7 +242,7 @@ class MaskPostProcess(object):
                 [num_mask, max_h, max_w], dtype='int32') - 1
 
             id_start = 0
-            for i in range(bbox_num.shape[0]):
+            for i in range(paddle.shape(bbox_num)[0]):
                 bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
                 mask_out_i = mask_out[id_start:id_start + bbox_num[i], :, :]
                 im_h = origin_shape[i, 0]
@@ -369,7 +369,7 @@ class CenterNetPostProcess(object):
     def _topk(self, scores):
         """ Select top k scores and decode to get xy coordinates. """
         k = self.max_per_img
-        shape_fm = scores.shape
+        shape_fm = paddle.shape(scores)
         shape_fm.stop_gradient = True
         cat, height, width = shape_fm[1], shape_fm[2], shape_fm[3]
         # batch size is 1
@@ -380,7 +380,7 @@ class CenterNetPostProcess(object):
 
         topk_score_r = paddle.reshape(topk_scores, [-1])
         topk_score, topk_ind = paddle.topk(topk_score_r, k)
-        k_t = paddle.full(topk_ind.shape, k, dtype='int64')
+        k_t = paddle.full(paddle.shape(topk_ind), k, dtype='int64')
         topk_clses = paddle.cast(paddle.floor_divide(topk_ind, k_t), 'float32')
 
         topk_inds = paddle.reshape(topk_inds, [-1])
@@ -419,7 +419,7 @@ class CenterNetPostProcess(object):
             y1 = ys - wh[:, 1:2] / 2
             x2 = xs + wh[:, 0:1] / 2
             y2 = ys + wh[:, 1:2] / 2
-        n, c, feat_h, feat_w = hm.shape
+        n, c, feat_h, feat_w = paddle.shape(hm)
         padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
         padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
         x1 = x1 * self.down_ratio
@@ -440,7 +440,7 @@ class CenterNetPostProcess(object):
         bboxes = paddle.divide(bboxes, scale_expand)
 
         results = paddle.concat([clses, scores, bboxes], axis=1)
-        return results, results.shape[0:1], inds, topk_clses, ys, xs
+        return results, paddle.shape(results)[0:1], inds, topk_clses, ys, xs
 
 
 @register
@@ -681,9 +681,9 @@ def paste_mask(masks, boxes, im_h, im_w, assign_on_cpu=False):
     if assign_on_cpu:
         paddle.set_device('cpu')
     gx = img_x[:, None, :].expand(
-        [N, img_y.shape[1], img_x.shape[1]])
+        [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
     gy = img_y[:, :, None].expand(
-        [N, img_y.shape[1], img_x.shape[1]])
+        [N, paddle.shape(img_y)[1], paddle.shape(img_x)[1]])
     grid = paddle.stack([gx, gy], axis=3)
     img_masks = F.grid_sample(masks, grid, align_corners=False)
     return img_masks[:, 0]

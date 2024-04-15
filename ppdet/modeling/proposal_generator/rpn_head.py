@@ -192,7 +192,7 @@ class RPNHead(nn.Layer):
             bs_rois_collect = []
             bs_rois_num_collect = []
 
-            batch_size = im_shape.shape[0]
+            batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
 
             # Generate proposals for each level and each batch.
             # Discard batch-computing to avoid sorting bbox cross different batches.
@@ -216,7 +216,6 @@ class RPNHead(nn.Layer):
                     rpn_rois = paddle.concat(rpn_rois_list)
                     rpn_prob = paddle.concat(rpn_prob_list).flatten()
 
-                    num_rois = rpn_prob.shape[0]
                     num_rois = paddle.shape(rpn_prob)[0].cast('int32')
                     if num_rois > post_nms_top_n:
                         topk_prob, topk_inds = paddle.topk(rpn_prob,

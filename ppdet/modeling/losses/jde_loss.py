@@ -34,7 +34,7 @@ class JDEDetectionLoss(nn.Layer):
         self.for_mot = for_mot
 
     def det_loss(self, p_det, anchor, t_conf, t_box):
-        pshape = p_det.shape
+        pshape = paddle.shape(p_det)
         pshape.stop_gradient = True
         nB, nGh, nGw = pshape[0], pshape[-2], pshape[-1]
         nA = len(anchor)
