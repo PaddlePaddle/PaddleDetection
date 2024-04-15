@@ -1060,6 +1060,6 @@ def channel_shuffle(x, groups):
 
 
 def get_static_shape(tensor):
-    shape = tensor.shape
+    shape = paddle.shape(tensor)
     shape.stop_gradient = True
     return shape
