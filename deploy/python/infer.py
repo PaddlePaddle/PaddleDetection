@@ -494,20 +494,14 @@ class Detector(object):
 
             if 'boxes' in results:
                 boxes = results['boxes'][idx:idx + box_num].tolist()
-                if task_type == 'Rotate':
-                    bbox = [
-                        box[2], box[3], box[4], box[5], box[6], box[7], box[8],
-                        box[9]
-                    ]  # x1, y1, x2, y2, x3, y3, x4, y4
-                else:  # default is 'Detection'
-                    bbox: [box[2], box[3], box[4] - box[2],
-                           box[5] - box[3]]  # xyxy -> xywh
                 bbox_results.extend([{
                     'image_id': img_id,
-                    'category_id': coco_clsid2catid[int(box[0])] \
-                        if use_coco_category else int(box[0]),
+                    'category_id': coco_clsid2catid[int(box[0])] if use_coco_category else int(box[0]),
                     'file_name': file_name,
-                    'bbox': bbox,
+                    # default is 'Detection' : xyxy -> xywh
+                    # 'Rotate': x1, y1, x2, y2, x3, y3, x4, y4
+                    'bbox': [box[2], box[3], box[4] - box[2], box[5] - box[3]] if task_type == 'Rotate' else
+                    [box[2], box[3], box[4], box[5], box[6], box[7], box[8], box[9], box[9]],
                     'score': box[1]} for box in boxes])
 
             if 'masks' in results:
