@@ -99,8 +99,8 @@ class GIoULoss(object):
         ykis1 = paddle.maximum(y1, y1g)
         xkis2 = paddle.minimum(x2, x2g)
         ykis2 = paddle.minimum(y2, y2g)
-        w_inter = (xkis2 - xkis1).clip(0)
-        h_inter = (ykis2 - ykis1).clip(0)
+        w_inter = (xkis2 - xkis1).clip(0,1e25)
+        h_inter = (ykis2 - ykis1).clip(0,1e25)
         overlap = w_inter * h_inter
 
         area1 = (x2 - x1) * (y2 - y1)
