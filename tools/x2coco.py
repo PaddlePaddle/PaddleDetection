@@ -194,7 +194,7 @@ def voc_get_label_anno(ann_dir_path, ann_ids_path, labels_path):
     labels_ids = list(range(1, len(labels_str) + 1))
 
     with open(ann_ids_path, 'r') as f:
-        ann_ids = [lin.strip().split(' ')[-1] for lin in f.readlines()]
+        ann_ids = [lin.strip() for lin in f.readlines()]
 
     ann_paths = []
     for aid in ann_ids:
