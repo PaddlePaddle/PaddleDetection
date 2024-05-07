@@ -14,6 +14,7 @@
 
 import os
 import copy
+
 try:
     from collections.abc import Sequence
 except Exception:
@@ -23,10 +24,11 @@ from ppdet.core.workspace import register, serializable
 from .dataset import DetDataset
 
 from ppdet.utils.logger import setup_logger
+
 logger = setup_logger(__name__)
 
 __all__ = [
-    'COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet', 'COCODetDataset'
+    'COCODataSet', 'SlicedCOCODataSet', 'SemiCOCODataSet', 'COCODetDataset', 'COCOInstSegDataset'
 ]
 
 
@@ -127,7 +129,7 @@ class COCODataSet(DetDataset):
             if im_w < 0 or im_h < 0:
                 logger.warning('Illegal width: {} or height: {} in annotation, '
                                'and im_id: {} will be ignored'.format(
-                                   im_w, im_h, img_id))
+                    im_w, im_h, img_id))
                 continue
 
             coco_rec = {
@@ -334,7 +336,7 @@ class SlicedCOCODataSet(COCODataSet):
             if im_w < 0 or im_h < 0:
                 logger.warning('Illegal width: {} or height: {} in annotation, '
                                'and im_id: {} will be ignored'.format(
-                                   im_w, im_h, img_id))
+                    im_w, im_h, img_id))
                 continue
 
             slice_image_result = sahi.slicing.slice_image(
@@ -437,7 +439,7 @@ class SemiCOCODataSet(COCODataSet):
             if im_w < 0 or im_h < 0:
                 logger.warning('Illegal width: {} or height: {} in annotation, '
                                'and im_id: {} will be ignored'.format(
-                                   im_w, im_h, img_id))
+                    im_w, im_h, img_id))
                 continue
 
             coco_rec = {
@@ -593,4 +595,11 @@ class SemiCOCODataSet(COCODataSet):
 @register
 @serializable
 class COCODetDataset(COCODataSet):
+    pass
+
+
+# for PaddleX
+@register
+@serializable
+class COCOInstSegDataset(COCODataSet):
     pass

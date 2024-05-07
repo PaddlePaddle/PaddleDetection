@@ -89,7 +89,7 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
     Draw bbox on image
     """
     font_url = "https://paddledet.bj.bcebos.com/simfang.ttf"
-    font_path , _ = get_path(font_url, "~/.cache/paddle/")
+    font_path, _ = get_path(font_url, "~/.cache/paddle/")
     font_size = 18
     font = ImageFont.truetype(font_path, font_size, encoding="utf-8")
 

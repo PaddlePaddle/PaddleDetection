@@ -182,6 +182,8 @@ class Checkpointer(Callback):
         weight = None
         save_name = None
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
+            end_epoch = self.model.cfg.epoch
+            save_name = str(epoch_id) if epoch_id != end_epoch - 1 else "model_final"
             if mode == 'train':
                 end_epoch = self.model.cfg.epoch
                 if (
@@ -191,29 +193,36 @@ class Checkpointer(Callback):
                         epoch_id) if epoch_id != end_epoch - 1 else "model_final"
                     weight = self.weight.state_dict()
             elif mode == 'eval':
-                if 'save_best_model' in status and status['save_best_model']:
-                    for metric in self.model._metrics:
-                        map_res = metric.get_results()
-                        eval_func = "ap"
-                        if 'pose3d' in map_res:
-                            key = 'pose3d'
-                            eval_func = "mpjpe"
-                        elif 'bbox' in map_res:
-                            key = 'bbox'
-                        elif 'keypoint' in map_res:
-                            key = 'keypoint'
-                        else:
-                            key = 'mask'
+                for metric in self.model._metrics:
+                    map_res = metric.get_results()
+                    eval_func = "ap"
+                    if 'pose3d' in map_res:
+                        key = 'pose3d'
+                        eval_func = "mpjpe"
+                    elif 'bbox' in map_res:
+                        key = 'bbox'
+                    elif 'keypoint' in map_res:
+                        key = 'keypoint'
+                    else:
+                        key = 'mask'
 
-                        key = self.model.cfg.get('target_metrics', key)
+                    key = self.model.cfg.get('target_metrics', key)
 
-                        if key not in map_res:
-                            logger.warning("Evaluation results empty, this may be due to " \
-                                        "training iterations being too few or not " \
-                                        "loading the correct weights.")
-                            return
-                        if map_res[key][0] >= self.best_ap:
-                            self.best_ap = map_res[key][0]
+                    if key not in map_res:
+                        logger.warning("Evaluation results empty, this may be due to " \
+                                    "training iterations being too few or not " \
+                                    "loading the correct weights.")
+                        return
+                    epoch_ap = map_res[key][0]
+                    epoch_metric = {
+                        'metric': abs(epoch_ap),
+                        'epoch': epoch_id + 1
+                    }
+                    save_path = os.path.join(self.save_dir, f"{save_name}.pdstates")
+                    paddle.save(epoch_metric, save_path)
+                    if 'save_best_model' in status and status['save_best_model']:
+                        if epoch_ap >= self.best_ap:
+                            self.best_ap = epoch_ap
                             save_name = 'best_model'
                             weight = self.weight.state_dict()
                             best_metric = {
