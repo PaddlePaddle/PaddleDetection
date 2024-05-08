@@ -520,6 +520,15 @@ class Trainer(object):
             model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
+                for key, value in data.items():
+                    if isinstance(value, paddle.Tensor):
+                        data[key] = value.cuda(blocking=False)
+                    else if isinstance(value, list):
+                        new_value = []
+                        for t in value:
+                            new_value.append(t.cuda(blocking=False))
+                        data[key] = new_value
+
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 profiler.add_profiler_step(profiler_options)
