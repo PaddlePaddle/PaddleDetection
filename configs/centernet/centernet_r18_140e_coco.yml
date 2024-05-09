@@ -2,11 +2,11 @@ _BASE_: [
   '../datasets/coco_detection.yml',
   '../runtime.yml',
   '_base_/optimizer_140e.yml',
-  '_base_/centernet_r50.yml',
+  '_base_/centernet_r18.yml',
   '_base_/centernet_reader.yml',
 ]
 
-weights: output/centernet_r50_140e_coco/model_final
-save_dir: ./output/centernet_r50_140e_coco/pipeline
+weights: output/centernet_r18_140e_coco/model_final
+save_dir: ./output/centernet_r18_140e_coco/pipeline
 log_iter: 1
 snapshot_epoch: 1
