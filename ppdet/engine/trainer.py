@@ -523,7 +523,7 @@ class Trainer(object):
                 for key, value in data.items():
                     if isinstance(value, paddle.Tensor):
                         data[key] = value.cuda(blocking=False)
-                    else if isinstance(value, list):
+                    elif isinstance(value, list):
                         new_value = []
                         for t in value:
                             new_value.append(t.cuda(blocking=False))
