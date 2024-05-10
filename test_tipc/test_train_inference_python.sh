@@ -296,7 +296,14 @@ else
                     set_shuffle=" "
                     set_enable_ce=" "
                 fi
-
+                # for PaddleDetection_dino_r50_4scale_1x_coco
+                if [[ ${model_name} =~ "dino_r50_4scale_1x_coco" ]];then
+                    echo "---- ${model_name} install setup_ms_deformable_attn_op.py "
+                    cd ./ppdet/modeling/transformers/ext_op/
+                    ${python} setup_ms_deformable_attn_op.py install
+                    pip list|grep deformable-detr-ops
+                    cd -
+                fi
                 set_save_model=$(func_set_params "${save_model_key}" "${save_log}")
                 nodes="1"
                 if [ ${#gpu} -le 2 ];then  # train with cpu or single gpu
