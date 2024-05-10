@@ -26,6 +26,7 @@ import queue
 import time
 from collections import defaultdict
 from datacollector import DataCollector, Result
+
 try:
     from collections.abc import Sequence
 except Exception:
@@ -44,7 +45,8 @@ from python.infer import Detector, DetectorPicoDet
 from python.keypoint_infer import KeyPointDetector
 from python.keypoint_postprocess import translate_to_ori_images
 from python.preprocess import decode_image, ShortSizeScale
-from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, visualize_vehicleplate, visualize_vehiclepress, visualize_lane, visualize_vehicle_retrograde
+from python.visualize import visualize_box_mask, visualize_attr, visualize_pose, visualize_action, \
+    visualize_vehicleplate, visualize_vehiclepress, visualize_lane, visualize_vehicle_retrograde
 
 from pptracking.python.mot_sde_infer import SDE_Detector
 from pptracking.python.mot.visualize import plot_tracking_dict
@@ -202,9 +204,9 @@ def get_model_dir(cfg):
         Otherwise it will use the model_path directly.
     """
     for key in cfg.keys():
-        if type(cfg[key]) ==  dict and \
-            ("enable" in cfg[key].keys() and cfg[key]['enable']
-                or "enable" not in cfg[key].keys()):
+        if type(cfg[key]) == dict and \
+                ("enable" in cfg[key].keys() and cfg[key]['enable']
+                 or "enable" not in cfg[key].keys()):
 
             if "model_dir" in cfg[key].keys():
                 model_dir = cfg[key]["model_dir"]
@@ -281,10 +283,10 @@ class PipePredictor(object):
                                                         False) else False
         self.with_idbased_detaction = cfg.get(
             'ID_BASED_DETACTION', False)['enable'] if cfg.get(
-                'ID_BASED_DETACTION', False) else False
+            'ID_BASED_DETACTION', False) else False
         self.with_idbased_clsaction = cfg.get(
             'ID_BASED_CLSACTION', False)['enable'] if cfg.get(
-                'ID_BASED_CLSACTION', False) else False
+            'ID_BASED_CLSACTION', False) else False
         self.with_mtmct = cfg.get('REID', False)['enable'] if cfg.get(
             'REID', False) else False
 
@@ -320,7 +322,7 @@ class PipePredictor(object):
 
         self.with_vehicle_retrograde = cfg.get(
             'VEHICLE_RETROGRADE', False)['enable'] if cfg.get(
-                'VEHICLE_RETROGRADE', False) else False
+            'VEHICLE_RETROGRADE', False) else False
         if self.with_vehicle_retrograde:
             print('Vehicle Retrograde Recognition enabled')
 
@@ -479,7 +481,7 @@ class PipePredictor(object):
                     vehicleretrograde_cfg)
 
             if self.with_mot or self.modebase["idbased"] or self.modebase[
-                    "skeletonbased"]:
+                "skeletonbased"]:
                 mot_cfg = self.cfg['MOT']
                 model_dir = mot_cfg['model_dir']
                 tracker_config = mot_cfg['tracker_config']
@@ -515,14 +517,14 @@ class PipePredictor(object):
                     args, video_action_cfg)
 
     def set_file_name(self, path):
-        if type(path) == int:
-            self.file_name = path
-        elif path is not None:
-            self.file_name = os.path.split(path)[-1]
-            if "." in self.file_name:
-                self.file_name = self.file_name.split(".")[-2]
+        if path is not None:
+            if isinstance(path, int):
+                self.file_name = None
+            else:
+                self.file_name = os.path.split(path)[-1]
+                if "." in self.file_name:
+                    self.file_name = self.file_name.split(".")[-2]
         else:
-            # use camera id
             self.file_name = None
 
     def get_result(self):
@@ -670,15 +672,15 @@ class PipePredictor(object):
             pushstream.initcmd(fps, width, height)
         elif self.cfg['visual']:
             video_out_name = 'output' if (
-                self.file_name is None or
-                type(self.file_name) == int) else self.file_name
+                    self.file_name is None or
+                    type(self.file_name) == int) else self.file_name
             if type(video_file) == str and "rtsp" in video_file:
                 video_out_name = video_out_name + "_t" + str(thread_idx).zfill(
                     2) + "_rtsp"
             if not os.path.exists(self.output_dir):
                 os.makedirs(self.output_dir)
             out_path = os.path.join(self.output_dir, video_out_name + ".mp4")
-            fourcc = cv2.VideoWriter_fourcc(* 'mp4v')
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
             writer = cv2.VideoWriter(out_path, fourcc, fps, (width, height))
 
         frame_id = 0
@@ -1015,13 +1017,12 @@ class PipePredictor(object):
                     self.pipe_timer.module_time['vehicle_retrograde'].start()
 
                 if frame_id % sample_freq == 0:
-
                     frame_mot_res = copy.deepcopy(self.pipeline_res.get('mot'))
                     self.vehicle_retrograde_predictor.update_center_traj(
                         frame_mot_res, max_len=frame_len)
                     retrograde_traj_len = retrograde_traj_len + 1
 
-                #the number of collected frames is enough to predict 
+                # the number of collected frames is enough to predict
                 if retrograde_traj_len == frame_len:
                     retrograde_mot_res = copy.deepcopy(
                         self.pipeline_res.get('mot'))
@@ -1258,7 +1259,7 @@ class PipePredictor(object):
                 det_res_i = {}
                 boxes_num_i = det_res['boxes_num'][i]
                 det_res_i['boxes'] = det_res['boxes'][start_idx:start_idx +
-                                                      boxes_num_i, :]
+                                                                boxes_num_i, :]
                 im = visualize_box_mask(
                     im,
                     det_res_i,
@@ -1268,16 +1269,16 @@ class PipePredictor(object):
                 im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
             if human_attr_res is not None:
                 human_attr_res_i = human_attr_res['output'][start_idx:start_idx
-                                                            + boxes_num_i]
+                                                                      + boxes_num_i]
                 im = visualize_attr(im, human_attr_res_i, det_res_i['boxes'])
             if vehicle_attr_res is not None:
                 vehicle_attr_res_i = vehicle_attr_res['output'][
-                    start_idx:start_idx + boxes_num_i]
+                                     start_idx:start_idx + boxes_num_i]
                 im = visualize_attr(im, vehicle_attr_res_i, det_res_i['boxes'])
             if vehicleplate_res is not None:
                 plates = vehicleplate_res['vehicleplate']
                 det_res_i['boxes'][:, 4:6] = det_res_i[
-                    'boxes'][:, 4:6] - det_res_i['boxes'][:, 2:4]
+                                                 'boxes'][:, 4:6] - det_res_i['boxes'][:, 2:4]
                 im = visualize_vehicleplate(im, plates, det_res_i['boxes'])
             if vehiclepress_res is not None:
                 press_vehicle = vehiclepress_res['output'][i]
