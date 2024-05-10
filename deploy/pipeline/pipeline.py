@@ -515,14 +515,14 @@ class PipePredictor(object):
                     args, video_action_cfg)
 
     def set_file_name(self, path):
-        if type(path) == int:
-            self.file_name = path
-        elif path is not None:
-            self.file_name = os.path.split(path)[-1]
-            if "." in self.file_name:
-                self.file_name = self.file_name.split(".")[-2]
+        if path is not None:
+            if isinstance(path, int):
+                self.file_name = None # use camera
+            else:
+                self.file_name = os.path.split(path)[-1]
+                if "." in self.file_name:
+                    self.file_name = self.file_name.split(".")[-2]
         else:
-            # use camera id
             self.file_name = None
 
     def get_result(self):
