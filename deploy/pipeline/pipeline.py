@@ -519,7 +519,7 @@ class PipePredictor(object):
     def set_file_name(self, path):
         if path is not None:
             if isinstance(path, int):
-                self.file_name = None
+                self.file_name = None # use camera
             else:
                 self.file_name = os.path.split(path)[-1]
                 if "." in self.file_name:
