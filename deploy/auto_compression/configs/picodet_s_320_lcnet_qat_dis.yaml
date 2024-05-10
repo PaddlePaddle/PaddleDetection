@@ -1,0 +1,33 @@
+Global:
+  include_nms: True
+  Evaluation: True
+  model_dir: ./models/picodet_s_320_coco_lcnet/
+  model_filename: model.pdmodel
+  params_filename: model.pdiparams
+
+Distillation:
+  alpha: 1.0
+  loss: l2
+
+QuantAware:
+  use_pact: true
+  onnx_format: true
+  activation_quantize_type: 'moving_average_abs_max'
+  weight_bits: 8
+  activation_bits: 8
+  quantize_op_types:
+  - conv2d
+
+TrainConfig:
+  train_iter: 16000
+  eval_iter: 1000
+  learning_rate:  
+    type: CosineAnnealingDecay
+    learning_rate: 0.00005
+    T_max: 8000
+  optimizer_builder:
+    optimizer:
+      type: SGD
+    weight_decay: 4.0e-05
+
+

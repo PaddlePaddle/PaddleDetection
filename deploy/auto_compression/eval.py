@@ -27,7 +27,7 @@ from post_process import PPYOLOEPostProcess
 def argsparser():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        '--config_path',
+        '--act_config_path',
         type=str,
         default=None,
         help="path of compression strategy config.",
@@ -121,7 +121,7 @@ def eval():
 
 def main():
     global global_config
-    all_config = load_slim_config(FLAGS.config_path)
+    all_config = load_slim_config(FLAGS.act_config_path)
     assert "Global" in all_config, "Key 'Global' not found in config file."
     global_config = all_config["Global"]
     reader_cfg = load_config(global_config['reader_config'])

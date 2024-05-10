@@ -113,10 +113,10 @@ class RotatedTaskAlignedAssigner(nn.Layer):
         # select topk largest alignment metrics pred bbox as candidates
         # for each gt, [B, n, L]
         is_in_topk = gather_topk_anchors(
-            alignment_metrics * is_in_gts, self.topk, topk_mask=pad_gt_mask)
+            alignment_metrics * is_in_gts.astype(alignment_metrics.dtype), self.topk, topk_mask=pad_gt_mask)
 
         # select positive sample, [B, n, L]
-        mask_positive = is_in_topk * is_in_gts * pad_gt_mask
+        mask_positive = is_in_topk * is_in_gts.astype(is_in_topk.dtype) * pad_gt_mask
 
         # if an anchor box is assigned to multiple gts,
         # the one with the highest iou will be selected, [B, n, L]
@@ -131,7 +131,7 @@ class RotatedTaskAlignedAssigner(nn.Layer):
         assigned_gt_index = mask_positive.argmax(axis=-2)
 
         # assigned target
-        assigned_gt_index = assigned_gt_index + batch_ind * num_max_boxes
+        assigned_gt_index = assigned_gt_index + (batch_ind * num_max_boxes).astype(assigned_gt_index.dtype)
         assigned_labels = paddle.gather(
             gt_labels.flatten(), assigned_gt_index.flatten(), axis=0)
         assigned_labels = assigned_labels.reshape([batch_size, num_anchors])

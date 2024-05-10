@@ -131,16 +131,16 @@ class SOLOv2MaskHead(nn.Layer):
             if i == (self.range_level - 1):
                 input_feat = input_p
                 x_range = paddle.linspace(
-                    -1, 1, paddle.shape(input_feat)[-1], dtype='float32')
+                    -1, 1, input_feat.shape[-1], dtype='float32')
                 y_range = paddle.linspace(
-                    -1, 1, paddle.shape(input_feat)[-2], dtype='float32')
+                    -1, 1, input_feat.shape[-2], dtype='float32')
                 y, x = paddle.meshgrid([y_range, x_range])
                 x = paddle.unsqueeze(x, [0, 1])
                 y = paddle.unsqueeze(y, [0, 1])
                 y = paddle.expand(
-                    y, shape=[paddle.shape(input_feat)[0], 1, -1, -1])
+                    y, shape=[input_feat.shape[0], 1, -1, -1])
                 x = paddle.expand(
-                    x, shape=[paddle.shape(input_feat)[0], 1, -1, -1])
+                    x, shape=[input_feat.shape[0], 1, -1, -1])
                 coord_feat = paddle.concat([x, y], axis=1)
                 input_p = paddle.concat([input_p, coord_feat], axis=1)
             feat_all_level = paddle.add(feat_all_level,
@@ -271,7 +271,7 @@ class SOLOv2Head(nn.Layer):
             align_mode=0,
             mode='bilinear'), feats[1], feats[2], feats[3], F.interpolate(
                 feats[4],
-                size=paddle.shape(feats[3])[-2:],
+                size=feats[3].shape[-2:],
                 mode='bilinear',
                 align_corners=False,
                 align_mode=0))
@@ -300,16 +300,16 @@ class SOLOv2Head(nn.Layer):
         ins_kernel_feat = input
         # CoordConv
         x_range = paddle.linspace(
-            -1, 1, paddle.shape(ins_kernel_feat)[-1], dtype='float32')
+            -1, 1, ins_kernel_feat.shape[-1], dtype='float32')
         y_range = paddle.linspace(
-            -1, 1, paddle.shape(ins_kernel_feat)[-2], dtype='float32')
+            -1, 1, ins_kernel_feat.shape[-2], dtype='float32')
         y, x = paddle.meshgrid([y_range, x_range])
         x = paddle.unsqueeze(x, [0, 1])
         y = paddle.unsqueeze(y, [0, 1])
         y = paddle.expand(
-            y, shape=[paddle.shape(ins_kernel_feat)[0], 1, -1, -1])
+            y, shape=[ins_kernel_feat.shape[0], 1, -1, -1])
         x = paddle.expand(
-            x, shape=[paddle.shape(ins_kernel_feat)[0], 1, -1, -1])
+            x, shape=[ins_kernel_feat.shape[0], 1, -1, -1])
         coord_feat = paddle.concat([x, y], axis=1)
         ins_kernel_feat = paddle.concat([ins_kernel_feat, coord_feat], axis=1)
 
@@ -358,7 +358,7 @@ class SOLOv2Head(nn.Layer):
             loss_ins (Tensor): The instance loss Tensor of SOLOv2 network.
             loss_cate (Tensor): The category loss Tensor of SOLOv2 network.
         """
-        batch_size = paddle.shape(grid_order_list[0])[0]
+        batch_size = grid_order_list[0].shape[0]
         ins_pred_list = []
         for kernel_preds_level, grid_orders_level in zip(kernel_preds,
                                                          grid_order_list):
@@ -368,25 +368,25 @@ class SOLOv2Head(nn.Layer):
             grid_orders_level = paddle.reshape(grid_orders_level, [-1])
             reshape_pred = paddle.reshape(
                 kernel_preds_level,
-                shape=(paddle.shape(kernel_preds_level)[0],
-                       paddle.shape(kernel_preds_level)[1], -1))
+                shape=(kernel_preds_level.shape[0],
+                       kernel_preds_level.shape[1], -1))
             reshape_pred = paddle.transpose(reshape_pred, [0, 2, 1])
             reshape_pred = paddle.reshape(
-                reshape_pred, shape=(-1, paddle.shape(reshape_pred)[2]))
+                reshape_pred, shape=(-1, reshape_pred.shape[2]))
             gathered_pred = paddle.gather(reshape_pred, index=grid_orders_level)
             gathered_pred = paddle.reshape(
                 gathered_pred,
-                shape=[batch_size, -1, paddle.shape(gathered_pred)[1]])
+                shape=[batch_size, -1, gathered_pred.shape[1]])
             cur_ins_pred = ins_pred
             cur_ins_pred = paddle.reshape(
                 cur_ins_pred,
-                shape=(paddle.shape(cur_ins_pred)[0],
-                       paddle.shape(cur_ins_pred)[1], -1))
+                shape=(cur_ins_pred.shape[0],
+                       cur_ins_pred.shape[1], -1))
             ins_pred_conv = paddle.matmul(gathered_pred, cur_ins_pred)
             cur_ins_pred = paddle.reshape(
                 ins_pred_conv,
-                shape=(-1, paddle.shape(ins_pred)[-2],
-                       paddle.shape(ins_pred)[-1]))
+                shape=(-1, ins_pred.shape[-2],
+                       ins_pred.shape[-1]))
             ins_pred_list.append(cur_ins_pred)
 
         num_ins = paddle.sum(fg_num)
@@ -423,7 +423,7 @@ class SOLOv2Head(nn.Layer):
             seg_masks (Tensor): The prediction score of each segmentation.
         """
         num_levels = len(cate_preds)
-        featmap_size = paddle.shape(seg_pred)[-2:]
+        featmap_size = seg_pred.shape[-2:]
         seg_masks_list = []
         cate_labels_list = []
         cate_scores_list = []
@@ -449,7 +449,7 @@ class SOLOv2Head(nn.Layer):
             seg_masks, cate_labels, cate_scores = self.get_seg_single(
                 cate_pred_list, seg_pred_list, kernel_pred_list, featmap_size,
                 im_shape[idx], scale_factor[idx][0])
-            bbox_num = paddle.shape(cate_labels)[0:1]
+            bbox_num = cate_labels.shape[0:1]
         return seg_masks, cate_labels, cate_scores, bbox_num
 
     def get_seg_single(self, cate_preds, seg_preds, kernel_preds, featmap_size,
@@ -462,7 +462,7 @@ class SOLOv2Head(nn.Layer):
         w = paddle.cast(im_shape[1], 'int32')
         upsampled_size_out = [featmap_size[0] * 4, featmap_size[1] * 4]
 
-        y = paddle.zeros(shape=paddle.shape(cate_preds), dtype='float32')
+        y = paddle.zeros(shape=cate_preds.shape, dtype='float32')
         inds = paddle.where(cate_preds > self.score_threshold, cate_preds, y)
         inds = paddle.nonzero(inds)
         cate_preds = paddle.reshape(cate_preds, shape=[-1])
@@ -507,7 +507,7 @@ class SOLOv2Head(nn.Layer):
         seg_masks = paddle.cast(seg_masks, 'float32')
         sum_masks = paddle.sum(seg_masks, axis=[1, 2])
 
-        y = paddle.zeros(shape=paddle.shape(sum_masks), dtype='float32')
+        y = paddle.zeros(shape=sum_masks.shape, dtype='float32')
         keep = paddle.where(sum_masks > strides, sum_masks, y)
         keep = paddle.nonzero(keep)
         keep = paddle.squeeze(keep, axis=[1])

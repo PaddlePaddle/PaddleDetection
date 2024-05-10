@@ -227,7 +227,7 @@ class DINOTransformerDecoderLayer(nn.Layer):
         q = k = self.with_pos_embed(tgt, query_pos_embed)
         if self.dual_queries:
             dual_groups = self.dual_groups
-            bs, num_queries, n_model = paddle.shape(q)
+            bs, num_queries, n_model = q.shape
             q = paddle.concat(q.split(dual_groups + 1, axis=1), axis=0)
             k = paddle.concat(k.split(dual_groups + 1, axis=1), axis=0)
             tgt = paddle.concat(tgt.split(dual_groups + 1, axis=1), axis=0)
@@ -566,7 +566,7 @@ class GroupDINOTransformer(nn.Layer):
         spatial_shapes = []
         valid_ratios = []
         for i, feat in enumerate(proj_feats):
-            bs, _, h, w = paddle.shape(feat)
+            bs, _, h, w = feat.shape
             spatial_shapes.append(paddle.concat([h, w]))
             # [b,c,h,w] -> [b,h*w,c]
             feat_flatten.append(feat.flatten(2).transpose([0, 2, 1]))

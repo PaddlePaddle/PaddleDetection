@@ -22,6 +22,7 @@ from . import group_detr_transformer
 from . import mask_dino_transformer
 from . import rtdetr_transformer
 from . import hybrid_encoder
+from . import mask_rtdetr_transformer
 
 from .detr_transformer import *
 from .utils import *
@@ -34,3 +35,4 @@ from .group_detr_transformer import *
 from .mask_dino_transformer import *
 from .rtdetr_transformer import *
 from .hybrid_encoder import *
+from .mask_rtdetr_transformer import *

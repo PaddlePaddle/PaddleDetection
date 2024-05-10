@@ -412,69 +412,20 @@ def prior_box(input,
                     clip=True,
                     flip=True)
     """
-    helper = LayerHelper("prior_box", **locals())
-    dtype = helper.input_dtype()
-    check_variable_and_dtype(
-        input, 'input', ['uint8', 'int8', 'float32', 'float64'], 'prior_box')
-
-    def _is_list_or_tuple_(data):
-        return (isinstance(data, list) or isinstance(data, tuple))
-
-    if not _is_list_or_tuple_(min_sizes):
-        min_sizes = [min_sizes]
-    if not _is_list_or_tuple_(aspect_ratios):
-        aspect_ratios = [aspect_ratios]
-    if not (_is_list_or_tuple_(steps) and len(steps) == 2):
-        raise ValueError('steps should be a list or tuple ',
-                         'with length 2, (step_width, step_height).')
-
-    min_sizes = list(map(float, min_sizes))
-    aspect_ratios = list(map(float, aspect_ratios))
-    steps = list(map(float, steps))
-
-    cur_max_sizes = None
-    if max_sizes is not None and len(max_sizes) > 0 and max_sizes[0] > 0:
-        if not _is_list_or_tuple_(max_sizes):
-            max_sizes = [max_sizes]
-        cur_max_sizes = max_sizes
-
-    if in_dynamic_mode():
-        attrs = ('min_sizes', min_sizes, 'aspect_ratios', aspect_ratios,
-                 'variances', variance, 'flip', flip, 'clip', clip, 'step_w',
-                 steps[0], 'step_h', steps[1], 'offset', offset,
-                 'min_max_aspect_ratios_order', min_max_aspect_ratios_order)
-        if cur_max_sizes is not None:
-            attrs += ('max_sizes', cur_max_sizes)
-        box, var = C_ops.prior_box(input, image, *attrs)
-        return box, var
-    else:
-        attrs = {
-            'min_sizes': min_sizes,
-            'aspect_ratios': aspect_ratios,
-            'variances': variance,
-            'flip': flip,
-            'clip': clip,
-            'step_w': steps[0],
-            'step_h': steps[1],
-            'offset': offset,
-            'min_max_aspect_ratios_order': min_max_aspect_ratios_order
-        }
-
-        if cur_max_sizes is not None:
-            attrs['max_sizes'] = cur_max_sizes
-
-        box = helper.create_variable_for_type_inference(dtype)
-        var = helper.create_variable_for_type_inference(dtype)
-        helper.append_op(
-            type="prior_box",
-            inputs={"Input": input,
-                    "Image": image},
-            outputs={"Boxes": box,
-                     "Variances": var},
-            attrs=attrs, )
-        box.stop_gradient = True
-        var.stop_gradient = True
-        return box, var
+    return paddle.vision.ops.prior_box(
+        input,
+        image,
+        min_sizes,
+        max_sizes,
+        aspect_ratios,
+        variance,
+        flip,
+        clip,
+        steps,
+        offset,
+        min_max_aspect_ratios_order,
+        name,
+    )
 
 
 @paddle.jit.not_to_static

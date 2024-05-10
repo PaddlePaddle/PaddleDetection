@@ -351,7 +351,7 @@ class DistillPPYOLOELoss(nn.Layer):
             loss_kd = self.loss_kd(
                 pred_scores_pos, soft_cls_pos, avg_factor=num_pos)
         else:
-            loss_kd = paddle.zeros([1])
+            loss_kd = paddle.zeros([])
         return loss_kd
 
     def forward(self, teacher_model, student_model):
@@ -378,7 +378,7 @@ class DistillPPYOLOELoss(nn.Layer):
                     ) if 'pred_bboxes_pos' in student_distill_pairs and \
                         'pred_bboxes_pos' in teacher_distill_pairs and \
                             'bbox_weight' in student_distill_pairs
-                    else paddle.zeros([1]))
+                    else paddle.zeros([]))
 
             distill_dfl_loss.append(
                 self.distribution_focal_loss(
@@ -388,7 +388,7 @@ class DistillPPYOLOELoss(nn.Layer):
                     ) if 'pred_dist_pos' in student_distill_pairs and \
                         'pred_dist_pos' in teacher_distill_pairs and \
                             'bbox_weight' in student_distill_pairs
-                    else paddle.zeros([1]))
+                    else paddle.zeros([]))
 
             distill_cls_loss = paddle.add_n(distill_cls_loss)
             distill_bbox_loss = paddle.add_n(distill_bbox_loss)
@@ -403,7 +403,7 @@ class DistillPPYOLOELoss(nn.Layer):
                     student_model.yolo_head.num_classes, )
                 logits_loss += loss_kd
         else:
-            logits_loss = paddle.zeros([1])
+            logits_loss = paddle.zeros([])
 
         if self.feat_distill and self.loss_weight_feat > 0:
             feat_loss_list = []
@@ -418,7 +418,7 @@ class DistillPPYOLOELoss(nn.Layer):
                     loss_module(stu_feats[i], tea_feats[i], inputs))
             feat_loss = paddle.add_n(feat_loss_list)
         else:
-            feat_loss = paddle.zeros([1])
+            feat_loss = paddle.zeros([])
 
         student_model.yolo_head.distill_pairs.clear()
         teacher_model.yolo_head.distill_pairs.clear()
@@ -449,7 +449,7 @@ class CWDFeatureLoss(nn.Layer):
             self.align = None
 
     def distill_softmax(self, x, tau):
-        _, _, w, h = paddle.shape(x)
+        _, _, w, h = x.shape
         x = paddle.reshape(x, [-1, w * h])
         x /= tau
         return F.softmax(x, axis=1)
@@ -556,7 +556,7 @@ class FGDFeatureLoss(nn.Layer):
                 weight_attr=zeros_init))
 
     def spatial_channel_attention(self, x, t=0.5):
-        shape = paddle.shape(x)
+        shape = x.shape
         N, C, H, W = shape
         _f = paddle.abs(x)
         spatial_map = paddle.reshape(

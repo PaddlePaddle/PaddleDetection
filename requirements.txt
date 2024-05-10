@@ -1,4 +1,4 @@
-numpy < 1.24
+numpy < 2.0
 tqdm
 typeguard
 visualdl>=2.2.0
@@ -13,7 +13,7 @@ setuptools
 Pillow
 
 # for MOT evaluation and inference
-lap
+lapx
 motmetrics
 sklearn==0.0
 

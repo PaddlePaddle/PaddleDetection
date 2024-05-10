@@ -139,7 +139,7 @@ class MSDeformableAttention(nn.Layer):
                 [1, 1, 1, self.num_levels, 1, 2])
             sampling_locations = reference_points.reshape([
                 bs, Len_q, 1, self.num_levels, 1, 2
-            ]) + sampling_offsets / offset_normalizer
+            ]) + sampling_offsets / offset_normalizer.astype(sampling_offsets.dtype)
         elif reference_points.shape[-1] == 4:
             sampling_locations = (
                 reference_points[:, :, None, :, None, :2] + sampling_offsets /

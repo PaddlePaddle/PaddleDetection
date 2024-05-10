@@ -124,7 +124,7 @@ class SSDLoss(nn.Layer):
                 [pos.shape[1] * mine_neg_ratio])
             num_negs.append(num_neg)
         num_negs = paddle.stack(num_negs).expand_as(idx_rank)
-        neg_mask = (idx_rank < num_negs).astype(conf_loss.dtype)
+        neg_mask = (idx_rank.astype(num_negs.dtype) < num_negs).astype(conf_loss.dtype)
 
         return (neg_mask + pos).astype('bool')
 
@@ -146,11 +146,11 @@ class SSDLoss(nn.Layer):
         bbox_mask = paddle.tile(targets_label != bg_index, [1, 1, 4])
         if bbox_mask.astype(boxes.dtype).sum() > 0:
             location = paddle.masked_select(boxes, bbox_mask)
-            targets_bbox = paddle.masked_select(targets_bbox, bbox_mask)
-            loc_loss = F.smooth_l1_loss(location, targets_bbox, reduction='sum')
+            targets_bbox_tmp = paddle.masked_select(targets_bbox, bbox_mask)
+            loc_loss = F.smooth_l1_loss(location, targets_bbox_tmp, reduction='sum')
             loc_loss = loc_loss * self.loc_loss_weight
         else:
-            loc_loss = paddle.zeros([1])
+            loc_loss = paddle.zeros([])
 
         # Compute confidence loss.
         conf_loss = F.cross_entropy(scores, targets_label, reduction="none")

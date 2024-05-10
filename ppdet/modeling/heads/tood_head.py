@@ -342,8 +342,8 @@ class TOODHead(nn.Layer):
             # l1 loss
             loss_l1 = F.l1_loss(pred_bboxes_pos, assigned_bboxes_pos)
         else:
-            loss_iou = paddle.zeros([1])
-            loss_l1 = paddle.zeros([1])
+            loss_iou = paddle.zeros([])
+            loss_l1 = paddle.zeros([])
 
         loss_cls /= assigned_scores.sum().clip(min=1)
         loss = self.loss_weight['class'] * loss_cls + self.loss_weight[

@@ -40,7 +40,7 @@ def drop_path(x, drop_prob=0., training=False):
     if drop_prob == 0. or not training:
         return x
     keep_prob = paddle.to_tensor(1.0 - drop_prob).astype(x.dtype)
-    shape = (paddle.shape(x)[0], ) + (1, ) * (x.ndim - 1)
+    shape = (x.shape[0], ) + (1, ) * (x.ndim - 1)
     random_tensor = keep_prob + paddle.rand(shape).astype(x.dtype)
     random_tensor = paddle.floor(random_tensor)  # binarize
     output = x.divide(keep_prob) * random_tensor
@@ -303,7 +303,7 @@ class ViT(nn.Layer):
 
     def forward_features(self, x):
 
-        B = paddle.shape(x)[0]
+        B = x.shape[0]
         x = self.patch_embed(x)
         B, D, Hp, Wp = x.shape
         x = x.flatten(2).transpose([0, 2, 1])

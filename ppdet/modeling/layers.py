@@ -105,7 +105,7 @@ class AlignConv(nn.Layer):
         return offset
 
     def forward(self, x, refine_anchors, featmap_size, stride):
-        batch = paddle.shape(x)[0].numpy()
+        batch = x.shape[0].numpy()
         offset = self.get_offset(refine_anchors, featmap_size, stride)
         if self.training:
             x = F.relu(self.align_conv(x, offset.detach()))
@@ -471,7 +471,7 @@ class RCNNBox(object):
             if isinstance(roi, list):
                 batch_size = len(roi)
             else:
-                batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
+                batch_size = paddle.slice(im_shape.shape, [0], [0], [1])
 
             # bbox_pred.shape: [N, C*4]
             for idx in range(batch_size):
@@ -518,7 +518,8 @@ class MultiClassNMS(object):
                  nms_eta=1.0,
                  return_index=False,
                  return_rois_num=True,
-                 trt=False):
+                 trt=False,
+                 cpu=False):
         super(MultiClassNMS, self).__init__()
         self.score_threshold = score_threshold
         self.nms_top_k = nms_top_k
@@ -529,6 +530,7 @@ class MultiClassNMS(object):
         self.return_index = return_index
         self.return_rois_num = return_rois_num
         self.trt = trt
+        self.cpu = cpu
 
     def __call__(self, bboxes, score, background_label=-1):
         """
@@ -551,6 +553,8 @@ class MultiClassNMS(object):
         if background_label > -1:
             kwargs.update({'background_label': background_label})
         kwargs.pop('trt')
+        kwargs.pop('cpu')
+
         # TODO(wangxinxin08): paddle version should be develop or 2.3 and above to run nms on tensorrt
         if self.trt and (int(paddle.version.major) == 0 or
                          (int(paddle.version.major) >= 2 and
@@ -563,7 +567,14 @@ class MultiClassNMS(object):
             bbox = paddle.gather_nd(bbox, idx)
             return bbox, bbox_num, None
         else:
-            return ops.multiclass_nms(bboxes, score, **kwargs)
+            if self.cpu:
+                device = paddle.device.get_device()
+                paddle.set_device('cpu')
+                outputs = ops.multiclass_nms(bboxes, score, **kwargs)
+                paddle.set_device(device)
+                return outputs
+            else:
+                return ops.multiclass_nms(bboxes, score, **kwargs)
 
 
 @register
@@ -729,7 +740,7 @@ class TTFBox(object):
         Select top k scores and decode to get xy coordinates.
         """
         k = self.max_per_img
-        shape_fm = paddle.shape(scores)
+        shape_fm = scores.shape
         shape_fm.stop_gradient = True
         cat, height, width = shape_fm[1], shape_fm[2], shape_fm[3]
         # batch size is 1
@@ -740,7 +751,7 @@ class TTFBox(object):
 
         topk_score_r = paddle.reshape(topk_scores, [-1])
         topk_score, topk_ind = paddle.topk(topk_score_r, k)
-        k_t = paddle.full(paddle.shape(topk_ind), k, dtype='int64')
+        k_t = paddle.full(topk_ind.shape, k, dtype='int64')
         topk_clses = paddle.cast(paddle.floor_divide(topk_ind, k_t), 'float32')
 
         topk_inds = paddle.reshape(topk_inds, [-1])
@@ -762,7 +773,7 @@ class TTFBox(object):
         clses = paddle.tensor.unsqueeze(clses, [1])
 
         wh_t = paddle.transpose(wh, [0, 2, 3, 1])
-        wh = paddle.reshape(wh_t, [-1, paddle.shape(wh_t)[-1]])
+        wh = paddle.reshape(wh_t, [-1, wh_t.shape[-1]])
         wh = paddle.gather(wh, inds)
 
         x1 = xs - wh[:, 0:1]
@@ -776,7 +787,7 @@ class TTFBox(object):
         scale_x = scale_factor[:, 1:2]
         scale_expand = paddle.concat(
             [scale_x, scale_y, scale_x, scale_y], axis=1)
-        boxes_shape = paddle.shape(bboxes)
+        boxes_shape = bboxes.shape
         boxes_shape.stop_gradient = True
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
@@ -789,7 +800,7 @@ class TTFBox(object):
         scores = results[:, 1]
         valid_ind = paddle.nonzero(scores > self.score_thresh)
         results = paddle.gather(results, valid_ind)
-        return results, paddle.shape(results)[0:1]
+        return results, results.shape[0:1]
 
     def __call__(self, hm, wh, im_shape, scale_factor):
         results = []
@@ -938,7 +949,7 @@ class MaskMatrixNMS(object):
         self.sigma = sigma
 
     def _sort_score(self, scores, top_num):
-        if paddle.shape(scores)[0] > top_num:
+        if scores.shape[0] > top_num:
             return paddle.topk(scores, top_num)[1]
         else:
             return paddle.argsort(scores, descending=True)
@@ -960,7 +971,7 @@ class MaskMatrixNMS(object):
         seg_masks = paddle.flatten(seg_masks, start_axis=1, stop_axis=-1)
         # inter.
         inter_matrix = paddle.mm(seg_masks, paddle.transpose(seg_masks, [1, 0]))
-        n_samples = paddle.shape(cate_labels)
+        n_samples = cate_labels.shape
         # union.
         sum_masks_x = paddle.expand(sum_masks, shape=[n_samples, n_samples])
         # iou.
@@ -998,7 +1009,7 @@ class MaskMatrixNMS(object):
 
         # update the score.
         cate_scores = cate_scores * decay_coefficient
-        y = paddle.zeros(shape=paddle.shape(cate_scores), dtype='float32')
+        y = paddle.zeros(shape=cate_scores.shape, dtype='float32')
         keep = paddle.where(cate_scores >= self.update_threshold, cate_scores,
                             y)
         keep = paddle.nonzero(keep)
@@ -1339,7 +1350,7 @@ class ConvMixer(nn.Layer):
         Seq, ActBn = nn.Sequential, lambda x: Seq(x, nn.GELU(), nn.BatchNorm2D(dim))
         Residual = type('Residual', (Seq, ),
                         {'forward': lambda self, x: self[0](x) + x})
-        return Seq(* [
+        return Seq(*[
             Seq(Residual(
                 ActBn(
                     nn.Conv2D(

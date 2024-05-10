@@ -1248,6 +1248,14 @@ class PadGT(BaseOperator):
                 if num_gt > 0:
                     pad_gt_areas[:num_gt, 0] = sample['gt_areas']
                 sample['gt_areas'] = pad_gt_areas
+            # gt_segm
+            if 'gt_segm' in sample:
+                pad_gt_segm = np.zeros(
+                    (num_max_boxes, *sample['gt_segm'].shape[-2:]),
+                    dtype=np.uint8)
+                if num_gt > 0:
+                    pad_gt_segm[:num_gt] = sample['gt_segm']
+                sample['gt_segm'] = pad_gt_segm.astype(np.float32)
         return samples
 
 

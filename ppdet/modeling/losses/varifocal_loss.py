@@ -24,7 +24,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register, serializable
 from ppdet.modeling import ops
-
+from paddle.base.framework import in_dygraph_mode
 __all__ = ['VarifocalLoss']
 
 
@@ -50,7 +50,9 @@ def varifocal_loss(pred,
             positive example with the iou target. Defaults to True.
     """
     # pred and target should be of the same size
-    assert pred.shape == target.shape
+    assert len(pred.shape) == len(target.shape) # rank
+    if in_dygraph_mode():
+        assert pred.shape == target.shape
     if use_sigmoid:
         pred_new = F.sigmoid(pred)
     else:

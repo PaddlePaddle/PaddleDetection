@@ -104,7 +104,7 @@ class DETR(BaseArch):
             else:
                 bbox, bbox_num, mask = self.post_process(
                     preds, self.inputs['im_shape'], self.inputs['scale_factor'],
-                    paddle.shape(self.inputs['image'])[2:])
+                    self.inputs['image'])[2:].shape
 
             output = {'bbox': bbox, 'bbox_num': bbox_num}
             if self.with_mask:

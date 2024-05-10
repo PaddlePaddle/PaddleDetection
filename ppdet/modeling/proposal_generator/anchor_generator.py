@@ -117,7 +117,7 @@ class AnchorGenerator(nn.Layer):
         return anchors
 
     def forward(self, input):
-        grid_sizes = [paddle.shape(feature_map)[-2:] for feature_map in input]
+        grid_sizes = [feature_map.shape[-2:] for feature_map in input]
         anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)
         return anchors_over_all_feature_maps
 
@@ -187,11 +187,11 @@ class S2ANetAnchorGenerator(nn.Layer):
         h_ratios = paddle.sqrt(self.ratios)
         w_ratios = 1 / h_ratios
         if self.scale_major:
-            ws = (w * w_ratios[:] * self.scales[:]).reshape([-1])
-            hs = (h * h_ratios[:] * self.scales[:]).reshape([-1])
+            ws = (w * w_ratios[:] * self.scales[:].astype(w_ratios.dtype)).reshape([-1])
+            hs = (h * h_ratios[:] * self.scales[:].astype(h_ratios.dtype)).reshape([-1])
         else:
-            ws = (w * self.scales[:] * w_ratios[:]).reshape([-1])
-            hs = (h * self.scales[:] * h_ratios[:]).reshape([-1])
+            ws = (w * self.scales[:].astype(w_ratios.dtype) * w_ratios[:]).reshape([-1])
+            hs = (h * self.scales[:].astype(h_ratios.dtype) * h_ratios[:]).reshape([-1])
 
         base_anchors = paddle.stack(
             [
@@ -221,7 +221,7 @@ class S2ANetAnchorGenerator(nn.Layer):
         shift_xx, shift_yy = self._meshgrid(shift_x, shift_y)
         shifts = paddle.stack([shift_xx, shift_yy, shift_xx, shift_yy], axis=-1)
 
-        all_anchors = self.base_anchors[:, :] + shifts[:, :]
+        all_anchors = self.base_anchors[:, :] + shifts[:, :].astype(self.base_anchors.dtype)
         all_anchors = all_anchors.cast(paddle.float32).reshape(
             [feat_h * feat_w, 4])
         all_anchors = self.rect2rbox(all_anchors)

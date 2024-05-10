@@ -581,7 +581,7 @@ class PicoHeadV2(GFLHead):
 
             cls_score_out = cls_score.transpose([0, 2, 3, 1])
             bbox_pred = reg_pred.transpose([0, 2, 3, 1])
-            b, cell_h, cell_w, _ = paddle.shape(cls_score_out)
+            b, cell_h, cell_w, _ = cls_score_out.shape
             y, x = self.get_single_level_center_point(
                 [cell_h, cell_w], stride, cell_offset=self.cell_offset)
             center_points = paddle.stack([x, y], axis=-1)
@@ -734,8 +734,8 @@ class PicoHeadV2(GFLHead):
                 weight=weight_targets.expand([-1, 4]).reshape([-1]),
                 avg_factor=4.0)
         else:
-            loss_bbox = paddle.zeros([1])
-            loss_dfl = paddle.zeros([1])
+            loss_bbox = paddle.zeros([])
+            loss_dfl = paddle.zeros([])
 
         avg_factor = flatten_assigned_scores.sum()
         if paddle.distributed.get_world_size() > 1:
