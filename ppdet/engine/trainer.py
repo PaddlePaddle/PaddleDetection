@@ -520,6 +520,17 @@ class Trainer(object):
             model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
+                def deep_pin(blob, blocking):
+                    if isinstance(blob, paddle.Tensor):
+                        return blob.cuda(blocking=blocking)
+                    elif isinstance(blob, dict):
+                        return {k: deep_pin(v, blocking) for k, v in blob.items()}
+                    elif isinstance(blob, (list, tuple)):
+                        return type(blob)([deep_pin(x, blocking) for x in blob])
+                    else:
+                        return blob
+                data = deep_pin(data, False)
+
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 profiler.add_profiler_step(profiler_options)
