@@ -117,7 +117,7 @@ class AnchorGenerator(nn.Layer):
         return anchors
 
     def forward(self, input):
-        grid_sizes = [feature_map.shape[-2:] for feature_map in input]
+        grid_sizes = [paddle.shape(feature_map)[-2:] for feature_map in input]
         anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)
         return anchors_over_all_feature_maps
 

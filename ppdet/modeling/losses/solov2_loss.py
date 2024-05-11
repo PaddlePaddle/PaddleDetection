@@ -43,8 +43,8 @@ class SOLOv2Loss(object):
         self.focal_loss_alpha = focal_loss_alpha
 
     def _dice_loss(self, input, target):
-        input = paddle.reshape(input, shape=(input.shape[0], -1))
-        target = paddle.reshape(target, shape=(target.shape[0], -1))
+        input = paddle.reshape(input, shape=(paddle.shape(input)[0], -1))
+        target = paddle.reshape(target, shape=(paddle.shape(target)[0], -1))
         a = paddle.sum(input * target, axis=1)
         b = paddle.sum(input * input, axis=1) + 0.001
         c = paddle.sum(target * target, axis=1) + 0.001
@@ -75,7 +75,7 @@ class SOLOv2Loss(object):
             target = paddle.cast(target, 'float32')
             target = paddle.reshape(
                 target,
-                shape=[-1, input.shape[-2], input.shape[-1]])
+                shape=[-1, paddle.shape(input)[-2], paddle.shape(input)[-1]])
             weights = paddle.cast(
                 paddle.sum(target, axis=[1, 2]) > 0, 'float32')
             input = F.sigmoid(input)

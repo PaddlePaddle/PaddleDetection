@@ -187,7 +187,7 @@ class FCOSRHead(nn.Layer):
         if self.trt:
             anchor_points = []
             for feat, stride in zip(feats, self.fpn_strides):
-                _, _, h, w = feat.shape
+                _, _, h, w = paddle.shape(feat)
                 anchor, _ = anchor_generator(
                     feat,
                     stride * 4,
@@ -206,7 +206,7 @@ class FCOSRHead(nn.Layer):
             stride_tensor = []
             num_anchors_list = []
             for feat, stride in zip(feats, self.fpn_strides):
-                _, _, h, w = feat.shape
+                _, _, h, w = paddle.shape(feat)
                 shift_x = (paddle.arange(end=w) + 0.5) * stride
                 shift_y = (paddle.arange(end=h) + 0.5) * stride
                 shift_y, shift_x = paddle.meshgrid(shift_y, shift_x)
@@ -263,7 +263,7 @@ class FCOSRHead(nn.Layer):
         cls_pred_list, reg_pred_list = [], []
         anchor_points, _, _ = self._generate_anchors(feats)
         for stride, feat, scale in zip(self.fpn_strides, feats, self.scales):
-            b, _, h, w = feat.shape
+            b, _, h, w = paddle.shape(feat)
             # cls
             cls_feat = feat
             for cls_layer in self.stem_cls:

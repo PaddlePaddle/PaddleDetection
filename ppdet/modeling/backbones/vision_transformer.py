@@ -121,7 +121,7 @@ class Attention(nn.Layer):
         self.proj_drop = nn.Dropout(proj_drop)
 
     def forward(self, x, rel_pos_bias=None):
-        x_shape = x.shape
+        x_shape = paddle.shape(x)
         N, C = x_shape[1], x_shape[2]
 
         qkv_bias = None

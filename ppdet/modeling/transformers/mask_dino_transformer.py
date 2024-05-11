@@ -313,7 +313,7 @@ class MaskDINO(nn.Layer):
         spatial_shapes = []
         valid_ratios = []
         for i, feat in enumerate(proj_feats):
-            bs, _, h, w = feat.shape
+            bs, _, h, w = paddle.shape(feat)
             spatial_shapes.append(paddle.concat([h, w]))
             # [b,c,h,w] -> [b,h*w,c]
             feat_flatten.append(feat.flatten(2).transpose([0, 2, 1]))
@@ -529,7 +529,7 @@ class MaskDINO(nn.Layer):
         out_query = self.dec_norm(query_embed)
         out_logits = self.class_head(out_query)
         mask_query_embed = self.mask_query_head(out_query)
-        _, _, h, w = mask_feat.shape
+        _, _, h, w = paddle.shape(mask_feat)
         # [b, q, c] x [b, c, h, w] -> [b, q, h, w]
         out_mask = paddle.bmm(mask_query_embed, mask_feat.flatten(2)).reshape(
             [0, 0, h, w])

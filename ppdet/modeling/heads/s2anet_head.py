@@ -250,7 +250,7 @@ class S2ANetHead(nn.Layer):
         for i, feat in enumerate(feats):
             # get shape
             B = feat.shape[0]
-            H, W = feat.shape[2], feat.shape[3]
+            H, W = paddle.shape(feat)[2], paddle.shape(feat)[3]
 
             NA = H * W
             num_anchors_list.append(NA)
@@ -324,7 +324,7 @@ class S2ANetHead(nn.Layer):
 
     def get_bboxes(self, head_outs):
         perd_bboxes_list, pred_scores_list = head_outs
-        batch = pred_scores_list[0].shape[0]
+        batch = paddle.shape(pred_scores_list[0])[0]
         bboxes, bbox_num = [], []
         for i in range(batch):
             pred_scores_per_image = [t[i] for t in pred_scores_list]
@@ -712,7 +712,7 @@ class S2ANetHead(nn.Layer):
         to
         polys: [x0,y0,x1,y1,x2,y2,x3,y3]
         """
-        N = rboxes.shape[0]
+        N = paddle.shape(rboxes)[0]
 
         x_ctr = rboxes[:, 0]
         y_ctr = rboxes[:, 1]

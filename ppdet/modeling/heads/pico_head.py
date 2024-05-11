@@ -581,7 +581,7 @@ class PicoHeadV2(GFLHead):
 
             cls_score_out = cls_score.transpose([0, 2, 3, 1])
             bbox_pred = reg_pred.transpose([0, 2, 3, 1])
-            b, cell_h, cell_w, _ = cls_score_out.shape
+            b, cell_h, cell_w, _ = paddle.shape(cls_score_out)
             y, x = self.get_single_level_center_point(
                 [cell_h, cell_w], stride, cell_offset=self.cell_offset)
             center_points = paddle.stack([x, y], axis=-1)
