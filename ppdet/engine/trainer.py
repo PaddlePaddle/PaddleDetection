@@ -1179,7 +1179,7 @@ class Trainer(object):
             })
         if prune_input:
             static_model = paddle.jit.to_static(
-                self.model, input_spec=input_spec)
+                self.model, input_spec=input_spec, full_graph=True)
             # NOTE: dy2st do not pruned program, but jit.save will prune program
             # input spec, prune input spec here and save with pruned input spec
             pruned_input_spec = _prune_input_spec(

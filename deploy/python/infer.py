@@ -197,7 +197,7 @@ class Detector(object):
         if run_benchmark:
             for i in range(repeats):
                 self.predictor.run()
-                paddle.device.cuda.synchronize()
+                paddle.device.synchronize('npu')
             result = dict(
                 boxes=np_boxes, masks=np_masks, boxes_num=np_boxes_num)
             return result
@@ -992,8 +992,6 @@ def load_predictor(model_dir,
             config.enable_lite_engine()
         config.enable_xpu(10 * 1024 * 1024)
     elif device == 'NPU':
-        if config.lite_engine_enabled():
-            config.enable_lite_engine()
         config.enable_custom_device('npu')
     else:
         config.disable_gpu()
