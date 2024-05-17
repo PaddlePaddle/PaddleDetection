@@ -1,0 +1,177 @@
+# Runtime
+epoch: 72
+use_gpu: true
+use_xpu: false
+use_mlu: false
+use_npu: false
+log_iter: 20
+save_dir: output
+snapshot_epoch: 1
+target_metrics: mask
+print_flops: false
+print_params: false
+use_ema: True
+ema_decay: 0.9999
+ema_decay_type: "exponential"
+ema_filter_no_grad: True
+
+# Dataset
+metric: COCO
+num_classes: 80
+
+worker_num: 4
+
+TrainDataset:
+  name: COCOInstSegDataset
+  image_dir: images
+  anno_path: annotations/instance_train.json
+  dataset_dir: datasets/COCO
+  data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_poly', 'is_crowd']
+
+EvalDataset:
+  name: COCOInstSegDataset
+  image_dir: images
+  anno_path: annotations/instance_val.json
+  dataset_dir: datasets/COCO
+
+TestDataset:
+  name: ImageFolder
+  anno_path: annotations/instance_val.json
+  dataset_dir: datasets/COCO
+
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - Poly2Mask: {del_poly: True}
+    - RandomDistort: {prob: 0.8}
+    - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
+    - RandomCrop: {prob: 0.8}
+    - RandomFlip: {}
+  batch_transforms:
+    - BatchRandomResize: {target_size: [480, 512, 544, 576, 608, 640, 640, 640, 672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  batch_size: 4
+  shuffle: true
+  drop_last: true
+  collate_batch: false
+  use_shared_memory: true
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 1 # mask be 1
+  shuffle: false
+  drop_last: false
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 640, 640]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [640, 640], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 1.0
+    milestones: [100]
+    use_warmup: true
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 2000
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+
+# Model
+architecture: DETR
+with_mask: True
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/PPHGNetV2_H_ssld_pretrained.pdparams
+norm_type: sync_bn
+hidden_dim: 256
+use_focal_loss: True
+eval_size: [640, 640]
+num_prototypes: 128
+find_unused_parameters: True
+
+DETR:
+  backbone: PPHGNetV2
+  neck: MaskHybridEncoder
+  transformer: MaskRTDETR
+  detr_head: MaskDINOHead
+  post_process: DETRPostProcess
+
+PPHGNetV2:
+  arch: 'H'
+  return_idx: [0, 1, 2, 3]
+  freeze_stem_only: True
+  freeze_at: 0
+  freeze_norm: True
+  lr_mult_list: [0., 0.01, 0.01, 0.01, 0.01]
+
+MaskHybridEncoder:
+  hidden_dim: 512
+  use_encoder_idx: [3]
+  num_encoder_layers: 2
+  encoder_layer:
+    name: TransformerLayer
+    d_model: 512
+    nhead: 8
+    dim_feedforward: 2048
+    dropout: 0.
+    activation: 'gelu'
+  expansion: 1.0
+  mask_feat_channels: [256, 128]
+
+MaskRTDETR:
+  num_queries: 300
+  position_embed_type: sine
+  feat_strides: [8, 16, 32]
+  num_levels: 3
+  nhead: 8
+  dim_feedforward: 1024
+  dropout: 0.0
+  activation: relu
+  num_denoising: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  learnt_init_query: False
+  mask_enhanced: True
+
+MaskDINOHead:
+  loss:
+    name: MaskDINOLoss
+    loss_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5}
+    aux_loss: True
+    use_vfl: True
+    vfl_iou_type: 'mask'
+    matcher:
+      name: HungarianMatcher
+      matcher_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5}
+
+DETRPostProcess:
+  num_top_queries: 100
+  mask_stride: 4
+
+# Exporting the model
+export:
+  post_process: True 
+  nms: True 
+  benchmark: False 
+  fuse_conv_bn: False
