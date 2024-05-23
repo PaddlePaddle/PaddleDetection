@@ -126,6 +126,7 @@ class Detector(object):
         self.batch_size = batch_size
         self.output_dir = output_dir
         self.threshold = threshold
+        self.device = device
 
     def set_config(self, model_dir, use_fd_format):
         return PredictConfig(model_dir, use_fd_format=use_fd_format)
@@ -198,7 +199,11 @@ class Detector(object):
         if run_benchmark:
             for i in range(repeats):
                 self.predictor.run()
-                paddle.device.cuda.synchronize()
+                if self.device == 'GPU':
+                    paddle.device.cuda.synchronize()
+                else:
+                    paddle.device.synchronize(device=self.device.lower())
+                
             result = dict(
                 boxes=np_boxes, masks=np_masks, boxes_num=np_boxes_num)
             return result
@@ -1007,8 +1012,6 @@ def load_predictor(model_dir,
             config.enable_lite_engine()
         config.enable_xpu(10 * 1024 * 1024)
     elif device == 'NPU':
-        if config.lite_engine_enabled():
-            config.enable_lite_engine()
         config.enable_custom_device('npu')
     else:
         config.disable_gpu()
