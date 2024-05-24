@@ -265,7 +265,7 @@ def get_contrastive_denoising_training_group(targets,
         pad_gt_mask = pad_gt_mask.flatten()
         # half of bbox prob
         mask = paddle.rand(input_query_class.shape) < (label_noise_ratio * 0.5)
-        chosen_idx = paddle.nonzero(mask * pad_gt_mask).squeeze(-1)
+        chosen_idx = paddle.nonzero(mask.cast(pad_gt_mask.dtype) * pad_gt_mask).squeeze(-1)
         # randomly put a new one here
         new_label = paddle.randint_like(
             chosen_idx, 0, num_classes, dtype=input_query_class.dtype)
