@@ -356,6 +356,16 @@ class PPHGNetV2(nn.Layer):
                 "stage3": [512, 256, 1024, 5, True, True, 5, 6],
                 "stage4": [1024, 512, 2048, 2, True, True, 5, 6],
             }
+        },
+        'H': {
+            'stem_channels': [3, 48, 96],
+            'stage_config': {
+                # in_channels, mid_channels, out_channels, num_blocks, downsample, light_block, kernel_size, layer_num
+                "stage1": [96, 96, 192, 2, False, False, 3, 6],
+                "stage2": [192, 192, 512, 3, True, False, 3, 6],
+                "stage3": [512, 384, 1024, 6, True, True, 5, 6],
+                "stage4": [1024, 768, 2048, 3, True, True, 5, 6],
+            }
         }
     }
 
