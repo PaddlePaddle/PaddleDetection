@@ -50,7 +50,6 @@ from ppdet.modeling.lane_utils import imshow_lanes
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback, SemiCheckpointer, SemiLogPrinter
 from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
-from .naive_sync_bn import convert_syncbn
 
 from paddle.distributed.fleet.utils.hybrid_parallel_util import fused_allreduce_gradients
 
@@ -195,14 +194,6 @@ class Trainer(object):
                     models=self.model,
                     optimizers=self.optimizer,
                     level=self.amp_level)
-
-        # support sync_bn for npu
-        if (paddle.get_device()[:3]=='npu'):
-            use_npu = ('use_npu' in cfg and cfg['use_npu'])
-            norm_type = ('norm_type' in cfg and cfg['norm_type'])
-            if norm_type == 'sync_bn' and use_npu and dist.get_world_size() > 1:
-                convert_syncbn(self.model)
-
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)

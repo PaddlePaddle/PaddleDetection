@@ -164,9 +164,8 @@ def get_denoising_training_group(targets,
     if label_noise_ratio > 0:
         input_query_class = input_query_class.flatten()
         pad_gt_mask = pad_gt_mask.flatten()
-        # half of bbox prob, cast mask from bool to float bacause dtype promotaion
-        # between bool and float is not supported in static mode.
-        mask = paddle.cast(paddle.rand(input_query_class.shape) < (label_noise_ratio * 0.5), paddle.float32)
+        # half of bbox prob
+        mask = paddle.rand(input_query_class.shape) < (label_noise_ratio * 0.5)
         chosen_idx = paddle.nonzero(mask * pad_gt_mask).squeeze(-1)
         # randomly put a new one here
         new_label = paddle.randint_like(
@@ -225,10 +224,7 @@ def get_contrastive_denoising_training_group(targets,
                                              box_noise_scale=1.0):
     if num_denoising <= 0:
         return None, None, None, None
-    # listcomp is not well-supported in SOT mode for now.
-    num_gts = []
-    for t in targets["gt_class"]:
-        num_gts.append(len(t))
+    num_gts = [len(t) for t in targets["gt_class"]]
     max_gt_num = max(num_gts)
     if max_gt_num == 0:
         return None, None, None, None
