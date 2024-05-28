@@ -538,7 +538,8 @@ class Trainer(object):
                         return type(blob)([deep_pin(x, blocking) for x in blob])
                     else:
                         return blob
-                data = deep_pin(data, False)
+                if paddle.base.core.is_compiled_with_cuda():
+                    data = deep_pin(data, False)
 
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
