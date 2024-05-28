@@ -58,3 +58,5 @@ repeat:1
 flags:null
 ===========================infer_benchmark_params===========================
 numpy_infer_input:3x640x640_2.npy
+===========================to_static_train_benchmark_params===========================
++to_static_train:--to_static
