@@ -19,6 +19,7 @@ try:
     from collections.abc import Sequence
 except Exception:
     from collections import Sequence
+from pycocotools.coco import COCO
 from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
@@ -192,7 +193,7 @@ class ImageFolder(DetDataset):
                 images.append(im_dir)
         return images
 
-    def _load_images(self):
+    def _load_images(self, eval_format=False):
         images = self._parse()
         ct = 0
         records = []
@@ -201,19 +202,33 @@ class ImageFolder(DetDataset):
                     "Image {} not found".format(image)
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
+            if eval_format:
+                image_id = self.get_image_id(image)
+                ct = image_id
             rec = {'im_id': np.array([ct]), 'im_file': image}
             self._imid2path[ct] = image
             ct += 1
             records.append(rec)
         assert len(records) > 0, "No image file found"
         return records
+    
+    def get_image_id(self, image):
+        anno_file = self.get_anno()
+        coco = COCO(anno_file) 
+        image_ids = coco.getImgIds()
+        for image_id in image_ids:
+            img_info = coco.loadImgs(image_id)[0]
+            if img_info['file_name'] in image:
+                return image_id
+            else:
+                continue
 
     def get_imid2path(self):
         return self._imid2path
 
-    def set_images(self, images):
+    def set_images(self, images, eval_format=False):
         self.image_dir = images
-        self.roidbs = self._load_images()
+        self.roidbs = self._load_images(eval_format=eval_format)
 
     def set_slice_images(self,
                          images,

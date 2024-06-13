@@ -84,6 +84,16 @@ def parse_args():
         default=False,
         help="Whether to record the data to VisualDL.")
     parser.add_argument(
+        "--save_prediction_only",
+        type=ast.literal_eval,
+        default=True,
+        help="Whether to save prediction only.")
+    parser.add_argument(
+        "--eval_format",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether to save results as eval format.")
+    parser.add_argument(
         '--vdl_log_dir',
         type=str,
         default="vdl_log_dir/image",
@@ -212,7 +222,8 @@ def run(FLAGS, cfg):
             output_dir=FLAGS.output_dir,
             save_results=FLAGS.save_results,
             visualize=FLAGS.visualize,
-            save_threshold=FLAGS.save_threshold)
+            save_threshold=FLAGS.save_threshold,
+            eval_format=FLAGS.eval_format)
 
 
 def main():
@@ -256,7 +267,6 @@ def main():
     check_xpu(cfg.use_xpu)
     check_mlu(cfg.use_mlu)
     check_version()
-
     run(FLAGS, cfg)
 
 
