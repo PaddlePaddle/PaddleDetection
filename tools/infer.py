@@ -30,7 +30,7 @@ import glob
 import ast
 
 import paddle
-from ppdet.core.workspace import load_config, merge_config
+from ppdet.core.workspace import create, load_config, merge_config
 from ppdet.engine import Trainer, Trainer_ARSL
 from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
@@ -84,15 +84,10 @@ def parse_args():
         default=False,
         help="Whether to record the data to VisualDL.")
     parser.add_argument(
-        "--save_prediction_only",
-        type=ast.literal_eval,
-        default=True,
-        help="Whether to save prediction only.")
-    parser.add_argument(
-        "--eval_format",
+        "--do_eval",
         type=ast.literal_eval,
         default=False,
-        help="Whether to save results as eval format.")
+        help="Whether to eval after infer.")
     parser.add_argument(
         '--vdl_log_dir',
         type=str,
@@ -200,7 +195,15 @@ def run(FLAGS, cfg):
         trainer = Trainer(cfg, mode='test')
         trainer.load_weights(cfg.weights)
     # get inference images
-    images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img, FLAGS.infer_list)
+    if FLAGS.do_eval:
+        # TestDataset_info = cfg.get('TestDataset', None)
+        # dataset = create('TestDataset')()
+        dataset = cfg['TestDataset'] = create(
+                'TestDataset')()
+        # dataset = create('TestDataset')()(dataset_dir=TestDataset_info["dataset_dir"], anno_path=TestDataset_info["anno_path"], image_dir=TestDataset_info["image_dir"])
+        images = dataset.get_images()
+    else:
+        images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img, FLAGS.infer_list)
 
     # inference
     if FLAGS.slice_infer:
@@ -223,7 +226,7 @@ def run(FLAGS, cfg):
             save_results=FLAGS.save_results,
             visualize=FLAGS.visualize,
             save_threshold=FLAGS.save_threshold,
-            eval_format=FLAGS.eval_format)
+            do_eval=FLAGS.do_eval)
 
 
 def main():
