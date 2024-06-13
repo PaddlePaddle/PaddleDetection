@@ -196,11 +196,7 @@ def run(FLAGS, cfg):
         trainer.load_weights(cfg.weights)
     # get inference images
     if FLAGS.do_eval:
-        # TestDataset_info = cfg.get('TestDataset', None)
-        # dataset = create('TestDataset')()
-        dataset = cfg['TestDataset'] = create(
-                'TestDataset')()
-        # dataset = create('TestDataset')()(dataset_dir=TestDataset_info["dataset_dir"], anno_path=TestDataset_info["anno_path"], image_dir=TestDataset_info["image_dir"])
+        dataset = create('TestDataset')()
         images = dataset.get_images()
     else:
         images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img, FLAGS.infer_list)
