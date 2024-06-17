@@ -984,11 +984,13 @@ class Trainer(object):
                 output_dir='output',
                 save_results=False,
                 visualize=True,
-                save_threshold=0):
+                save_threshold=0,
+                do_eval=False):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-
-        self.dataset.set_images(images)
+        if do_eval:
+            save_threshold = 0.0
+        self.dataset.set_images(images, do_eval=do_eval)
         loader = create('TestReader')(self.dataset, 0)
 
         imid2path = self.dataset.get_imid2path()
@@ -1014,7 +1016,7 @@ class Trainer(object):
             self.mode = mode
             self.cfg.pop('save_prediction_only')
             if save_prediction_only is not None:
-                self.cfg['save_prediction_only'] = save_prediction_only
+                self.cfg['save_prediction_only'] = save_prediction_only            
 
             self.cfg.pop('output_eval')
             if output_eval is not None:
