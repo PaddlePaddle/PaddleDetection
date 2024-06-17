@@ -30,7 +30,7 @@ import glob
 import ast
 
 import paddle
-from ppdet.core.workspace import load_config, merge_config
+from ppdet.core.workspace import create, load_config, merge_config
 from ppdet.engine import Trainer, Trainer_ARSL
 from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
@@ -83,6 +83,11 @@ def parse_args():
         type=bool,
         default=False,
         help="Whether to record the data to VisualDL.")
+    parser.add_argument(
+        "--do_eval",
+        type=ast.literal_eval,
+        default=False,
+        help="Whether to eval after infer.")
     parser.add_argument(
         '--vdl_log_dir',
         type=str,
@@ -190,7 +195,11 @@ def run(FLAGS, cfg):
         trainer = Trainer(cfg, mode='test')
         trainer.load_weights(cfg.weights)
     # get inference images
-    images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img, FLAGS.infer_list)
+    if FLAGS.do_eval:
+        dataset = create('TestDataset')()
+        images = dataset.get_images()
+    else:
+        images = get_test_images(FLAGS.infer_dir, FLAGS.infer_img, FLAGS.infer_list)
 
     # inference
     if FLAGS.slice_infer:
@@ -212,7 +221,8 @@ def run(FLAGS, cfg):
             output_dir=FLAGS.output_dir,
             save_results=FLAGS.save_results,
             visualize=FLAGS.visualize,
-            save_threshold=FLAGS.save_threshold)
+            save_threshold=FLAGS.save_threshold,
+            do_eval=FLAGS.do_eval)
 
 
 def main():
@@ -256,7 +266,6 @@ def main():
     check_xpu(cfg.use_xpu)
     check_mlu(cfg.use_mlu)
     check_version()
-
     run(FLAGS, cfg)
 
 
