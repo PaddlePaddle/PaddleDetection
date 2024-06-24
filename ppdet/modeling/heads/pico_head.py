@@ -39,6 +39,14 @@ eps = 1e-9
 __all__ = ['PicoHead', 'PicoHeadV2', 'PicoFeat']
 
 
+def npu_avg_pool2d(feat, w, h):
+    batch_size, channels, _, _ = feat.shape
+    feat_flat = paddle.reshape(feat, [batch_size, channels, -1])
+    feat_mean = paddle.mean(feat_flat, axis=2)
+    feat_mean = paddle.reshape(
+        feat_mean, [batch_size, channels, w, h])
+    return feat_mean
+
 class PicoSE(nn.Layer):
     def __init__(self, feat_channels):
         super(PicoSE, self).__init__()
@@ -88,6 +96,12 @@ class PicoFeat(nn.Layer):
         self.use_se = use_se
         self.cls_convs = []
         self.reg_convs = []
+
+        if paddle.device.get_device().startswith("npu"):
+            self.device = "npu"
+        else:
+            self.device = None
+            
         if use_se:
             assert share_cls_reg == True, \
                 'In the case of using se, share_cls_reg must be set to True'
@@ -169,7 +183,10 @@ class PicoFeat(nn.Layer):
             if not self.share_cls_reg:
                 reg_feat = self.act_func(self.reg_convs[stage_idx][i](reg_feat))
         if self.use_se:
-            avg_feat = F.adaptive_avg_pool2d(cls_feat, (1, 1))
+            if self.device == "npu":
+                avg_feat = npu_avg_pool2d(cls_feat, 1, 1)
+            else:
+                avg_feat = F.adaptive_avg_pool2d(cls_feat, (1, 1))
             se_feat = self.act_func(self.se[stage_idx](cls_feat, avg_feat))
             return cls_feat, se_feat
         return cls_feat, reg_feat
