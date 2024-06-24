@@ -156,7 +156,7 @@ class AdaptiveAvgPool2D(nn.AdaptiveAvgPool2D):
             x_mean = paddle.reshape(x_mean, [N, C, 1, 1])
             return x_mean
         else:
-            return super().forward(x)
+            return super(AdaptiveAvgPool2D, self).forward(x)
 
 class SEModule(nn.Layer):
     def __init__(self, channel, reduction=4):
