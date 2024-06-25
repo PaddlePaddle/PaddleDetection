@@ -265,7 +265,7 @@ def get_contrastive_denoising_training_group(targets,
         pad_gt_mask = pad_gt_mask.flatten()
         # half of bbox prob
         mask = paddle.rand(input_query_class.shape) < (label_noise_ratio * 0.5)
-        chosen_idx = paddle.nonzero(mask * pad_gt_mask).squeeze(-1)
+        chosen_idx = paddle.nonzero(mask.cast(pad_gt_mask.dtype) * pad_gt_mask).squeeze(-1)
         # randomly put a new one here
         new_label = paddle.randint_like(
             chosen_idx, 0, num_classes, dtype=input_query_class.dtype)
@@ -379,17 +379,18 @@ def mask_to_box_coordinate(mask,
             end=h, dtype=dtype), paddle.arange(
                 end=w, dtype=dtype))
 
-    x_mask = x * mask
+    x_mask = x * mask.astype(x.dtype)
     x_max = x_mask.flatten(-2).max(-1) + 1
-    x_min = paddle.where(mask, x_mask,
+    x_min = paddle.where(mask.astype(bool), x_mask,
                          paddle.to_tensor(1e8)).flatten(-2).min(-1)
 
-    y_mask = y * mask
+    y_mask = y * mask.astype(y.dtype)
     y_max = y_mask.flatten(-2).max(-1) + 1
-    y_min = paddle.where(mask, y_mask,
+    y_min = paddle.where(mask.astype(bool), y_mask,
                          paddle.to_tensor(1e8)).flatten(-2).min(-1)
     out_bbox = paddle.stack([x_min, y_min, x_max, y_max], axis=-1)
-    out_bbox *= mask.any(axis=[2, 3]).unsqueeze(2)
+    mask = mask.any(axis=[2, 3]).unsqueeze(2)
+    out_bbox = out_bbox * mask.astype(out_bbox.dtype)
     if normalize:
         out_bbox /= paddle.to_tensor([w, h, w, h]).astype(dtype)
 

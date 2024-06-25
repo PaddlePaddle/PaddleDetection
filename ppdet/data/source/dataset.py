@@ -19,6 +19,7 @@ try:
     from collections.abc import Sequence
 except Exception:
     from collections import Sequence
+from pycocotools.coco import COCO
 from paddle.io import Dataset
 from ppdet.core.workspace import register, serializable
 from ppdet.utils.download import get_dataset_path
@@ -191,29 +192,52 @@ class ImageFolder(DetDataset):
             elif os.path.isfile(im_dir) and _is_valid_file(im_dir):
                 images.append(im_dir)
         return images
+    
+    def get_images(self):
+        images_path = []
+        coco = COCO(os.path.join(self.dataset_dir, self.anno_path))
+        imgIds = coco.getImgIds(catIds=[])
+        for imgId in imgIds:
+            filename = coco.loadImgs(imgId)[0]["file_name"]
+            images_path.append(os.path.join(self.dataset_dir, self.image_dir, filename))
+        return images_path
 
-    def _load_images(self):
+    def _load_images(self, do_eval=False):
         images = self._parse()
         ct = 0
         records = []
+        anno_file = self.get_anno()
+        coco = COCO(anno_file)
         for image in images:
             assert image != '' and os.path.isfile(image), \
                     "Image {} not found".format(image)
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
+            if do_eval:
+                image_id = self.get_image_id(image, coco)
+                ct = image_id
             rec = {'im_id': np.array([ct]), 'im_file': image}
             self._imid2path[ct] = image
             ct += 1
             records.append(rec)
         assert len(records) > 0, "No image file found"
         return records
+    
+    def get_image_id(self, image, coco):
+        image_ids = coco.getImgIds()
+        for image_id in image_ids:
+            img_info = coco.loadImgs(image_id)[0]
+            if img_info['file_name'] in image:
+                return image_id
+            else:
+                continue
 
     def get_imid2path(self):
         return self._imid2path
 
-    def set_images(self, images):
+    def set_images(self, images, do_eval=False):
         self.image_dir = images
-        self.roidbs = self._load_images()
+        self.roidbs = self._load_images(do_eval=do_eval)
 
     def set_slice_images(self,
                          images,
