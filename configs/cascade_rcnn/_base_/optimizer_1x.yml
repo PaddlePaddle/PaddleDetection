@@ -11,6 +11,7 @@ LearningRate:
     steps: 1000
 
 OptimizerBuilder:
+  clip_grad_by_norm: 35.0 # avoid gradient explosion in NPU
   optimizer:
     momentum: 0.9
     type: Momentum
