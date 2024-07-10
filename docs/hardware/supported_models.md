@@ -13,5 +13,10 @@
 | RT-DETR-L | √ |
 | RT-DETR-H | √ |
 | RT-DETR-X | √ |
+| FCOS | √ |
+| CenterNet | √ |
+| DETR | √ |
 | PicoDet-S | √ |
 | PicoDet-L | √ |
+| Cascade MASK-RCNN | √ |
+| SOLOv2 | √ |
