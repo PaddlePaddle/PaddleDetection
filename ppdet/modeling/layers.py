@@ -471,7 +471,7 @@ class RCNNBox(object):
             if isinstance(roi, list):
                 batch_size = len(roi)
             else:
-                batch_size = paddle.slice(im_shape.shape, [0], [0], [1])
+                batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
 
             # bbox_pred.shape: [N, C*4]
             for idx in range(batch_size):
