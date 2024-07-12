@@ -740,7 +740,7 @@ class TTFBox(object):
         Select top k scores and decode to get xy coordinates.
         """
         k = self.max_per_img
-        shape_fm = scores.shape
+        shape_fm = paddle.shape(scores)
         shape_fm.stop_gradient = True
         cat, height, width = shape_fm[1], shape_fm[2], shape_fm[3]
         # batch size is 1
