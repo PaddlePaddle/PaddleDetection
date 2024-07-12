@@ -533,7 +533,9 @@ class SOLOv2Head(nn.Layer):
         seg_preds, cate_scores, cate_labels = self.mask_nms(
             seg_preds, seg_masks, cate_labels, cate_scores, sum_masks=sum_masks)
         ori_shape = im_shape[:2] / scale_factor + 0.5
+        
         ori_shape = paddle.cast(ori_shape, 'int32')
+        
         seg_preds = F.interpolate(
             paddle.unsqueeze(seg_preds, 0),
             size=upsampled_size_out,

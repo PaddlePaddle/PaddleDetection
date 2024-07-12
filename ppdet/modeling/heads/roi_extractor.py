@@ -68,7 +68,7 @@ class RoIAlign(nn.Layer):
         self.canonical_size = canonical_size
         self.start_level = start_level
         self.end_level = end_level
-        self.aligned = aligned
+        self.aligned = False
 
     @classmethod
     def from_config(cls, cfg, input_shape):
@@ -114,5 +114,4 @@ class RoIAlign(nn.Layer):
                 rois_feat_list.append(roi_feat)
             rois_feat_shuffle = paddle.concat(rois_feat_list)
             rois_feat = paddle.gather(rois_feat_shuffle, restore_index)
-
         return rois_feat
