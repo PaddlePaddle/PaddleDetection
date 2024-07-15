@@ -121,7 +121,9 @@ class BBoxCAM:
         self.num_class = cfg.num_classes
         # set hook for extraction of featuremaps and grads
         self.set_hook(cfg)
-        self.nms_idx_need_divid_numclass_arch = ['FasterRCNN', 'MaskRCNN', 'CascadeRCNN']
+        self.nms_idx_need_divid_numclass_arch = [
+            'FasterRCNN', 'MaskRCNN', 'CascadeRCNN'
+        ]
         """
         In these networks, the bbox array shape before nms contain num_class,
         the nms_keep_idx of the bbox need to divide the num_class; 
@@ -141,7 +143,7 @@ class BBoxCAM:
         trainer.load_weights(cfg.weights)
 
         # set for get extra_data before nms
-        trainer.model.use_extra_data=True
+        trainer.model.use_extra_data = True
         # set for record the bbox index before nms
         if cfg.architecture in ['FasterRCNN', 'MaskRCNN']:
             trainer.model.bbox_post_process.nms.return_index = True
@@ -152,14 +154,12 @@ class BBoxCAM:
             else:
                 # anchor free YOLOs: PP-YOLOE, PP-YOLOE+
                 trainer.model.yolo_head.nms.return_index = True
-        elif cfg.architecture=='BlazeFace' or cfg.architecture=='SSD':
+        elif cfg.architecture == 'BlazeFace' or cfg.architecture == 'SSD':
             trainer.model.post_process.nms.return_index = True
-        elif cfg.architecture=='RetinaNet':
+        elif cfg.architecture == 'RetinaNet':
             trainer.model.head.nms.return_index = True
         else:
-            print(
-                cfg.architecture+' is not supported for cam temporarily!'
-            )
+            print(cfg.architecture + ' is not supported for cam temporarily!')
             sys.exit()
         # Todo: Unify the head/post_process name in each model
 
@@ -169,19 +169,23 @@ class BBoxCAM:
         # set hook for extraction of featuremaps and grads
         self.target_feats = {}
         self.target_layer_name = cfg.target_feature_layer_name
+
         # such as trainer.model.backbone, trainer.model.bbox_head.roi_extractor
 
         def hook(layer, input, output):
             self.target_feats[layer._layer_name_for_hook] = output
 
         try:
-            exec('self.trainer.'+self.target_layer_name+'._layer_name_for_hook = self.target_layer_name')
+            exec('self.trainer.' + self.target_layer_name +
+                 '._layer_name_for_hook = self.target_layer_name')
             # self.trainer.target_layer_name._layer_name_for_hook = self.target_layer_name
-            exec('self.trainer.'+self.target_layer_name+'.register_forward_post_hook(hook)')
+            exec('self.trainer.' + self.target_layer_name +
+                 '.register_forward_post_hook(hook)')
             # self.trainer.target_layer_name.register_forward_post_hook(hook)
         except:
             print("Error! "
-                  "The target_layer_name--"+self.target_layer_name+" is not in model! "
+                  "The target_layer_name--" + self.target_layer_name +
+                  " is not in model! "
                   "Please check the spelling and "
                   "the network's architecture!")
             sys.exit()
@@ -228,7 +232,7 @@ class BBoxCAM:
             # currently, only include the rcnn architectures （fasterrcnn, maskrcnn, cascadercnn);
             before_nms_indexes = extra_data['nms_keep_idx'].cpu().numpy(
             ) // self.num_class  # num_class
-        else :
+        else:
             before_nms_indexes = extra_data['nms_keep_idx'].cpu().numpy()
 
         # Calculate and visualize the heatmap of per predict bbox
@@ -240,7 +244,7 @@ class BBoxCAM:
 
             target_bbox_before_nms = int(before_nms_indexes[index])
 
-            if len(extra_data['scores'].shape)==2:
+            if len(extra_data['scores'].shape) == 2:
                 score_out = extra_data['scores'][target_bbox_before_nms]
             else:
                 score_out = extra_data['scores'][0, :, target_bbox_before_nms]
@@ -249,7 +253,6 @@ class BBoxCAM:
                 1) [num_of_bboxes_before_nms, num_classes], for example: [1000, 80]
                 2) [num_of_image, num_classes, num_of_yolo_bboxes_before_nms], for example: [1, 80, 1000]
             """
-
 
             # construct one_hot label and do backward to get the gradients
             predicted_label = paddle.argmax(score_out)
@@ -266,8 +269,8 @@ class BBoxCAM:
                     # when the featuremap contains of multiple scales,
                     # take the featuremap of the last scale
                     # Todo: fuse the cam result from multisclae featuremaps
-                    if self.target_feats[self.target_layer_name][
-                            -1].shape[-1]==1:
+                    if self.target_feats[self.target_layer_name][-1].shape[
+                            -1] == 1:
                         """
                         if the last level featuremap is 1x1 size,
                         we take the second last one
@@ -286,11 +289,12 @@ class BBoxCAM:
                         self.target_layer_name].grad.squeeze().cpu().numpy()
                     cam_feat = self.target_feats[
                         self.target_layer_name].squeeze().cpu().numpy()
-            else: # roi level feature
+            else:  # roi level feature
                 cam_grad = self.target_feats[
-                    self.target_layer_name].grad.squeeze().cpu().numpy()[target_bbox_before_nms]
-                cam_feat = self.target_feats[
-                    self.target_layer_name].squeeze().cpu().numpy()[target_bbox_before_nms]
+                    self.target_layer_name].grad.squeeze().cpu().numpy()[
+                        target_bbox_before_nms]
+                cam_feat = self.target_feats[self.target_layer_name].squeeze(
+                ).cpu().numpy()[target_bbox_before_nms]
 
             # grad_cam:
             exp = grad_cam(cam_feat, cam_grad)
@@ -305,23 +309,25 @@ class BBoxCAM:
                 # reshape the cam image to the input image size
                 resized_exp = resize_cam(exp, (img.shape[1], img.shape[0]))
                 mask = np.zeros((img.shape[0], img.shape[1], 3))
-                mask[int(target_bbox[3]):int(target_bbox[5]), int(target_bbox[2]):
-                     int(target_bbox[4]), :] = 1
+                mask[int(target_bbox[3]):int(target_bbox[5]), int(target_bbox[
+                    2]):int(target_bbox[4]), :] = 1
                 resized_exp = resized_exp * mask
                 # add the bbox cam back to the input image
                 overlay_vis = np.uint8(resized_exp * 0.4 + img * 0.6)
             elif 'roi' in self.target_layer_name:
                 # get the bbox part of the image
-                bbox_img = copy.deepcopy(img[int(target_bbox[3]):int(target_bbox[5]),
-                                         int(target_bbox[2]):int(target_bbox[4]), :])
+                bbox_img = copy.deepcopy(img[int(target_bbox[3]):int(
+                    target_bbox[5]), int(target_bbox[2]):int(target_bbox[
+                        4]), :])
                 # reshape the cam image to the bbox size
-                resized_exp = resize_cam(exp, (bbox_img.shape[1], bbox_img.shape[0]))
+                resized_exp = resize_cam(exp,
+                                         (bbox_img.shape[1], bbox_img.shape[0]))
                 # add the bbox cam back to the bbox image
                 bbox_overlay_vis = np.uint8(resized_exp * 0.4 + bbox_img * 0.6)
                 # put the bbox_cam image to the original image
                 overlay_vis = copy.deepcopy(img)
-                overlay_vis[int(target_bbox[3]):int(target_bbox[5]),
-                    int(target_bbox[2]):int(target_bbox[4]), :] = bbox_overlay_vis
+                overlay_vis[int(target_bbox[3]):int(target_bbox[5]), int(
+                    target_bbox[2]):int(target_bbox[4]), :] = bbox_overlay_vis
             else:
                 print(
                     'Only supported cam for  backbone/neck feature and roi feature,  the others are not supported temporarily!'

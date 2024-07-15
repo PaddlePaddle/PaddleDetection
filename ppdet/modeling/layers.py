@@ -471,7 +471,7 @@ class RCNNBox(object):
             if isinstance(roi, list):
                 batch_size = len(roi)
             else:
-                batch_size = paddle.slice(im_shape.shape, [0], [0], [1])
+                batch_size = paddle.slice(paddle.shape(im_shape), [0], [0], [1])
 
             # bbox_pred.shape: [N, C*4]
             for idx in range(batch_size):
@@ -740,7 +740,7 @@ class TTFBox(object):
         Select top k scores and decode to get xy coordinates.
         """
         k = self.max_per_img
-        shape_fm = scores.shape
+        shape_fm = paddle.shape(scores)
         shape_fm.stop_gradient = True
         cat, height, width = shape_fm[1], shape_fm[2], shape_fm[3]
         # batch size is 1
@@ -787,7 +787,7 @@ class TTFBox(object):
         scale_x = scale_factor[:, 1:2]
         scale_expand = paddle.concat(
             [scale_x, scale_y, scale_x, scale_y], axis=1)
-        boxes_shape = bboxes.shape
+        boxes_shape = paddle.shape(bboxes)
         boxes_shape.stop_gradient = True
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)

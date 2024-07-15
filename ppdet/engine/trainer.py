@@ -50,6 +50,7 @@ from ppdet.modeling.lane_utils import imshow_lanes
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback, SemiCheckpointer, SemiLogPrinter
 from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
+from .naive_sync_bn import convert_syncbn
 
 from paddle.distributed.fleet.utils.hybrid_parallel_util import fused_allreduce_gradients
 
@@ -194,6 +195,14 @@ class Trainer(object):
                     models=self.model,
                     optimizers=self.optimizer,
                     level=self.amp_level)
+
+        # support sync_bn for npu
+        if (paddle.get_device()[:3]=='npu'):
+            use_npu = ('use_npu' in cfg and cfg['use_npu'])
+            norm_type = ('norm_type' in cfg and cfg['norm_type'])
+            if norm_type == 'sync_bn' and use_npu and dist.get_world_size() > 1:
+                convert_syncbn(self.model)
+
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)
@@ -520,6 +529,18 @@ class Trainer(object):
             model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):
+                def deep_pin(blob, blocking):
+                    if isinstance(blob, paddle.Tensor):
+                        return blob.cuda(blocking=blocking)
+                    elif isinstance(blob, dict):
+                        return {k: deep_pin(v, blocking) for k, v in blob.items()}
+                    elif isinstance(blob, (list, tuple)):
+                        return type(blob)([deep_pin(x, blocking) for x in blob])
+                    else:
+                        return blob
+                if paddle.base.core.is_compiled_with_cuda():
+                    data = deep_pin(data, False)
+
                 self.status['data_time'].update(time.time() - iter_tic)
                 self.status['step_id'] = step_id
                 profiler.add_profiler_step(profiler_options)
@@ -963,11 +984,13 @@ class Trainer(object):
                 output_dir='output',
                 save_results=False,
                 visualize=True,
-                save_threshold=0):
+                save_threshold=0,
+                do_eval=False):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
-
-        self.dataset.set_images(images)
+        if do_eval:
+            save_threshold = 0.0
+        self.dataset.set_images(images, do_eval=do_eval)
         loader = create('TestReader')(self.dataset, 0)
 
         imid2path = self.dataset.get_imid2path()
@@ -993,7 +1016,7 @@ class Trainer(object):
             self.mode = mode
             self.cfg.pop('save_prediction_only')
             if save_prediction_only is not None:
-                self.cfg['save_prediction_only'] = save_prediction_only
+                self.cfg['save_prediction_only'] = save_prediction_only            
 
             self.cfg.pop('output_eval')
             if output_eval is not None:

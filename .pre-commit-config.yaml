@@ -1,5 +1,6 @@
+repos:
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    sha: a11d9314b22d8f8c7556443875b731ef05965464
+    rev: a11d9314b22d8f8c7556443875b731ef05965464
     hooks:
     -   id: check-merge-conflict
     -   id: check-symlinks
@@ -10,7 +11,7 @@
     -   id: trailing-whitespace
         files: \.(md|yml)$
 -   repo: https://github.com/Lucas-C/pre-commit-hooks
-    sha: v1.0.1
+    rev: v1.0.1
     hooks:
     -   id: forbid-crlf
         files: \.(md|yml)$

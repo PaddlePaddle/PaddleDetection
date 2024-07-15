@@ -53,13 +53,15 @@ class MaskTransformerDecoder(nn.Layer):
                  hidden_dim,
                  decoder_layer,
                  num_layers,
-                 eval_idx=-1):
+                 eval_idx=-1,
+                 eval_topk=100):
         super(MaskTransformerDecoder, self).__init__()
         self.layers = _get_clones(decoder_layer, num_layers)
         self.hidden_dim = hidden_dim
         self.num_layers = num_layers
         self.eval_idx = eval_idx if eval_idx >= 0 \
             else num_layers + eval_idx
+        self.eval_topk = eval_topk
 
     def forward(self,
                 tgt,
