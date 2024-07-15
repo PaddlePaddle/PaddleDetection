@@ -787,7 +787,7 @@ class TTFBox(object):
         scale_x = scale_factor[:, 1:2]
         scale_expand = paddle.concat(
             [scale_x, scale_y, scale_x, scale_y], axis=1)
-        boxes_shape = bboxes.shape
+        boxes_shape = paddle.shape(bboxes)
         boxes_shape.stop_gradient = True
         scale_expand = paddle.expand(scale_expand, shape=boxes_shape)
         bboxes = paddle.divide(bboxes, scale_expand)
