@@ -994,6 +994,7 @@ def load_predictor(model_dir,
             "Predict by TensorRT mode: {}, expect device=='GPU', but device == {}"
             .format(run_mode, device))
 
+    # TODO
     config = Config(model_dir, 'model')
     
     if device == 'GPU':
