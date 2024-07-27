@@ -16,6 +16,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import re
 import sys
 import math
 import paddle
@@ -325,12 +326,15 @@ class OptimizerBuilder():
                 assert isinstance(group,
                                   dict) and 'params' in group and isinstance(
                                       group['params'], list), ''
-                _params = {
-                    n: p
-                    for n, p in model.named_parameters()
-                    if any([k in n
-                            for k in group['params']]) and p.trainable is True
-                }
+                _params = {}
+                for n, p in model.named_parameters():
+                    if not p.trainable:
+                        continue
+                    for k in group['params']:
+                        if re.search(k, n):
+                            _params.update({n: p})
+                            break
+
                 _group = group.copy()
                 _group.update({'params': list(_params.values())})
 

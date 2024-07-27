@@ -1,0 +1,49 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/rtdetrv2_r50vd.yml',
+  '_base_/rtdetrv2_reader.yml',
+]
+
+weights: output/rtdetrv2_r18_120e_coco/model_final
+find_unused_parameters: True
+log_iter: 200
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet18_vd_pretrained.pdparams
+
+ResNet:
+  depth: 18
+  norm_decay: 0.
+  freeze_at: -1
+  freeze_norm: false
+
+HybridEncoder:
+  expansion: 0.5
+  depth_mult: 1.0
+
+RTDETRTransformerv2:
+  num_decoder_layers: 3
+
+
+epoch: 120
+
+OptimizerBuilder:
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+    param_groups:
+      - params: ['^(?=.*(?:norm|bn)).*$']
+        weight_decay: 0.
+
+
+TrainReader:
+  batch_transforms:
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  transform_schedulers:
+    - RandomDistort: {start_epoch: 0, stop_epoch: 117}
+    - RandomExpand: {start_epoch: 0, stop_epoch: 117}
+    - RandomCrop: {start_epoch: 0, stop_epoch: 117}
