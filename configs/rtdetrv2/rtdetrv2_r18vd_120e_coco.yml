@@ -14,7 +14,6 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet18_vd_
 
 ResNet:
   depth: 18
-  norm_decay: 0.
   freeze_at: -1
   freeze_norm: false
 
@@ -44,6 +43,6 @@ TrainReader:
     - BboxXYXY2XYWH: {}
     - Permute: {}
   transform_schedulers:
-    - RandomDistort: {start_epoch: 0, stop_epoch: 117}
-    - RandomExpand: {start_epoch: 0, stop_epoch: 117}
-    - RandomCrop: {start_epoch: 0, stop_epoch: 117}
+    - RandomDistort: {stop_epoch: 117}
+    - RandomExpand: {stop_epoch: 117}
+    - RandomCrop: {stop_epoch: 117}

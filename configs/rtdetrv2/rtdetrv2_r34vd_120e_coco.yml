@@ -14,7 +14,6 @@ pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/ResNet34_
 
 ResNet:
   depth: 34
-  norm_decay: 0.
   freeze_at: -1
   freeze_norm: false
 
@@ -44,7 +43,8 @@ OptimizerBuilder:
 
 TrainReader:
   transform_schedulers:
-    - RandomDistort: {start_epoch: 0, stop_epoch: 117}
-    - RandomExpand: {start_epoch: 0, stop_epoch: 117}
-    - RandomCrop: {start_epoch: 0, stop_epoch: 117}
-    - BatchRandomResize: {start_epoch: 0, stop_epoch: 117}
+    - RandomDistort: {stop_epoch: 117}
+    - RandomExpand: {stop_epoch: 117}
+    - RandomCrop: {stop_epoch: 117}
+    - Resize: {start_epoch: 117}
+    - BatchRandomResize: {stop_epoch: 117}

@@ -2,8 +2,8 @@ worker_num: 4
 TrainReader:
   sample_transforms:
     - Decode: {}
-    - RandomDistort: {prob: 0.5}
-    - RandomExpand: {fill_value: [0., 0, 0.]}
+    - RandomDistort: {prob: 0.8}
+    - RandomExpand: {fill_value: [123.675, 116.28, 103.53]}
     - RandomCrop: {prob: 0.8}
     - RandomFlip: {}
     - Resize: {target_size: [640, 640], keep_ratio: False, interp: 1}
@@ -18,11 +18,13 @@ TrainReader:
   drop_last: true
   collate_batch: false
   use_shared_memory: true
-  transform_schedulers: # [start_epoch, stop_epoch)
-    - RandomDistort: {start_epoch: 0, stop_epoch: 71}
-    - RandomExpand: {start_epoch: 0, stop_epoch: 71}
-    - RandomCrop: {start_epoch: 0, stop_epoch: 71}
-    - BatchRandomResize: {start_epoch: 0, stop_epoch: 71}
+  transform_schedulers:
+    # [start_epoch, stop_epoch) | [0, stop_epoch) | [start_epoch, inf)
+    - RandomDistort: {stop_epoch: 71}
+    - RandomExpand: {stop_epoch: 71}
+    - RandomCrop: {stop_epoch: 71}
+    - Resize: {start_epoch: 71}
+    - BatchRandomResize: {stop_epoch: 71}
 
 
 EvalReader:

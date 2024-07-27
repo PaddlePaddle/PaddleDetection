@@ -8,6 +8,7 @@ ema_filter_no_grad: True
 hidden_dim: 256
 use_focal_loss: True
 eval_size: [640, 640]
+reset_norm_param_attr: True
 
 
 DETR:
@@ -22,7 +23,6 @@ ResNet:
   depth: 50
   variant: d
   norm_type: bn
-  norm_decay: 0.
   freeze_at: 0
   return_idx: [1, 2, 3]
   num_stages: 4

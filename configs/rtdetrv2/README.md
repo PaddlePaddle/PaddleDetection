@@ -4,9 +4,7 @@
 
 RT-DETRv2是基于 Transformer 的实时端到端检测器。它在SOTA的 RT-DETR
 的基础上，引入了灵活的解码器，并运用了一系列有效的训练策略。具体而言，我们为解码器的各种特征图建议了不同数量的采样点，在多个训练阶段采用动态数据增强策略，并为每个独特的模型确定特定的优化超参数。为适应各种部署方案，解码器现在提供了一个利用离散采样而非网格采样的选项。RT-DETRv2-R18
-在相同速度下相比 RT-DETR-R18 实现了 1.4 的提升，在 T4 GPU 上以 FP16 模式达到了 47.9 mAP 和 217
-FPS。而且，混合精度训练策略的使用使得训练速度提高了 15%，GPU 内存使用减少了 20%
-。若要了解更多细节，请参考论文[paper](https://arxiv.org/pdf/2407.17140).
+在相同速度下相比 RT-DETR-R18 实现了 1.4 的提升，在 T4 GPU 上以 FP16 模式达到了 47.9 mAP 和 217 FPS。若要了解更多细节，请参考论文[paper](https://arxiv.org/pdf/2407.17140).
 
 ## 基础模型
 
@@ -22,10 +20,10 @@ FPS。而且，混合精度训练策略的使用使得训练速度提高了 15%�
 
 |        Model         | Epoch | Backbone  | Input shape | $AP^{val}$ | $AP^{val}_{50}$ | Params(M) | FLOPs(G) | T4 TensorRT FP16(FPS) |                                      Pretrained Model                                       |                    config                    |
 |:--------------------:|:-----:|:---------:|:-----------:|:----------:|:---------------:|:---------:|:--------:|:---------------------:|:-------------------------------------------------------------------------------------------:|:--------------------------------------------:|
-|  *RT-DETRv2-R18-dsp  |  120  | ResNet-18 |     640     |    47.4    |      64.8       |    20     |    60    |          217          |  [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r18vd_dsp_3x_coco.pdparams)  |  [config](./rtdetrv2_r18vd_dsp_3x_coco.yml)  |
-|  *RT-DETRv2-R34-dsp  |  120  | ResNet-34 |     640     |    49.2    |      67.2       |    31     |    92    |          161          |  [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r34vd_dsp_1x_coco.pdparams)  |  [config](./rtdetrv2_r34vd_dsp_1x_coco.yml)  |
-| *RT-DETRv2-R50-m-dsp |  84   | ResNet-50 |     640     |    51.3    |      69.7       |    36     |   100    |          145          | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r50vd_m_dsp_3x_coco.pdparams) | [config](./rtdetrv2_r50vd_m_dsp_3x_coco.yml) |
-|  *RT-DETRv2-R50-dsp  |  72   | ResNet-50 |     640     |    52.8    |      71.3       |    42     |   136    |          108          |  [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r50vd_dsp_1x_coco.pdparams)  |  [config](./rtdetrv2_r50vd_dsp_1x_coco.yml)  |
+|  *RT-DETRv2-R18-dsp  |  36   | ResNet-18 |     640     |    47.4    |      64.8       |    20     |    60    |          217          |  [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r18vd_dsp_3x_coco.pdparams)  |  [config](./rtdetrv2_r18vd_dsp_3x_coco.yml)  |
+|  *RT-DETRv2-R34-dsp  |  12   | ResNet-34 |     640     |    49.2    |      67.2       |    31     |    92    |          161          |  [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r34vd_dsp_1x_coco.pdparams)  |  [config](./rtdetrv2_r34vd_dsp_1x_coco.yml)  |
+| *RT-DETRv2-R50-m-dsp |  36   | ResNet-50 |     640     |    51.3    |      69.7       |    36     |   100    |          145          | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r50vd_m_dsp_3x_coco.pdparams) | [config](./rtdetrv2_r50vd_m_dsp_3x_coco.yml) |
+|  *RT-DETRv2-R50-dsp  |  12   | ResNet-50 |     640     |    52.8    |      71.3       |    42     |   136    |          108          |  [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r50vd_dsp_1x_coco.pdparams)  |  [config](./rtdetrv2_r50vd_dsp_1x_coco.yml)  |
 
 **注意事项:**
 
@@ -129,7 +127,7 @@ paddle2onnx --model_dir=./output_inference/rtdetrv2_r50vd_6x_coco/ \
 <details>
 <summary>3. 转换成TensorRT（可选） </summary>
 
-- 确保TensorRT的版本>=8.5.1
+- 基础模型请确保TensorRT的版本>=8.5.1，离散采样模型支持TensorRT的版本==8.4甚至一些更早的版本
 - TRT推理可以参考[RT-DETR](https://github.com/lyuwenyu/RT-DETR)的部分代码或者其他网络资源
 
 ```shell

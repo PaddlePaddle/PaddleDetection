@@ -14,7 +14,6 @@ pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r34vd_120e_
 
 ResNet:
   depth: 34
-  norm_decay: 0.
   freeze_at: -1
   freeze_norm: false
 
@@ -45,7 +44,8 @@ OptimizerBuilder:
 
 TrainReader:
   transform_schedulers:
-    - RandomDistort: {start_epoch: 0, stop_epoch: 10}
-    - RandomExpand: {start_epoch: 0, stop_epoch: 10}
-    - RandomCrop: {start_epoch: 0, stop_epoch: 10}
-    - BatchRandomResize: {start_epoch: 0, stop_epoch: 10}
+    - RandomDistort: {stop_epoch: 10}
+    - RandomExpand: {stop_epoch: 10}
+    - RandomCrop: {stop_epoch: 10}
+    - Resize: {start_epoch: 10}
+    - BatchRandomResize: {stop_epoch: 10}

@@ -44,7 +44,6 @@ class Compose(object):
     def __init__(self, transforms, num_classes=80):
         self.transforms = transforms
         self.transforms_cls = []
-        self.skip_transforms_cls = []
         for t in self.transforms:
             for k, v in t.items():
                 op_cls = getattr(transform, k)
@@ -54,27 +53,29 @@ class Compose(object):
 
                 self.transforms_cls.append(f)
 
-    def _update_skip_transforms_cls(self, data):
+    def _update_transforms_cls(self, data):
         if 'transform_schedulers' in data:
-            self.skip_transforms_cls.clear()
-            transform_schedulers = data['transform_schedulers']
-            curr_epoch = data['curr_epoch']
-            for trans_op in self.transforms_cls:
-                trans_op_name = trans_op.__class__.__name__
-                for t in transform_schedulers:
+            def is_valid(op):
+                op_name = op.__class__.__name__
+                for t in data['transform_schedulers']:
                     for k, v in t.items():
-                        if trans_op_name == k:
+                        if op_name == k:
                             # [start_epoch, stop_epoch)
-                            if curr_epoch < v['start_epoch'] or curr_epoch >= v['stop_epoch']:
-                                self.skip_transforms_cls.append(trans_op)
+                            start_epoch = v.get('start_epoch', 0)
+                            if start_epoch > data['curr_epoch']:
+                                return False
+                            stop_epoch = v.get('stop_epoch', float('inf'))
+                            if stop_epoch <= data['curr_epoch']:
+                                return False
+                return True
+
+            return filter(is_valid, self.transforms_cls)
+        else:
+            return self.transforms_cls
 
     def __call__(self, data):
-        self._update_skip_transforms_cls(data)
-
-        for f in self.transforms_cls:
-            if f in self.skip_transforms_cls:
-                continue
-
+        transforms_cls = self._update_transforms_cls(data)
+        for f in transforms_cls:
             try:
                 data = f(data)
             except Exception as e:
@@ -93,12 +94,8 @@ class BatchCompose(Compose):
         self.collate_batch = collate_batch
 
     def __call__(self, data):
-        self._update_skip_transforms_cls(data[0])
-
-        for f in self.transforms_cls:
-            if f in self.skip_transforms_cls:
-                continue
-
+        transforms_cls = self._update_transforms_cls(data[0])
+        for f in transforms_cls:
             try:
                 data = f(data)
             except Exception as e:

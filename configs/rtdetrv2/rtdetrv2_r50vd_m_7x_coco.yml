@@ -33,7 +33,8 @@ OptimizerBuilder:
 
 TrainReader:
   transform_schedulers:
-    - RandomDistort: {start_epoch: 0, stop_epoch: 81}
-    - RandomExpand: {start_epoch: 0, stop_epoch: 81}
-    - RandomCrop: {start_epoch: 0, stop_epoch: 81}
-    - BatchRandomResize: {start_epoch: 0, stop_epoch: 81}
+    - RandomDistort: {stop_epoch: 81}
+    - RandomExpand: {stop_epoch: 81}
+    - RandomCrop: {stop_epoch: 81}
+    - Resize: {start_epoch: 81}
+    - BatchRandomResize: {stop_epoch: 81}
