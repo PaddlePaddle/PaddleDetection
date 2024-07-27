@@ -155,13 +155,13 @@ trtexec --onnx=./rtdetrv2_r50vd_6x_coco.onnx \
       primaryClass={cs.CV}
 }
 
-@software{Lv_rtdetr_by_cvperception_2023,
-author = {Lv, Wenyu},
-license = {Apache-2.0},
-month = oct,
-title = {{rtdetr by cvperception}},
-url = {https://github.com/lyuwenyu/cvperception/},
-version = {0.0.1dev},
-year = {2023}
+@misc{lv2024rtdetrv2improvedbaselinebagoffreebies,
+      title={RT-DETRv2: Improved Baseline with Bag-of-Freebies for Real-Time Detection Transformer},
+      author={Wenyu Lv and Yian Zhao and Qinyao Chang and Kui Huang and Guanzhong Wang and Yi Liu},
+      year={2024},
+      eprint={2407.17140},
+      archivePrefix={arXiv},
+      primaryClass={cs.CV},
+      url={https://arxiv.org/abs/2407.17140},
 }
 ```
