@@ -96,10 +96,20 @@ class DetDataset(Dataset):
         if isinstance(roidb, Sequence):
             for r in roidb:
                 r['curr_iter'] = self._curr_iter
+                r['curr_epoch'] = self._epoch
         else:
             roidb['curr_iter'] = self._curr_iter
+            roidb['curr_epoch'] = self._epoch
         self._curr_iter += 1
-
+        
+        if self.transform_schedulers:
+            assert isinstance(self.transform_schedulers, list)
+            if isinstance(roidb, Sequence):
+                for r in roidb:
+                    r['transform_schedulers'] = self.transform_schedulers
+            else:
+                roidb['transform_schedulers'] = self.transform_schedulers
+        
         return self.transform(roidb)
 
     def check_or_download_dataset(self):
@@ -111,6 +121,7 @@ class DetDataset(Dataset):
         self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
         self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)
         self.pre_img_epoch = kwargs.get('pre_img_epoch', -1)
+        self.transform_schedulers = kwargs.get('transform_schedulers', None)
 
     def set_transform(self, transform):
         self.transform = transform
