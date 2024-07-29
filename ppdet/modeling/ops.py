@@ -536,13 +536,6 @@ def multiclass_nms(bboxes,
     helper = LayerHelper('multiclass_nms3', **locals())
 
     if in_dynamic_or_pir_mode():
-        # attrs = ('background_label', background_label, 'score_threshold',
-        #          score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
-        #          nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
-        #          'normalized', normalized)
-        # output, index, nms_rois_num = C_ops.multiclass_nms3(bboxes, scores, rois_num, *attrs)
-
-        # TODO
         # https://github.com/PaddlePaddle/Paddle/blob/develop/paddle/phi/ops/yaml/ops.yaml#L3175
         attrs = (score_threshold, nms_top_k, keep_top_k, nms_threshold, normalized, nms_eta, background_label, )
         output, index, nms_rois_num = paddle._C_ops.multiclass_nms3(bboxes, scores, rois_num, *attrs)
