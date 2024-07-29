@@ -21,6 +21,7 @@ try:
     import paddle._legacy_C_ops as C_ops
 except:
     import paddle._C_ops as C_ops
+from paddle.framework import in_dynamic_or_pir_mode
 
 from paddle import in_dynamic_mode
 from paddle.common_ops_import import Variable, LayerHelper, check_variable_and_dtype, check_type, check_dtype
@@ -534,13 +535,11 @@ def multiclass_nms(bboxes,
     """
     helper = LayerHelper('multiclass_nms3', **locals())
 
-    if in_dynamic_mode():
-        attrs = ('background_label', background_label, 'score_threshold',
-                 score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
-                 nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
-                 'normalized', normalized)
-        output, index, nms_rois_num = C_ops.multiclass_nms3(bboxes, scores,
-                                                            rois_num, *attrs)
+    if in_dynamic_or_pir_mode():
+        # https://github.com/PaddlePaddle/Paddle/blob/develop/paddle/phi/ops/yaml/ops.yaml#L3175
+        attrs = (score_threshold, nms_top_k, keep_top_k, nms_threshold, normalized, nms_eta, background_label, )
+        output, index, nms_rois_num = paddle._C_ops.multiclass_nms3(bboxes, scores, rois_num, *attrs)
+
         if not return_index:
             index = None
         return output, nms_rois_num, index
