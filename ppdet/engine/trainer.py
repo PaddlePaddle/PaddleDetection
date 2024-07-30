@@ -124,7 +124,12 @@ class Trainer(object):
                     m._epsilon = 1e-3  # for amp(fp16)
                     m._momentum = 0.97  # 0.03 in pytorch
 
-        #normalize params for deploy
+        # reset norm param attr for setting them in optimizer
+        if cfg['reset_norm_param_attr']:
+            self.model = self.reset_norm_param_attr(
+                self.model, weight_attr=None, bias_attr=None)
+
+        # normalize params for deploy
         if 'slim' in cfg and cfg['slim_type'] == 'OFA':
             self.model.model.load_meanstd(cfg['TestReader'][
                 'sample_transforms'])
@@ -1450,3 +1455,32 @@ class Trainer(object):
                     imshow_lanes(img, lanes, out_file=out_file)
 
         return results
+
+    def reset_norm_param_attr(self, layer, **kwargs):
+        if isinstance(layer, (nn.BatchNorm2D, nn.LayerNorm, nn.GroupNorm)):
+            src_state_dict = layer.state_dict()
+            if isinstance(layer, nn.BatchNorm2D):
+                layer = nn.BatchNorm2D(
+                    num_features=layer._num_features,
+                    momentum=layer._momentum,
+                    epsilon=layer._epsilon,
+                    **kwargs)
+            elif isinstance(layer, nn.LayerNorm):
+                layer = nn.LayerNorm(
+                    normalized_shape=layer._normalized_shape,
+                    epsilon=layer._epsilon,
+                    **kwargs)
+            else:
+                layer = nn.GroupNorm(
+                    num_groups=layer._num_groups,
+                    num_channels=layer._num_channels,
+                    epsilon=layer._epsilon,
+                    **kwargs)
+            layer.set_state_dict(src_state_dict)
+        else:
+            for name, sublayer in layer.named_children():
+                new_sublayer = self.reset_norm_param_attr(sublayer, **kwargs)
+                if new_sublayer is not sublayer:
+                    setattr(layer, name, new_sublayer)
+
+        return layer

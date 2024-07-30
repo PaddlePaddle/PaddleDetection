@@ -53,8 +53,29 @@ class Compose(object):
 
                 self.transforms_cls.append(f)
 
+    def _update_transforms_cls(self, data):
+        if 'transform_schedulers' in data:
+            def is_valid(op):
+                op_name = op.__class__.__name__
+                for t in data['transform_schedulers']:
+                    for k, v in t.items():
+                        if op_name == k:
+                            # [start_epoch, stop_epoch)
+                            start_epoch = v.get('start_epoch', 0)
+                            if start_epoch > data['curr_epoch']:
+                                return False
+                            stop_epoch = v.get('stop_epoch', float('inf'))
+                            if stop_epoch <= data['curr_epoch']:
+                                return False
+                return True
+
+            return filter(is_valid, self.transforms_cls)
+        else:
+            return self.transforms_cls
+
     def __call__(self, data):
-        for f in self.transforms_cls:
+        transforms_cls = self._update_transforms_cls(data)
+        for f in transforms_cls:
             try:
                 data = f(data)
             except Exception as e:
@@ -73,7 +94,8 @@ class BatchCompose(Compose):
         self.collate_batch = collate_batch
 
     def __call__(self, data):
-        for f in self.transforms_cls:
+        transforms_cls = self._update_transforms_cls(data[0])
+        for f in transforms_cls:
             try:
                 data = f(data)
             except Exception as e:
@@ -84,7 +106,7 @@ class BatchCompose(Compose):
                 raise e
 
         # remove keys which is not needed by model
-        extra_key = ['h', 'w', 'flipped']
+        extra_key = ['h', 'w', 'flipped', 'transform_schedulers']
         for k in extra_key:
             for sample in data:
                 if k in sample:

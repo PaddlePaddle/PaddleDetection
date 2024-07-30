@@ -1,0 +1,51 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/rtdetrv2_r50vd.yml',
+  '_base_/rtdetrv2_reader.yml',
+]
+
+weights: output/rtdetrv2_r34vd_dsp_1x_coco/model_final
+find_unused_parameters: True
+log_iter: 200
+
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/rtdetrv2_r34vd_120e_coco.pdparams
+
+ResNet:
+  depth: 34
+  freeze_at: -1
+  freeze_norm: false
+
+HybridEncoder:
+  expansion: 0.5
+  depth_mult: 1.0
+
+RTDETRTransformerv2:
+  num_decoder_layers: 4
+  cross_attn_sampling_method: discrete
+
+
+epoch: 12
+
+OptimizerBuilder:
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*norm).*$']
+        learning_rate: 0.00005
+      - params: ['^(?=.*backbone)(?=.*norm).*$']
+        learning_rate: 0.00005
+        weight_decay: 0.
+      - params: ['^(?=.*(?:neck|transformer))(?=.*(?:norm|bn|bias)).*$']
+        weight_decay: 0.
+
+
+TrainReader:
+  transform_schedulers:
+    - RandomDistort: {stop_epoch: 10}
+    - RandomExpand: {stop_epoch: 10}
+    - RandomCrop: {stop_epoch: 10}
+    - Resize: {start_epoch: 10}
+    - BatchRandomResize: {stop_epoch: 10}

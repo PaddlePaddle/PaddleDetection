@@ -1,0 +1,40 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/rtdetrv2_r50vd.yml',
+  '_base_/rtdetrv2_reader.yml',
+]
+
+weights: output/rtdetrv2_r50vd_m_7x_coco/model_final
+find_unused_parameters: True
+log_iter: 200
+
+HybridEncoder:
+  expansion: 0.5
+  depth_mult: 1.0
+
+RTDETRTransformerv2:
+  eval_idx: 2 # use 3rd decoder layer to eval
+
+
+epoch: 84
+
+OptimizerBuilder:
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*norm).*$']
+        learning_rate: 0.00001
+      - params: ['^(?=.*(?:neck|transformer))(?=.*(?:norm|bn)).*$']
+        weight_decay: 0.
+
+
+TrainReader:
+  transform_schedulers:
+    - RandomDistort: {stop_epoch: 81}
+    - RandomExpand: {stop_epoch: 81}
+    - RandomCrop: {stop_epoch: 81}
+    - Resize: {start_epoch: 81}
+    - BatchRandomResize: {stop_epoch: 81}

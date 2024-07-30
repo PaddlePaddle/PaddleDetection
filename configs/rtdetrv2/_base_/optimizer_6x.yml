@@ -1,0 +1,24 @@
+epoch: 72
+
+LearningRate:
+  base_lr: 0.0001
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 0.1
+    milestones: [1000]
+    use_warmup: true
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 2000
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*norm).*$']
+        learning_rate: 0.00001
+      - params: ['^(?=.*(?:neck|transformer))(?=.*(?:norm|bn)).*$']
+        weight_decay: 0.
