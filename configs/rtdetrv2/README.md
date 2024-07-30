@@ -27,7 +27,6 @@ RT-DETRv2是基于 Transformer 的实时端到端检测器。它在SOTA的 RT-DE
 
 **注意事项:**
 
-- `*`表示该权重是从对应模型的PyTorch权重转换而来，故而部分模型精度会有轻微下降。
 - RT-DETRv2 基础模型均使用4个GPU训练。
 - RT-DETRv2 在COCO train2017上训练，并在val2017上评估。
 - 基础模型的采样方法默认为`grid_sample`,
