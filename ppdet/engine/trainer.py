@@ -125,7 +125,7 @@ class Trainer(object):
                     m._momentum = 0.97  # 0.03 in pytorch
 
         # reset norm param attr for setting them in optimizer
-        if cfg['reset_norm_param_attr']:
+        if 'reset_norm_param_attr' in cfg and cfg['reset_norm_param_attr']:
             self.model = self.reset_norm_param_attr(
                 self.model, weight_attr=None, bias_attr=None)
 
