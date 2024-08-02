@@ -1,0 +1,39 @@
+_BASE_: [
+  '../datasets/coco_instance.yml',
+  '../runtime.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/mask_rtdetr_r50vd.yml',
+  '_base_/mask_rtdetr_reader.yml',
+]
+
+weights: output/mask_rtdetr_hgnetv2_h_6x_coco/model_final
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/PPHGNetV2_H_ssld_pretrained.pdparams
+find_unused_parameters: True
+log_iter: 200
+save_dir: output/mask_rtdetr_hgnetv2_h_6x_coco
+num_prototypes: 128
+
+DETR:
+  backbone: PPHGNetV2
+
+PPHGNetV2:
+  arch: 'H'
+  return_idx: [0, 1, 2, 3]
+  freeze_stem_only: True
+  freeze_at: 0
+  freeze_norm: True
+  lr_mult_list: [0., 0.01, 0.01, 0.01, 0.01]
+
+MaskHybridEncoder:
+  hidden_dim: 512
+  use_encoder_idx: [3]
+  num_encoder_layers: 2
+  encoder_layer:
+    name: TransformerLayer
+    d_model: 512
+    nhead: 8
+    dim_feedforward: 2048
+    dropout: 0.
+    activation: 'gelu'
+  expansion: 1.0
+  mask_feat_channels: [256, 128]
