@@ -77,6 +77,11 @@ class Trainer(object):
         self.use_master_grad = self.cfg.get('master_grad', False)
         if 'slim' in cfg and cfg['slim_type'] == 'PTQ':
             self.cfg['TestDataset'] = create('TestDataset')()
+        log_ranks = cfg.get('log_ranks', '0')
+        if isinstance(log_ranks, str):
+            self.log_ranks = [int(i) for i in log_ranks.split(',')]
+        elif isinstance(log_ranks, int):
+            self.log_ranks = [log_ranks]
 
         # build data loader
         capital_mode = self.mode.capitalize()
@@ -615,7 +620,7 @@ class Trainer(object):
                 self.optimizer.clear_grad()
                 self.status['learning_rate'] = curr_lr
 
-                if self._nranks < 2 or self._local_rank == 0:
+                if self._nranks < 2 or self._local_rank in self.log_ranks:
                     self.status['training_staus'].update(outputs)
 
                 self.status['batch_time'].update(time.time() - iter_tic)

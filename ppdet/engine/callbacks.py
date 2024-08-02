@@ -41,6 +41,12 @@ __all__ = [
 class Callback(object):
     def __init__(self, model):
         self.model = model
+        log_ranks = self.model.cfg.get("log_ranks", '0')
+        if isinstance(log_ranks, str):
+            self.log_ranks = [int(i) for i in log_ranks.split(',')]
+        elif isinstance(log_ranks, int):
+            self.log_ranks = [log_ranks]
+        self.logger = setup_logger('ppdet.engine.callbacks',log_ranks=self.log_ranks)
 
     def on_step_begin(self, status):
         pass
@@ -99,7 +105,8 @@ class LogPrinter(Callback):
         super(LogPrinter, self).__init__(model)
 
     def on_step_end(self, status):
-        if dist.get_world_size() < 2 or dist.get_rank() == 0:
+        
+        if dist.get_world_size() < 2 or dist.get_rank() in self.log_ranks:
             mode = status['mode']
             if mode == 'train':
                 epoch_id = status['epoch_id']
@@ -122,9 +129,10 @@ class LogPrinter(Callback):
                     ips = float(batch_size) / batch_time.avg
                     max_mem_reserved_str = ""
                     max_mem_allocated_str = ""
-                    if paddle.device.is_compiled_with_cuda():
-                        max_mem_reserved_str = f"max_mem_reserved: {paddle.device.cuda.max_memory_reserved() // (1024 ** 2)} MB"
-                        max_mem_allocated_str = f"max_mem_allocated: {paddle.device.cuda.max_memory_allocated() // (1024 ** 2)} MB"
+                    print_mem_info = self.model.cfg.get("print_mem_info", True)
+                    if paddle.device.is_compiled_with_cuda() and print_mem_info:
+                        max_mem_reserved_str = f", max_mem_reserved: {paddle.device.cuda.max_memory_reserved() // (1024 ** 2)} MB"
+                        max_mem_allocated_str = f", max_mem_allocated: {paddle.device.cuda.max_memory_allocated() // (1024 ** 2)} MB"
                     fmt = ' '.join([
                         'Epoch: [{}]',
                         '[{' + space_fmt + '}/{}]',
@@ -133,8 +141,8 @@ class LogPrinter(Callback):
                         'eta: {eta}',
                         'batch_cost: {btime}',
                         'data_cost: {dtime}',
-                        'ips: {ips:.4f} images/s',
-                        '{max_mem_reserved_str}',
+                        'ips: {ips:.4f} images/s'
+                        '{max_mem_reserved_str}'
                         '{max_mem_allocated_str}'
                     ])
                     fmt = fmt.format(
@@ -149,11 +157,11 @@ class LogPrinter(Callback):
                         ips=ips,
                         max_mem_reserved_str=max_mem_reserved_str,
                         max_mem_allocated_str=max_mem_allocated_str)
-                    logger.info(fmt)
+                    self.logger.info(fmt)
             if mode == 'eval':
                 step_id = status['step_id']
                 if step_id % 100 == 0:
-                    logger.info("Eval iter: {}".format(step_id))
+                    self.logger.info("Eval iter: {}".format(step_id))
 
     def on_epoch_end(self, status):
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
@@ -161,7 +169,7 @@ class LogPrinter(Callback):
             if mode == 'eval':
                 sample_num = status['sample_num']
                 cost_time = status['cost_time']
-                logger.info('Total sample number: {}, average FPS: {}'.format(
+                self.logger.info('Total sample number: {}, average FPS: {}'.format(
                     sample_num, sample_num / cost_time))
 
 
