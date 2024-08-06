@@ -71,6 +71,8 @@ TO_STATIC_SPEC = {
             name='gt_bbox', shape=[-1, 50, 4], dtype='float32'),
         'curr_iter': paddle.static.InputSpec(
             name='curr_iter', shape=[-1], dtype='float32'),
+        'curr_epoch': paddle.static.InputSpec(
+            name='curr_epoch', shape=[-1], dtype='int64'),
         'image': paddle.static.InputSpec(
             name='image', shape=[-1, 3, -1, -1], dtype='float32'),
         'im_shape': paddle.static.InputSpec(
@@ -107,6 +109,8 @@ TO_STATIC_SPEC = {
             name='im_id', shape=[-1, 1], dtype='float32'),
         'curr_iter': paddle.static.InputSpec(
             name='curr_iter', shape=[-1], dtype='float32'),
+        'curr_epoch': paddle.static.InputSpec(
+            name='curr_epoch', shape=[-1], dtype='int64'),
         'image': paddle.static.InputSpec(
             name='image', shape=[-1, 3, -1, -1], dtype='float32'),
         'im_shape': paddle.static.InputSpec(
@@ -155,6 +159,8 @@ TO_STATIC_SPEC = {
             name='gt_bbox', shape=[-1, -1, 4], dtype='float32'),
         'curr_iter': paddle.static.InputSpec(
             name='curr_iter', shape=[-1], dtype='float32'),
+        'curr_epoch': paddle.static.InputSpec(
+            name='curr_epoch', shape=[-1], dtype='int64'),
         'image': paddle.static.InputSpec(
             name='image', shape=[-1, 3, -1, -1], dtype='float32'),
         'im_shape': paddle.static.InputSpec(
@@ -175,6 +181,8 @@ TO_STATIC_SPEC = {
             name='gt_bbox', shape=[-1, -1, 4], dtype='float32'),
         'curr_iter': paddle.static.InputSpec(
             name='curr_iter', shape=[-1], dtype='float32'),
+        'curr_epoch': paddle.static.InputSpec(
+            name='curr_epoch', shape=[-1], dtype='int64'),
         'image': paddle.static.InputSpec(
             name='image', shape=[-1, 3, -1, -1], dtype='float32'),
         'im_shape': paddle.static.InputSpec(
