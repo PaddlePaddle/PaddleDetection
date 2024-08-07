@@ -23,7 +23,7 @@ __all__ = ['setup_logger']
 logger_initialized = []
 
 
-def setup_logger(name="ppdet", output=None):
+def setup_logger(name="ppdet", output=None, log_ranks="0"):
     """
     Initialize logger and set its verbosity level to INFO.
     Args:
@@ -31,6 +31,7 @@ def setup_logger(name="ppdet", output=None):
             If ends with ".txt" or ".log", assumed to be a file name.
             Otherwise, logs will be saved to `output/log.txt`.
         name (str): the root module name of this logger
+        log_ranks (str): The ids of gpu to log which are separated by "," when more than 1, "0" by default.
 
     Returns:
         logging.Logger: a logger
@@ -45,9 +46,15 @@ def setup_logger(name="ppdet", output=None):
     formatter = logging.Formatter(
         "[%(asctime)s] %(name)s %(levelname)s: %(message)s",
         datefmt="%m/%d %H:%M:%S")
+    
+    if isinstance(log_ranks, str):
+        log_ranks = [int(i) for i in log_ranks.split(',')]
+    elif isinstance(log_ranks, int):
+        log_ranks = [log_ranks]
+
     # stdout logging: master only
     local_rank = dist.get_rank()
-    if local_rank == 0:
+    if local_rank in log_ranks:
         ch = logging.StreamHandler(stream=sys.stdout)
         ch.setLevel(logging.DEBUG)
         ch.setFormatter(formatter)
@@ -66,5 +73,6 @@ def setup_logger(name="ppdet", output=None):
         fh.setLevel(logging.DEBUG)
         fh.setFormatter(logging.Formatter())
         logger.addHandler(fh)
+
     logger_initialized.append(name)
     return logger
