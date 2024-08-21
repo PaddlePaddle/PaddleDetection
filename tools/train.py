@@ -27,8 +27,11 @@ sys.path.insert(0, parent_path)
 import warnings
 warnings.filterwarnings('ignore')
 
-import paddle
+import cv2
+cv2.setNumThreads(0)
+cv2.ocl.setUseOpenCL(False)
 
+import paddle
 from ppdet.core.workspace import load_config, merge_config
 
 from ppdet.engine import Trainer, TrainerCot, init_parallel_env, set_random_seed, init_fleet_env
