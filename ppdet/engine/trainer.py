@@ -206,11 +206,12 @@ class Trainer(object):
                     optimizers=self.optimizer,
                     level=self.amp_level)
 
-        # support sync_bn for npu
-        if (paddle.get_device()[:3]=='npu'):
+        # support sync_bn for npu/xpu
+        if (paddle.get_device()[:3]=='npu' or paddle.get_device()[:3]=='xpu'):
             use_npu = ('use_npu' in cfg and cfg['use_npu'])
+            use_xpu = ('use_xpu' in cfg and cfg['use_xpu'])
             norm_type = ('norm_type' in cfg and cfg['norm_type'])
-            if norm_type == 'sync_bn' and use_npu and dist.get_world_size() > 1:
+            if norm_type == 'sync_bn' and (use_npu or use_xpu) and dist.get_world_size() > 1:
                 convert_syncbn(self.model)
 
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])

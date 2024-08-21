@@ -1031,6 +1031,8 @@ def load_predictor(model_dir,
         config.enable_xpu(10 * 1024 * 1024)
     elif device == 'NPU':
         config.enable_custom_device('npu')
+    elif device == 'MLU':
+        config.enable_custom_device('mlu')
     else:
         config.disable_gpu()
         config.set_cpu_math_library_num_threads(cpu_threads)
@@ -1253,8 +1255,8 @@ if __name__ == '__main__':
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
     FLAGS.device = FLAGS.device.upper()
-    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU'
-                            ], "device should be CPU, GPU, XPU or NPU"
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU', 'MLU'
+                            ], "device should be CPU, GPU, XPU, MLU or NPU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
     assert not (
