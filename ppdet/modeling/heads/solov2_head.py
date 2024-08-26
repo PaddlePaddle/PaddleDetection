@@ -507,8 +507,8 @@ class SOLOv2Head(nn.Layer):
         seg_masks = paddle.cast(seg_masks, 'float32')
         sum_masks = paddle.sum(seg_masks, axis=[1, 2])
 
-        y = paddle.zeros(shape=sum_masks.shape, dtype='float32')
-        keep = paddle.where(sum_masks > strides, sum_masks, y)
+        y = paddle.zeros(shape=paddle.shape(sum_masks), dtype='float32')
+        keep = paddle.where(sum_masks > strides.cast(sum_masks.dtype), sum_masks, y)
         keep = paddle.nonzero(keep)
         keep = paddle.squeeze(keep, axis=[1])
         # Prevent empty and increase fake data
