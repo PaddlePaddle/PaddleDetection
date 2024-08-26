@@ -352,7 +352,8 @@ class BBoxHead(nn.Layer):
                                self.num_classes)).flatten()
 
         if fg_inds.numel() == 0:
-            loss_bbox[reg_name] = paddle.zeros([1], dtype='float32')
+            # loss_bbox[reg_name] = paddle.zeros([1], dtype='float32')
+            loss_bbox[reg_name] = scores.mean() * 0. + deltas.mean() * 0.
             return loss_bbox
 
         if cls_agnostic_bbox_reg:
