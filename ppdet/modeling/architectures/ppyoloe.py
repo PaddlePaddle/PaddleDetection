@@ -130,11 +130,9 @@ class PPYOLOE(BaseArch):
                         scale_factor=self.inputs['scale_factor'],
                         infer_shape=self.inputs['image'].shape[2:])
 
-            if not self.with_mask:
-                output = {'bbox': bbox, 'bbox_num': bbox_num}
-            else:
-                output = {'bbox': bbox, 'bbox_num': bbox_num, 'mask': mask}
-
+            output = {'bbox': bbox, 'bbox_num': bbox_num}
+            if self.with_mask:
+                output['mask'] = mask
             return output
 
     def get_loss(self):

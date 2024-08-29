@@ -80,6 +80,7 @@ class TaskAlignedAssigner(nn.Layer):
                 gt_bboxes,
                 pad_gt_mask,
                 bg_index,
+                gt_segms=None,
                 gt_scores=None):
         r"""This code is based on
             https://github.com/fcjian/TOOD/blob/master/mmdet/core/bbox/assigners/task_aligned_assigner.py
@@ -190,4 +191,7 @@ class TaskAlignedAssigner(nn.Layer):
         alignment_metrics = alignment_metrics.max(-2).unsqueeze(-1)
         assigned_scores = assigned_scores * alignment_metrics
 
-        return assigned_labels, assigned_bboxes, assigned_scores
+        if gt_segms is not None:
+            return assigned_labels, assigned_bboxes, assigned_scores, assigned_gt_index
+        else:
+            return assigned_labels, assigned_bboxes, assigned_scores
