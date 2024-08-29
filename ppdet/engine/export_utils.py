@@ -332,6 +332,9 @@ def _dump_infer_config(config, path, image_shape, model):
     if 'mask_head' in config[config['architecture']] and config[config[
             'architecture']]['mask_head']:
         infer_cfg['mask'] = True
+    if 'with_mask' in config[config['architecture']] and config[config[
+            'architecture']]['with_mask']:
+        infer_cfg['mask'] = True
     label_arch = 'detection_arch'
     if infer_arch in KEYPOINT_ARCH:
         label_arch = 'keypoint_arch'
