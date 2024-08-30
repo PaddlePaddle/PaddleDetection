@@ -419,7 +419,7 @@ class CenterNetPostProcess(object):
             y1 = ys - wh[:, 1:2] / 2
             x2 = xs + wh[:, 0:1] / 2
             y2 = ys + wh[:, 1:2] / 2
-        n, c, feat_h, feat_w = hm.shape
+        n, c, feat_h, feat_w = paddle.shape(hm)
         padw = (feat_w * self.down_ratio - im_shape[0, 1]) / 2
         padh = (feat_h * self.down_ratio - im_shape[0, 0]) / 2
         x1 = x1 * self.down_ratio
@@ -440,7 +440,7 @@ class CenterNetPostProcess(object):
         bboxes = paddle.divide(bboxes, scale_expand)
 
         results = paddle.concat([clses, scores, bboxes], axis=1)
-        return results, results.shape[0:1], inds, topk_clses, ys, xs
+        return results, paddle.shape(results)[0:1], inds, topk_clses, ys, xs
 
 
 @register
