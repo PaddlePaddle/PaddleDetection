@@ -31,6 +31,9 @@ try:
 except Exception:
     from collections import Sequence
 
+# CSVファイルに書き出すため追加
+import csv
+
 # add deploy path of PaddleDetection to sys.path
 parent_path = os.path.abspath(os.path.join(__file__, *(['..'] * 2)))
 sys.path.insert(0, parent_path)
@@ -76,6 +79,10 @@ class Pipeline(object):
     """
 
     def __init__(self, args, cfg):
+
+        # 検知時間計測用のトラッキング情報の初期化
+        self.detection_tracking_info = defaultdict(list) 
+
         self.multi_camera = False
         reid_cfg = cfg.get('REID', False)
         self.enable_mtmct = reid_cfg['enable'] if reid_cfg else False
@@ -262,6 +269,10 @@ class PipePredictor(object):
     """
 
     def __init__(self, args, cfg, is_video=True, multi_camera=False):
+
+        # 検知時間計測用のトラッキング情報の初期化
+        self.detection_tracking_info = defaultdict(list)
+
         # general module for pphuman and ppvehicle
         self.with_mot = cfg.get('MOT', False)['enable'] if cfg.get(
             'MOT', False) else False
@@ -660,7 +671,11 @@ class PipePredictor(object):
         height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(capture.get(cv2.CAP_PROP_FPS))
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
-        print("video fps: %d, frame_count: %d" % (fps, frame_count))
+
+        # 検知時間計測用の変数を追加
+        detection_time_calc_fps = fps
+
+        print("video fps: %d, frame_count: %d" % (detection_time_calc_fps, frame_count))
 
         if len(self.pushurl) > 0:
             video_out_name = 'output' if self.file_name is None else self.file_name
@@ -804,9 +819,12 @@ class PipePredictor(object):
                         self.pipe_timer.img_num += 1
                         self.pipe_timer.total_time.end()
                     if self.cfg['visual']:
-                        _, _, fps = self.pipe_timer.get_total_time()
+
+                        # fpsは検知時間計測用のものを使用
+                        # _, _, fps = self.pipe_timer.get_total_time()
+
                         im = self.visualize_video(
-                            frame_rgb, mot_res, self.collector, frame_id, fps,
+                            frame_rgb, mot_res, self.collector, frame_id, detection_time_calc_fps,
                             entrance, records, center_traj)  # visualize
                         if len(self.pushurl) > 0:
                             pushstream.pipe.stdin.write(im.tobytes())
@@ -1073,10 +1091,12 @@ class PipePredictor(object):
             frame_id += 1
 
             if self.cfg['visual']:
-                _, _, fps = self.pipe_timer.get_total_time()
+
+                # fpsは検知時間計測用のものを使用
+                # _, _, fps = self.pipe_timer.get_total_time()
 
                 im = self.visualize_video(frame_rgb, self.pipeline_res,
-                                          self.collector, frame_id, fps,
+                                          self.collector, frame_id, detection_time_calc_fps,
                                           entrance, records, center_traj,
                                           self.illegal_parking_time != -1,
                                           illegal_parking_dict)  # visualize
@@ -1093,6 +1113,65 @@ class PipePredictor(object):
             writer.release()
             print('save result to {}'.format(out_path))
 
+        # 各IDの検知時間を計算し、CSVに出力する処理
+        csv_output_path = os.path.join(self.output_dir, "detection_times.csv")
+        with open(csv_output_path, mode='w', newline='') as csv_file:
+            fieldnames = [
+                'Detection ID',
+                'Detection Time (start time)',
+                'Detection Time (end time)',
+                'Detection Time (seconds)',
+                'Score Min',
+                'Score Max',
+                'Score Average', 
+                'First Frame Center X',
+                'First Frame Center Y',
+                'Last Frame Center X',
+                'Last Frame Center Y'
+                ]
+            writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
+            writer.writeheader()
+            for track_id, frames in self.detection_tracking_info.items():
+                start_frame = frames[0]["frame_id"]
+                end_frame = frames[-1]["frame_id"] 
+                start_time = round(start_frame / detection_time_calc_fps, 2)
+                end_time = round(end_frame / detection_time_calc_fps, 2)
+                detection_time = round(end_time - start_time, 2)
+
+                # 最初のフレームでの中心座標を取得
+                first_center = frames[0]["center"]
+                first_center_x, first_center_y = first_center
+                first_center_x = round(first_center_x, 1)
+                first_center_y = round(first_center_y, 1)
+
+                # 最後のフレームでの中心座標を取得
+                last_center = frames[-1]["center"]
+                last_center_x, last_center_y = last_center
+                last_center_x = round(last_center_x, 1)
+                last_center_y = round(last_center_y, 1)
+
+                # スコアのリストを作成
+                scores = [frame["score"] for frame in frames]
+                score_min = round(min(scores), 2)
+                score_max = round(max(scores),2)
+                score_average = round(sum(scores) / len(scores), 2)
+
+                writer.writerow({
+                    'Detection ID': int(track_id), 
+                    'Detection Time (start time)': start_time,
+                    'Detection Time (end time)': end_time,
+                    'Detection Time (seconds)': detection_time,
+                    'Score Min': score_min,
+                    'Score Max': score_max,
+                    'Score Average': score_average, 
+                    'First Frame Center X': first_center_x,
+                    'First Frame Center Y': first_center_y,
+                    'Last Frame Center X': last_center_x,
+                    'Last Frame Center Y': last_center_y
+                })
+
+        print(f'Detection times saved to {csv_output_path}')
+
     def visualize_video(self,
                         image_rgb,
                         result,
@@ -1106,6 +1185,10 @@ class PipePredictor(object):
                         illegal_parking_dict=None):
         image = cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR)
         mot_res = copy.deepcopy(result.get('mot'))
+        
+        # fpsが0の時はValueErrorとなるように変更
+        if fps == 0:
+            raise ValueError("Error: fps is zero. Cannot calculate detection time.")
 
         if mot_res is not None:
             ids = mot_res['boxes'][:, 0]
@@ -1144,6 +1227,21 @@ class PipePredictor(object):
                 entrance=entrance,
                 records=records,
                 center_traj=center_traj)
+            
+            # トラッキング情報の更新
+            for track_id, box, score in zip(ids, boxes, scores):
+                xmin, ymin = box[0], box[1]
+                width, height = box[2], box[3]
+
+                # 中心座標の計算
+                center_x = xmin + width / 2
+                center_y = ymin + height / 2
+
+                self.detection_tracking_info[track_id].append({
+                    "frame_id": frame_id,
+                    "center": [center_x, center_y] ,
+                    "score": score
+                })
 
         human_attr_res = result.get('attr')
         if human_attr_res is not None:
@@ -1187,6 +1285,21 @@ class PipePredictor(object):
                 boxes = mot_res['boxes'][:, 1:]
                 image = visualize_vehicleplate(image, plates, boxes)
                 image = np.array(image)
+        
+            # トラッキング情報の更新
+            for track_id, box, score in zip(ids, boxes, scores):
+                xmin, ymin = box[0], box[1]
+                width, height = box[2], box[3]
+
+                # 中心座標の計算
+                center_x = xmin + width / 2
+                center_y = ymin + height / 2
+
+                self.detection_tracking_info[track_id].append({
+                    "frame_id": frame_id,
+                    "center": [center_x, center_y] ,
+                    "score": score
+                })
 
         kpt_res = result.get('kpt')
         if kpt_res is not None:
