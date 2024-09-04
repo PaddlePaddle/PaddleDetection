@@ -972,6 +972,7 @@ class MaskMatrixNMS(object):
         # inter.
         inter_matrix = paddle.mm(seg_masks, paddle.transpose(seg_masks, [1, 0]))
         n_samples = cate_labels.shape
+        n_samples = paddle.to_tensor(n_samples, dtype="int32")
         # union.
         sum_masks_x = paddle.expand(sum_masks, shape=[n_samples, n_samples])
         # iou.
