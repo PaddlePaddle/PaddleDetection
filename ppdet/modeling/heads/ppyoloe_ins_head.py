@@ -160,6 +160,7 @@ class PPYOLOEInsHead(nn.Layer):
                  for_distill=False):
         super(PPYOLOEInsHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
+
         self.mask_thr_binary = mask_thr_binary
         self.num_masks = num_masks
         self.num_protos = int(num_protos * width_mult)
