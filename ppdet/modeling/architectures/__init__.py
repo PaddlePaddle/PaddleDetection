@@ -45,6 +45,7 @@ from . import queryinst
 from . import detr_ssod
 from . import multi_stream_detector
 from . import clrnet
+from . import co_detr
 
 from .meta_arch import *
 from .faster_rcnn import *
@@ -68,6 +69,7 @@ from .blazeface import *
 from .gfl import *
 from .picodet import *
 from .detr import *
+from .co_detr import *
 from .sparse_rcnn import *
 from .tood import *
 from .retinanet import *
