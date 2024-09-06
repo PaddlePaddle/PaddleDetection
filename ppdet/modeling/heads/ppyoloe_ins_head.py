@@ -124,13 +124,11 @@ def process_mask_upsample(protos, masks_in, bboxes, shape):
 class PPYOLOEInsHead(nn.Layer):
     __shared__ = [
         'num_classes', 'eval_size', 'trt', 'exclude_nms',
-        'exclude_post_process', 'use_shared_conv', 'for_distill', 'with_mask',
-        'width_mult'
+        'exclude_post_process', 'use_shared_conv', 'for_distill', 'width_mult'
     ]
     __inject__ = ['static_assigner', 'assigner', 'nms']
 
     def __init__(self,
-                 with_mask=True,
                  in_channels=[1024, 512, 256],
                  num_classes=80,
                  act='swish',
@@ -162,7 +160,7 @@ class PPYOLOEInsHead(nn.Layer):
                  for_distill=False):
         super(PPYOLOEInsHead, self).__init__()
         assert len(in_channels) > 0, "len(in_channels) should > 0"
-        self.with_mask = with_mask
+
         self.mask_thr_binary = mask_thr_binary
         self.num_masks = num_masks
         self.num_protos = int(num_protos * width_mult)
@@ -704,7 +702,7 @@ class PPYOLOEInsHead(nn.Layer):
 
         bbox_pred, bbox_num, keep_idxs = self.nms(pred_bboxes, pred_scores)
 
-        if self.with_mask and bbox_num.sum() > 0:
+        if bbox_num.sum() > 0:
             pred_mask_coeffs = pred_mask_coeffs.transpose([0, 2, 1])
             mask_coeffs = paddle.gather(
                 pred_mask_coeffs.reshape([-1, self.num_masks]), keep_idxs)
@@ -742,7 +740,4 @@ class PPYOLOEInsHead(nn.Layer):
             bbox_pred = paddle.zeros([bbox_num, 6])
             mask_pred = paddle.zeros([bbox_num, int(ori_h), int(ori_w)])
 
-        if self.with_mask:
-            return bbox_pred, bbox_num, mask_pred
-        else:
-            return bbox_pred, bbox_num
+        return bbox_pred, bbox_num, mask_pred, keep_idxs

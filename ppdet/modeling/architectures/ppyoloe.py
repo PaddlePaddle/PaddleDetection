@@ -118,13 +118,10 @@ class PPYOLOE(BaseArch):
 
             else:
                 if not self.with_mask:
-                    bbox, bbox_num = self.yolo_head.post_process(
-                        yolo_head_outs,
-                        im_shape=self.inputs['im_shape'],
-                        scale_factor=self.inputs['scale_factor'],
-                        infer_shape=self.inputs['image'].shape[2:])
+                    bbox, bbox_num, nms_keep_idx = self.yolo_head.post_process(
+                        yolo_head_outs, self.inputs['scale_factor'])
                 else:
-                    bbox, bbox_num, mask = self.yolo_head.post_process(
+                    bbox, bbox_num, mask, nms_keep_idx = self.yolo_head.post_process(
                         yolo_head_outs,
                         im_shape=self.inputs['im_shape'],
                         scale_factor=self.inputs['scale_factor'],
@@ -134,6 +131,9 @@ class PPYOLOE(BaseArch):
                 output = {'bbox': bbox, 'bbox_num': bbox_num}
             else:
                 output = {'bbox': bbox, 'bbox_num': bbox_num, 'mask': mask}
+
+            if self.with_mask:
+                output['mask'] = mask
 
             return output
 

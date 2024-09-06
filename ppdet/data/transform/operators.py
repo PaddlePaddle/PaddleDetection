@@ -36,6 +36,7 @@ import copy
 import logging
 import cv2
 from PIL import Image, ImageDraw, ImageEnhance
+from pycocotools import mask
 import pickle
 import threading
 MUTEX = threading.Lock()
@@ -1545,7 +1546,7 @@ class RandomCrop(BaseOperator):
 
         crop_segms = []
         for id in valid_ids:
-            segm = segms[id]
+            segm = self.polygon_to_rle(segms[id], height, width)
             if is_poly(segm):
                 import copy
                 import shapely.ops
@@ -1556,8 +1557,38 @@ class RandomCrop(BaseOperator):
             else:
                 # RLE format
                 import pycocotools.mask as mask_util
-                crop_segms.append(_crop_rle(segm, crop, height, width))
+                res = _crop_rle(segm, crop, height, width)
+                crop_segms.append(self.rle_to_polygon(res))
         return crop_segms
+
+    def polygon_to_rle(self, polygons, height, width):
+        # Create an empty mask
+        mask_img = np.zeros((height, width), dtype=np.uint8)
+
+        # Fill the polygon in the mask
+        for polygon in polygons:
+            contour = np.array(polygon).reshape((-1, 1, 2)).astype(int)
+            cv2.drawContours(mask_img, [contour], 0, 255, -1)
+
+        # Convert binary mask to RLE
+        rle = mask.encode(np.asfortranarray(mask_img))
+        return rle
+
+    def rle_to_polygon(self, rle_mask, min_area=5):
+        binary_mask = mask.decode(rle_mask).squeeze()
+        # Find contours in the binary mask
+        contours, _ = cv2.findContours(
+            binary_mask.astype(np.uint8), cv2.RETR_EXTERNAL,
+            cv2.CHAIN_APPROX_SIMPLE)
+        polygons = []
+        for contour in contours:
+            # Convert contour to polygon and filter small areas
+            if cv2.contourArea(contour) >= min_area:
+                # Flatten list and add to polygons
+                polygon = contour.flatten().tolist()
+                if len(polygon) > 4:
+                    polygons.append(polygon)
+        return polygons
 
     def set_fake_bboxes(self, sample):
         sample['gt_bbox'] = np.array(
