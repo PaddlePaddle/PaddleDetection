@@ -18,6 +18,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import os
+import json
 import numpy as np
 import paddle
 import paddle.nn as nn
@@ -26,6 +27,13 @@ from .download import get_weights_path
 from .logger import setup_logger
 logger = setup_logger(__name__)
 
+def convert_to_dict(obj):
+    if isinstance(obj, dict):
+        return {k: convert_to_dict(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_to_dict(i) for i in obj]
+    else:
+        return obj
 
 def is_url(path):
     """
@@ -375,3 +383,69 @@ def save_semi_model(teacher_model, student_model, optimizer, save_dir,
     state_dict['last_iter'] = last_iter
     paddle.save(state_dict, save_path + str(last_epoch) + "epoch.pdopt")
     logger.info("Save checkpoint: {}".format(save_dir))
+
+def save_model_info(model_info, save_path, prefix):
+    """
+    save model info to the target path
+    """
+    save_path = os.path.join(save_path, prefix)
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    with open(os.path.join(save_path, f'{prefix}.info.json'), 'w') as f:
+        json.dump(model_info, f)
+    logger.info("Already save model info in {}".format(save_path))
+
+def update_train_results(config,
+                         prefix,
+                         metric_info,
+                         done_flag=False,
+                         last_num=5,
+                         ema=False):
+    if paddle.distributed.get_rank() != 0:
+        return
+    assert last_num >= 1
+    train_results_path = os.path.join(config["save_dir"],
+                                      "train_results.json")
+    save_model_tag = ["pdparams", "pdopt", "pdstates"]
+    save_inference_tag = [
+        "inference_config", "pdmodel", "pdiparams", "pdiparams.info"
+    ]
+    if ema:
+        save_model_tag.append("pdema")
+    if os.path.exists(train_results_path):
+        with open(train_results_path, "r") as fp:
+            train_results = json.load(fp)
+    else:
+        train_results = {}
+        train_results["model_name"] = config["pdx_model_name"]
+        train_results["label_dict"] = ""
+        train_results["visualdl_log"] = ""
+        train_results["train_log"] = "train.log"
+        train_results["config"] = "config.yaml"
+        train_results["models"] = {}
+        for i in range(1, last_num + 1):
+            train_results["models"][f"last_{i}"] = {}
+        train_results["models"]["best"] = {}
+    train_results["done_flag"] = done_flag
+    if prefix == "best_model":
+        train_results["models"]["best"]["score"] = metric_info["metric"]
+        for tag in save_model_tag:
+            train_results["models"]["best"][tag] = os.path.join(
+                prefix, f"{prefix}.{tag}")
+        for tag in save_inference_tag:
+            train_results["models"]["best"][tag] = os.path.join(
+                prefix, "inference", f"inference.{tag}" if tag != "inference_config" else "inference.yml")
+    else:
+        for i in range(last_num - 1, 0, -1):
+            train_results["models"][f"last_{i + 1}"] = train_results["models"][
+                f"last_{i}"].copy()
+        train_results["models"][f"last_{1}"]["score"] = metric_info["metric"]
+        for tag in save_model_tag:
+            train_results["models"][f"last_{1}"][tag] = os.path.join(
+                prefix, f"{prefix}.{tag}")
+        for tag in save_inference_tag:
+            train_results["models"][f"last_{1}"][tag] = os.path.join(
+                prefix, "inference", f"inference.{tag}" if tag != "inference_config" else "inference.yml")
+
+    with open(train_results_path, "w") as fp:
+        json.dump(train_results, fp)

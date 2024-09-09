@@ -26,7 +26,7 @@ import json
 import paddle
 import paddle.distributed as dist
 
-from ppdet.utils.checkpoint import save_model, save_semi_model
+from ppdet.utils.checkpoint import save_model, save_semi_model, save_model_info, update_train_results
 from ppdet.metrics import get_infer_results
 
 from ppdet.utils.logger import setup_logger
@@ -178,11 +178,12 @@ class Checkpointer(Callback):
         super(Checkpointer, self).__init__(model)
         self.best_ap = -1000.
         self.save_dir = self.model.cfg.save_dir
+        self.uniform_output_enabled = self.model.cfg.get("uniform_output_enabled", False)
         if hasattr(self.model.model, 'student_model'):
             self.weight = self.model.model.student_model
         else:
             self.weight = self.model.model
-
+        
     def on_epoch_end(self, status):
         # Checkpointer only performed during training
         mode = status['mode']
@@ -226,8 +227,11 @@ class Checkpointer(Callback):
                         'metric': abs(epoch_ap),
                         'epoch': epoch_id + 1
                     }
-                    save_path = os.path.join(self.save_dir, f"{save_name}.pdstates")
+                    save_path = os.path.join(os.path.join(self.save_dir, save_name) if self.uniform_output_enabled else self.save_dir, f"{save_name}.pdstates")
                     paddle.save(epoch_metric, save_path)
+                    if self.uniform_output_enabled:
+                        save_model_info(epoch_metric, self.save_dir, save_name)
+                        update_train_results(self.model.cfg, save_name, epoch_metric, done_flag=epoch_id + 1 == self.model.cfg.epoch, ema=self.model.use_ema)
                     if 'save_best_model' in status and status['save_best_model']:
                         if epoch_ap >= self.best_ap:
                             self.best_ap = epoch_ap
@@ -237,8 +241,11 @@ class Checkpointer(Callback):
                                 'metric': abs(self.best_ap),
                                 'epoch': epoch_id + 1
                             }
-                            save_path = os.path.join(self.save_dir, "best_model.pdstates")
+                            save_path = os.path.join(os.path.join(self.save_dir, save_name) if self.uniform_output_enabled else self.save_dir, "best_model.pdstates")
                             paddle.save(best_metric, save_path)
+                            if self.uniform_output_enabled:
+                                save_model_info(best_metric, self.save_dir, save_name)
+                                update_train_results(self.model.cfg, save_name, best_metric, done_flag=epoch_id + 1 == self.model.cfg.epoch, ema=self.model.use_ema)
                         logger.info("Best test {} {} is {:0.3f}.".format(
                             key, eval_func, abs(self.best_ap)))
             if weight:
@@ -250,10 +257,12 @@ class Checkpointer(Callback):
                         save_model(
                             status['weight'],
                             self.model.optimizer,
-                            self.save_dir,
+                            os.path.join(self.save_dir, save_name) if self.uniform_output_enabled else self.save_dir,
                             save_name,
                             epoch_id + 1,
                             ema_model=weight)
+                        if self.uniform_output_enabled:
+                            self.model.export(output_dir=os.path.join(self.save_dir, save_name, "inference"), for_fd=True)
                     else:
                         # save model(student model) and ema_model(teacher model)
                         # in DenseTeacher SSOD, the teacher model will be higher,
@@ -270,8 +279,10 @@ class Checkpointer(Callback):
                         del teacher_model
                         del student_model
                 else:
-                    save_model(weight, self.model.optimizer, self.save_dir,
+                    save_model(weight, self.model.optimizer, os.path.join(self.save_dir, save_name) if self.uniform_output_enabled else self.save_dir,
                                save_name, epoch_id + 1)
+                    if self.uniform_output_enabled:
+                        self.model.export(output_dir=os.path.join(self.save_dir, save_name, "inference"), for_fd=True)
 
 
 class WiferFaceEval(Callback):
