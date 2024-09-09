@@ -22,6 +22,7 @@ from collections import OrderedDict
 
 import paddle
 from ppdet.data.source.category import get_categories
+from ppdet.core.workspace import load_config
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('ppdet.engine')
@@ -286,6 +287,22 @@ def _dump_infer_config(config, path, image_shape, model):
         'metric': config['metric'],
         'use_dynamic_shape': use_dynamic_shape
     })
+    hpi_config_path = config.get("hpi_config_path", None)
+    if hpi_config_path:
+        hpi_config = load_config(hpi_config_path)
+        dynamic_shapes = image_shape[-1]
+        if hpi_config["Hpi"]["backend_config"].get("paddle_tensorrt", None):
+            hpi_config["Hpi"]["backend_config"]["paddle_tensorrt"][
+                "dynamic_shapes"]["image"] = [[1, 3, dynamic_shapes, dynamic_shapes] for i in range(3)]
+            hpi_config["Hpi"]["backend_config"]["paddle_tensorrt"]["max_batch_size"] = 1
+        if hpi_config["Hpi"]["backend_config"].get("tensorrt", None):
+            hpi_config["Hpi"]["backend_config"]["tensorrt"]["dynamic_shapes"][
+                "image"] = [[1, 3, dynamic_shapes, dynamic_shapes] for i in range(3)]
+            hpi_config["Hpi"]["backend_config"]["tensorrt"]["max_batch_size"] = 1
+        infer_cfg["Hpi"] = hpi_config["Hpi"]
+    if config.get('pdx_model_name', None):
+        infer_cfg["Global"] = {}
+        infer_cfg["Global"]["model_name"] = config["pdx_model_name"]
     export_onnx = config.get('export_onnx', False)
     export_eb = config.get('export_eb', False)
 

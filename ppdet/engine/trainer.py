@@ -20,6 +20,7 @@ import os
 import sys
 import copy
 import time
+import yaml
 from tqdm import tqdm
 
 import numpy as np
@@ -36,7 +37,7 @@ from paddle.static import InputSpec
 from ppdet.optimizer import ModelEMA
 
 from ppdet.core.workspace import create
-from ppdet.utils.checkpoint import load_weight, load_pretrain_weight
+from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, convert_to_dict
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
 from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
@@ -75,13 +76,27 @@ class Trainer(object):
         self.custom_white_list = self.cfg.get('custom_white_list', None)
         self.custom_black_list = self.cfg.get('custom_black_list', None)
         self.use_master_grad = self.cfg.get('master_grad', False)
-        if 'slim' in cfg and cfg['slim_type'] == 'PTQ':
+        self.uniform_output_enabled = self.cfg.get('uniform_output_enabled', False)
+        if ('slim' in cfg and cfg['slim_type'] == 'PTQ') or self.uniform_output_enabled:
             self.cfg['TestDataset'] = create('TestDataset')()
         log_ranks = cfg.get('log_ranks', '0')
         if isinstance(log_ranks, str):
             self.log_ranks = [int(i) for i in log_ranks.split(',')]
         elif isinstance(log_ranks, int):
             self.log_ranks = [log_ranks]
+        train_results_path = os.path.abspath(os.path.join(self.cfg.save_dir, "train_results.json"))
+        if self.uniform_output_enabled:
+            if os.path.exists(train_results_path) and self.mode == 'train':
+                try:
+                    os.remove(train_results_path)
+                except:
+                    pass
+            if not os.path.exists(self.cfg.save_dir):
+                os.mkdir(self.cfg.save_dir)
+            with open(os.path.join(self.cfg.save_dir, "config.yaml"), "w") as f:
+                config_dict = convert_to_dict(self.cfg)
+                config_dict = {k: v for k, v in config_dict.items() if v != {}}
+                yaml.dump(config_dict, f)
 
         # build data loader
         capital_mode = self.mode.capitalize()
@@ -1136,9 +1151,12 @@ class Trainer(object):
                                       save_dir,
                                       prune_input=True,
                                       kl_quant=False,
-                                      yaml_name=None):
+                                      yaml_name=None,
+                                      model=None):
         if yaml_name is None:
             yaml_name = 'infer_cfg.yml'
+        if model is None:
+            model = self.model
         image_shape = None
         im_shape = [None, 2]
         scale_factor = [None, 2]
@@ -1159,17 +1177,16 @@ class Trainer(object):
             im_shape = [image_shape[0], 2]
             scale_factor = [image_shape[0], 2]
 
-        if hasattr(self.model, 'deploy'):
-            self.model.deploy = True
-
+        if hasattr(model, 'deploy'):
+            model.deploy = True
         if 'slim' not in self.cfg:
-            for layer in self.model.sublayers():
+            for layer in model.sublayers():
                 if hasattr(layer, 'convert_to_deploy'):
                     layer.convert_to_deploy()
 
         if hasattr(self.cfg, 'export') and 'fuse_conv_bn' in self.cfg[
                 'export'] and self.cfg['export']['fuse_conv_bn']:
-            self.model = fuse_conv_bn(self.model)
+            model = fuse_conv_bn(model)
 
         export_post_process = self.cfg['export'].get(
             'post_process', False) if hasattr(self.cfg, 'export') else True
@@ -1177,20 +1194,20 @@ class Trainer(object):
             self.cfg, 'export') else True
         export_benchmark = self.cfg['export'].get(
             'benchmark', False) if hasattr(self.cfg, 'export') else False
-        if hasattr(self.model, 'fuse_norm'):
-            self.model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
+        if hasattr(model, 'fuse_norm'):
+            model.fuse_norm = self.cfg['TestReader'].get('fuse_normalize',
                                                               False)
-        if hasattr(self.model, 'export_post_process'):
-            self.model.export_post_process = export_post_process if not export_benchmark else False
-        if hasattr(self.model, 'export_nms'):
-            self.model.export_nms = export_nms if not export_benchmark else False
+        if hasattr(model, 'export_post_process'):
+            model.export_post_process = export_post_process if not export_benchmark else False
+        if hasattr(model, 'export_nms'):
+            model.export_nms = export_nms if not export_benchmark else False
         if export_post_process and not export_benchmark:
             image_shape = [None] + image_shape[1:]
 
         # Save infer cfg
         _dump_infer_config(self.cfg,
                            os.path.join(save_dir, yaml_name), image_shape,
-                           self.model)
+                           model)
 
         input_spec = [{
             "image": InputSpec(
@@ -1213,7 +1230,7 @@ class Trainer(object):
             })
         if prune_input:
             static_model = paddle.jit.to_static(
-                self.model, input_spec=input_spec, full_graph=True)
+                model, input_spec=input_spec, full_graph=True)
             # NOTE: dy2st do not pruned program, but jit.save will prune program
             # input spec, prune input spec here and save with pruned input spec
             pruned_input_spec = _prune_input_spec(
@@ -1251,6 +1268,7 @@ class Trainer(object):
         if hasattr(self.model, 'aux_head'):
             self.model.__delattr__('aux_head')
         self.model.eval()
+        model = copy.deepcopy(self.model)
 
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
         if for_fd:
@@ -1266,7 +1284,7 @@ class Trainer(object):
             os.makedirs(save_dir)
 
         static_model, pruned_input_spec = self._get_infer_cfg_and_input_spec(
-            save_dir, yaml_name=yaml_name)
+            save_dir, yaml_name=yaml_name, model=model)
 
         # dy2st and save model
         if 'slim' not in self.cfg or 'QAT' not in self.cfg['slim_type']:
