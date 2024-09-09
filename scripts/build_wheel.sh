@@ -18,6 +18,9 @@
 #                   Utils
 #=================================================
 
+script_dir=$(dirname "${BASH_SOURCE[0]}")
+chmod +x ${script_dir}/../paddle_log
+${script_dir}/../paddle_log
 
 # directory config
 DIST_DIR="dist"

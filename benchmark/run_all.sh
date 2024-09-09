@@ -6,6 +6,10 @@
 #   bash benchmark/run_all.sh
 log_path=${LOG_PATH_INDEX_DIR:-$(pwd)}  #  benchmark系统指定该参数,不需要跑profile时,log_path指向存speed的目录
 
+script_dir=$(dirname "${BASH_SOURCE[0]}")
+chmod +x ${script_dir}/../paddle_log
+${script_dir}/../paddle_log
+
 # run prepare.sh
 bash benchmark/prepare.sh
 

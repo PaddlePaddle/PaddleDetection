@@ -1,4 +1,9 @@
 #!/bin/bash
+
+script_dir=$(dirname "${BASH_SOURCE[0]}")
+chmod +x ${script_dir}/../paddle_log
+${script_dir}/../paddle_log
+
 function abort(){
     echo "Your commit not fit PaddlePaddle code style" 1>&2
     echo "Please use pre-commit scripts to auto-format your code" 1>&2

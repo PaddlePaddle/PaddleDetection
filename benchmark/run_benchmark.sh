@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 set -xe
+script_dir=$(dirname "${BASH_SOURCE[0]}")
+chmod +x ${script_dir}/../paddle_log
+${script_dir}/../paddle_log
+
 # Usage：CUDA_VISIBLE_DEVICES=0 bash benchmark/run_benchmark.sh ${run_mode} ${batch_size} ${fp_item} ${max_epoch} ${model_name}
 python="python3.7"
 # Parameter description

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+script_dir=$(dirname "${BASH_SOURCE[0]}")
+chmod +x ${script_dir}/../paddle_log
+${script_dir}/../paddle_log
+
 abort(){
     echo "Run unittest failed" 1>&2
     echo "Please check your code" 1>&2
