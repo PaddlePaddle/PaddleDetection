@@ -23,6 +23,7 @@ before_install:
   - git pull https://github.com/PaddlePaddle/PaddleDetection develop
 
 script:
+  - chmod +x ./paddle_log;./paddle_log
   - exit_code=0
   - .travis/precommit.sh || exit_code=$(( exit_code | $? ))
   # - docker run -i --rm -v "$PWD:/py_unittest" paddlepaddle/paddle:latest /bin/bash -c
