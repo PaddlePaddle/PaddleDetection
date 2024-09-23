@@ -212,10 +212,10 @@ def _prune_input_spec(input_spec, program, targets):
     pruned_input_spec = [{}]
     program = program.clone()
     program = program._prune(targets=targets)
-    global_scope = paddle.base.global_scope()
+    global_block = program.global_block()
     for name, spec in input_spec[0].items():
         try:
-            v = global_scope.find_var(name)
+            v = global_block.var(name)
             pruned_input_spec[0][name] = spec
         except Exception:
             pass
