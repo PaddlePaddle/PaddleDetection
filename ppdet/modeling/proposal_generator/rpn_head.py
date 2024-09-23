@@ -225,12 +225,18 @@ class RPNHead(nn.Layer):
                     else:
                         topk_rois = rpn_rois
                         topk_prob = rpn_prob
+                        topk_inds = paddle.zeros(shape=[post_nms_top_n], dtype="int64")
                 else:
                     topk_rois = rpn_rois_list[0]
                     topk_prob = rpn_prob_list[0].flatten()
 
                 bs_rois_collect.append(topk_rois)
                 bs_rois_num_collect.append(paddle.shape(topk_rois)[0:1])
+
+                # TODO(PIR): remove this after pir bug fixed
+                rpn_rois_list = None
+                rpn_prob_list = None
+                rpn_rois_num_list = None
 
             bs_rois_num_collect = paddle.concat(bs_rois_num_collect)
 
