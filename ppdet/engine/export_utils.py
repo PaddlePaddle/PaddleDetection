@@ -212,13 +212,22 @@ def _prune_input_spec(input_spec, program, targets):
     pruned_input_spec = [{}]
     program = program.clone()
     program = program._prune(targets=targets)
-    global_scope = paddle.base.global_scope()
+    global_block = program.global_block()
     for name, spec in input_spec[0].items():
-        try:
-            v = global_scope.find_var(name)
-            pruned_input_spec[0][name] = spec
-        except Exception:
-            pass
+       for name, spec in input_spec[0].items():
+        if paddle.framework.use_pir_api():
+            for op in global_block.ops:
+                if (
+                    op.name() == 'pd_op.data'
+                    and op.attrs()["name"] == name
+                ):
+                    pruned_input_spec[0][name] = spec
+        else:
+            try:
+                v = global_block.var(name)
+                pruned_input_spec[0][name] = spec
+            except Exception:
+                pass
     paddle.disable_static(place=device)
     return pruned_input_spec
 
