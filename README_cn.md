@@ -18,6 +18,8 @@
 - [💌目录](#目录)
 - [🌈简介](#简介)
 - [📣最新进展](#最新进展)
+- [⚡️快速开始](#️快速开始)
+- [🔥一站式全流程开发](#一站式全流程开发)
 - [👫开源社区](#开源社区)
 - [✨主要特性](#主要特性)
     - [🧩模块化设计](#模块化设计)
@@ -65,17 +67,15 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
 
 同时，PaddleDetection提供了模型的在线体验功能，用户可以选择自己的数据进行在线推理。
 
-`说明`：考虑到服务器负载压力，在线推理均为CPU推理，完整的模型开发实例以及产业部署实践代码示例请前往[🎗️产业特色模型|产业工具](#️产业特色模型产业工具-1)。
-
-`传送门`：[模型在线体验](https://www.paddlepaddle.org.cn/models)
-
-<div align="center">
-<p align="center">
-  <img src="https://user-images.githubusercontent.com/61035602/206896755-bd0cd498-1149-4e94-ae30-da590ea78a7a.gif" align="middle"/>
-</p>
-</div>
 
 ## 📣最新进展
+
+- **🔥2024.10.1 发布PaddleDetection 2.8**:  
+  *  飞桨一站式全流程开发工具PaddleX，依托于PaddleDetection的先进技术，支持了目标检测领域的**一站式全流程**开发能力：
+     * 🎨 [**模型丰富一键调用**](docs/paddlex/quick_start.md)：将通用目标检测、小目标检测和实例分割涉及的**55个模型**整合为3条模型产线，通过极简的**Python API一键调用**，快速体验模型效果。此外，同一套API，也支持图像分类、图像分割、文本图像智能分析、通用OCR、时序预测等共计**200+模型**，形成20+单功能模块，方便开发者进行**模型组合使用**。
+     * 🚀 [**提高效率降低门槛**](docs/paddlex/overview.md)：提供基于**统一命令**和**图形界面**两种方式，实现模型简洁高效的使用、组合与定制。支持**高性能部署、服务化部署和端侧部署**等多种部署方式。此外，对于各种主流硬件如**英伟达GPU、昆仑芯、昇腾、寒武纪和海光**等，进行模型开发时，都可以**无缝切换**。
+     
+  *  添加实例分割SOTA模型[**Mask-RT-DETR**](https://github.com/PaddlePaddle/PaddleX/blob/release/3.0-beta1/docs/module_usage/tutorials/cv_modules/instance_segmentation.md)
 
 **🔥超越YOLOv8，飞桨推出精度最高的实时检测器RT-DETR！**
 
@@ -88,84 +88,19 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
     -  [《超越YOLOv8，飞桨推出精度最高的实时检测器RT-DETR！》](https://mp.weixin.qq.com/s/o03QM2rZNjHVto36gcV0Yw)
   - `代码传送门`：[RT-DETR](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/rtdetr)
 
+
+## [⚡️快速开始](/docs/paddlex/quick_start.md)
+
+## [🔥一站式全流程开发](/docs/paddlex/overview.md)
+
+
 ## 👫开源社区
 
-- **📑项目合作：** 如果您是企业开发者且有明确的目标检测垂类应用需求，请扫描如下二维码入群，并联系`群管理员AI`后可免费与官方团队展开不同层次的合作。
+
 - **🏅️社区贡献：** PaddleDetection非常欢迎你加入到飞桨社区的开源建设中，参与贡献方式可以参考[开源项目开发指南](docs/contribution/README.md)。
-- **💻直播教程：** PaddleDetection会定期在飞桨直播间([B站:飞桨PaddlePaddle](https://space.bilibili.com/476867757)、[微信: 飞桨PaddlePaddle](https://mp.weixin.qq.com/s/6ji89VKqoXDY6SSGkxS8NQ))，针对发新内容、以及产业范例、使用教程等进行直播分享。
-- **🎁加入社区：** **微信扫描二维码并填写问卷之后，可以及时获取如下信息，包括：**
-  - 社区最新文章、直播课等活动预告
-  - 往期直播录播&PPT
-  - 30+行人车辆等垂类高性能预训练模型
-  - 七大任务开源数据集下载链接汇总
-  - 40+前沿检测领域顶会算法
-  - 15+从零上手目标检测理论与实践视频课程
-  - 10+工业安防交通全流程项目实操（含源码）
+- [**🎈社区近期活动**](community.md)
 
-<div align="center">
-<img src="https://github.com/PaddlePaddle/PaddleDetection/assets/22989727/0466954b-ab4d-4984-bd36-796c37f0ee9c"  width = "150" height = "150",caption='' />
-<p>PaddleDetection官方交流群二维码</p>
-</div>
 
-- **🎈社区近期活动**
-  - **🔥PaddleDetection v2.6版本更新解读**
-
-    <div align="center">
-    <img src="https://user-images.githubusercontent.com/61035602/224244188-da8495fc-eea9-432f-bc2d-6f0144c2dde9.png"  height = "250" caption='' />
-    <p></p>
-    </div>
-
-    - `v2.6版本版本更新解读文章传送门`：[《PaddleDetection v2.6发布：目标小？数据缺？标注累？泛化差？PP新员逐一应对！》](https://mp.weixin.qq.com/s/SLITj5k120d_fQc7jEO8Vw)
-
-  - **🏆半监督检测**
-
-    - `文章传送门`：[CVPR 2023 | 单阶段半监督目标检测SOTA：ARSL](https://mp.weixin.qq.com/s/UZLIGL6va2KBfofC-nKG4g)
-    - `代码传送门`：[ARSL](https://github.com/PaddlePaddle/PaddleDetection/tree/develop/configs/semi_det)
-
-    <div align="center">
-    <img src="https://user-images.githubusercontent.com/61035602/230522850-21873665-ba79-4f8d-8dce-43d736111df8.png"  height = "250" caption='' />
-    <p></p>
-    </div>
-
-  - **👀YOLO系列专题**
-
-    - `文章传送门`：[YOLOv8来啦！YOLO内卷期模型怎么选？9+款AI硬件如何快速部署？深度解析](https://mp.weixin.qq.com/s/rPwprZeHEpmGOe5wxrmO5g)
-    - `代码传送门`：[PaddleYOLO全系列](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.5/docs/feature_models/PaddleYOLO_MODEL.md)
-
-    <div align="center">
-    <img src="https://user-images.githubusercontent.com/61035602/213202797-3a1b24f3-53c0-4094-bb31-db2f84438fbc.jpeg"  height = "250" caption='' />
-    <p></p>
-    </div>
-
-  - **🎯少目标迁移学习专题**
-    - `文章传送门`：[囿于数据少？泛化性差？PaddleDetection少样本迁移学习助你一键突围！](https://mp.weixin.qq.com/s/dFEQoxSzVCOaWVZPb3N7WA)
-
-  - **⚽️2022卡塔尔世界杯专题**
-    - `文章传送门`：[世界杯决赛号角吹响！趁周末来搭一套足球3D+AI量化分析系统吧！](https://mp.weixin.qq.com/s/koJxjWDPBOlqgI-98UsfKQ)
-
-    <div align="center">
-    <img src="https://user-images.githubusercontent.com/61035602/208036574-f151a7ff-a5f1-4495-9316-a47218a6576b.gif"  height = "250" caption='' />
-    <p></p>
-    </div>
-
-  - **🔍旋转框小目标检测专题**
-    - `文章传送门`：[Yes, PP-YOLOE！80.73mAP、38.5mAP，旋转框、小目标检测能力双SOTA！](https://mp.weixin.qq.com/s/6ji89VKqoXDY6SSGkxS8NQ)
-
-    <div align="center">
-    <img src="https://user-images.githubusercontent.com/61035602/208037368-5b9f01f7-afd9-46d8-bc80-271ccb5db7bb.png"  height = "220" caption='' />
-    <p></p>
-    </div>
-
-  - **🎊YOLO Vision世界学术交流大会**
-    - **PaddleDetection**受邀参与首个以**YOLO为主题**的**YOLO-VISION**世界大会，与全球AI领先开发者学习交流。
-    - `活动链接传送门`：[YOLO-VISION](https://ultralytics.com/yolo-vision)
-
-    <div  align="center">
-    <img src="https://user-images.githubusercontent.com/48054808/192301374-940cf2fa-9661-419b-9c46-18a4570df381.jpeg" width="400"/>
-    </div>
-
-- **🏅️社区贡献**
-  - `活动链接传送门`：[Yes, PP-YOLOE! 基于PP-YOLOE的算法开发](https://github.com/PaddlePaddle/PaddleDetection/issues/7345)
 
 ## ✨主要特性
 
