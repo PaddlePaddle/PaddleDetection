@@ -236,12 +236,14 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
 
     fuse_normalize = reader_cfg.get('fuse_normalize', False)
     sample_transforms = reader_cfg['sample_transforms']
+    hpi_dynamic_shape = None
     for st in sample_transforms[1:]:
         for key, value in st.items():
             p = {'type': key}
             if key == 'Resize':
                 if int(image_shape[1]) != -1:
                     value['target_size'] = image_shape[1:]
+                    hpi_dynamic_shape = image_shape[1:]
                 value['interp'] = value.get('interp', 1)  # cv2.INTER_LINEAR
             if fuse_normalize and key == 'NormalizeImage':
                 continue
@@ -266,7 +268,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
                     preprocess_list.append(p)
                     break
 
-    return preprocess_list, label_list
+    return preprocess_list, label_list, hpi_dynamic_shape
 
 
 def _parse_tracker(tracker_cfg):
@@ -287,22 +289,10 @@ def _dump_infer_config(config, path, image_shape, model):
         'metric': config['metric'],
         'use_dynamic_shape': use_dynamic_shape
     })
-    hpi_config_path = config.get("hpi_config_path", None)
-    if hpi_config_path:
-        hpi_config = load_config(hpi_config_path)
-        dynamic_shapes = image_shape[-1]
-        if hpi_config["Hpi"]["backend_config"].get("paddle_tensorrt", None):
-            hpi_config["Hpi"]["backend_config"]["paddle_tensorrt"][
-                "dynamic_shapes"]["image"] = [[1, 3, dynamic_shapes, dynamic_shapes] for i in range(3)]
-            hpi_config["Hpi"]["backend_config"]["paddle_tensorrt"]["max_batch_size"] = 1
-        if hpi_config["Hpi"]["backend_config"].get("tensorrt", None):
-            hpi_config["Hpi"]["backend_config"]["tensorrt"]["dynamic_shapes"][
-                "image"] = [[1, 3, dynamic_shapes, dynamic_shapes] for i in range(3)]
-            hpi_config["Hpi"]["backend_config"]["tensorrt"]["max_batch_size"] = 1
-        infer_cfg["Hpi"] = hpi_config["Hpi"]
     if config.get('pdx_model_name', None):
         infer_cfg["Global"] = {}
         infer_cfg["Global"]["model_name"] = config["pdx_model_name"]
+    hpi_config_path = config.get("hpi_config_path", None)
     export_onnx = config.get('export_onnx', False)
     export_eb = config.get('export_eb', False)
 
@@ -384,8 +374,31 @@ def _dump_infer_config(config, path, image_shape, model):
         reader_cfg = config['TestReader']
         dataset_cfg = config['TestDataset']
 
-    infer_cfg['Preprocess'], infer_cfg['label_list'] = _parse_reader(
+    infer_cfg['Preprocess'], infer_cfg['label_list'], hpi_dynamic_shape = _parse_reader(
         reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape[1:])
+
+    if hpi_config_path:
+        hpi_config = load_config(hpi_config_path)
+        if hpi_dynamic_shape:
+            dynamic_shapes = [1, 3] + hpi_dynamic_shape
+            if hpi_config["Hpi"]["backend_config"].get("paddle_tensorrt", None):
+                hpi_config["Hpi"]["backend_config"]["paddle_tensorrt"][
+                    "dynamic_shapes"]["image"] = [dynamic_shapes for i in range(3)]
+                hpi_config["Hpi"]["backend_config"]["paddle_tensorrt"]["max_batch_size"] = 1
+            if hpi_config["Hpi"]["backend_config"].get("tensorrt", None):
+                hpi_config["Hpi"]["backend_config"]["tensorrt"]["dynamic_shapes"][
+                    "image"] = [dynamic_shapes for i in range(3)]
+                hpi_config["Hpi"]["backend_config"]["tensorrt"]["max_batch_size"] = 1
+        else:
+            if hpi_config["Hpi"]["backend_config"].get("paddle_tensorrt", None):
+                hpi_config["Hpi"]["supported_backends"]["gpu"].remove(
+                    "paddle_tensorrt")
+                del hpi_config['Hpi']['backend_config']['paddle_tensorrt']
+            if hpi_config["Hpi"]["backend_config"].get("tensorrt", None):
+                hpi_config["Hpi"]["supported_backends"]["gpu"].remove("tensorrt")
+                del hpi_config['Hpi']['backend_config']['tensorrt']
+            hpi_config["Hpi"]["selected_backends"]["gpu"] = "paddle_infer"
+        infer_cfg["Hpi"] = hpi_config["Hpi"]
 
     if infer_arch == 'PicoDet':
         if hasattr(config, 'export') and config['export'].get(
