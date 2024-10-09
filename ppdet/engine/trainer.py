@@ -225,8 +225,9 @@ class Trainer(object):
         if (paddle.get_device()[:3]=='npu' or paddle.get_device()[:3]=='xpu'):
             use_npu = ('use_npu' in cfg and cfg['use_npu'])
             use_xpu = ('use_xpu' in cfg and cfg['use_xpu'])
+            use_mlu = ('use_mlu' in cfg and cfg['use_mlu'])
             norm_type = ('norm_type' in cfg and cfg['norm_type'])
-            if norm_type == 'sync_bn' and (use_npu or use_xpu) and dist.get_world_size() > 1:
+            if norm_type == 'sync_bn' and (use_npu or use_xpu or use_mlu) and dist.get_world_size() > 1:
                 convert_syncbn(self.model)
 
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
@@ -505,7 +506,7 @@ class Trainer(object):
         if self.cfg.get('to_static', False):
             model = apply_to_static(self.cfg, model)
         sync_bn = (getattr(self.cfg, 'norm_type', None) == 'sync_bn' and
-                   (self.cfg.use_gpu or self.cfg.use_mlu) and self._nranks > 1)
+                   self.cfg.use_gpu and self._nranks > 1)
         if sync_bn:
             model = paddle.nn.SyncBatchNorm.convert_sync_batchnorm(model)
 

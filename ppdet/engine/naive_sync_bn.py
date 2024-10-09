@@ -41,7 +41,7 @@ class NaiveSyncBatchNorm(nn.BatchNorm2D):
 
     def forward(self, input):
         if dist.get_world_size() == 1 or not self.training:
-            return super().forward(input)
+            return super(NaiveSyncBatchNorm, self).forward(input)
 
         B, C = input.shape[0], input.shape[1]
 
