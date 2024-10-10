@@ -549,6 +549,17 @@ def multiclass_nms(bboxes,
             index = None
         return output, nms_rois_num, index
 
+    elif in_dynamic_mode():
+        attrs = ('background_label', background_label, 'score_threshold',
+                 score_threshold, 'nms_top_k', nms_top_k, 'nms_threshold',
+                 nms_threshold, 'keep_top_k', keep_top_k, 'nms_eta', nms_eta,
+                 'normalized', normalized)
+        output, index, nms_rois_num = C_ops.multiclass_nms3(bboxes, scores,
+                                                            rois_num, *attrs)
+        if not return_index:
+            index = None
+        return output, nms_rois_num, index
+        
     else:
         output = helper.create_variable_for_type_inference(dtype=bboxes.dtype)
         index = helper.create_variable_for_type_inference(dtype='int32')
