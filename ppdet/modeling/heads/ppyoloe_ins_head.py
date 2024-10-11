@@ -729,14 +729,14 @@ class PPYOLOEInsHead(nn.Layer):
                     mask_logits = mask_logits[..., :int(ori_h), :int(ori_w)]
 
             masks = mask_logits.squeeze(0)
-            mask_pred = masks > self.mask_thr_binary
+            mask_pred = paddle.to_tensor(masks > self.mask_thr_binary).cast("float32")
 
             # scale bbox to origin
             scale_factor = scale_factor.flip(-1).tile([1, 2])
             bbox_pred[:, 2:6] /= scale_factor
         else:
             ori_h, ori_w = im_shape[0] / scale_factor[0]
-            bbox_num = paddle.to_tensor([1])
+            bbox_num = paddle.to_tensor([1]).cast("int32")
             bbox_pred = paddle.zeros([bbox_num, 6])
             mask_pred = paddle.zeros([bbox_num, int(ori_h), int(ori_w)])
 
