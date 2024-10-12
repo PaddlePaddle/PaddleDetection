@@ -68,7 +68,10 @@ class RoIAlign(nn.Layer):
         self.canonical_size = canonical_size
         self.start_level = start_level
         self.end_level = end_level
-        self.aligned = aligned
+        if 'npu' in paddle.device.get_device():
+            self.aligned = False
+        else:
+            self.aligned = aligned
 
     @classmethod
     def from_config(cls, cfg, input_shape):

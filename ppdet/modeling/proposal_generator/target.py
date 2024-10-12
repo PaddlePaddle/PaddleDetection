@@ -43,11 +43,13 @@ def rpn_anchor_target(anchors,
         fg_inds, bg_inds = subsample_labels(match_labels, rpn_batch_size_per_im,
                                             rpn_fg_fraction, 0, use_random)
         # Fill with the ignore label (-1), then set positive and negative labels
-        labels = paddle.full(match_labels.shape, -1, dtype='int32')
+        labels = paddle.full(match_labels.shape, -1, dtype='float32')
         if bg_inds.shape[0] > 0:
-            labels = paddle.scatter(labels, bg_inds, paddle.zeros_like(bg_inds))
+            bg_inds = bg_inds % labels.shape[0]
+            labels = paddle.scatter(labels, bg_inds, paddle.zeros_like(bg_inds, dtype=labels.dtype))
         if fg_inds.shape[0] > 0:
-            labels = paddle.scatter(labels, fg_inds, paddle.ones_like(fg_inds))
+            fg_inds = fg_inds % labels.shape[0]
+            labels = paddle.scatter(labels, fg_inds, paddle.ones_like(fg_inds, dtype=labels.dtype))
         # Step3: make output  
         if gt_bbox.shape[0] == 0:
             matched_gt_boxes = paddle.zeros([matches.shape[0], 4])
