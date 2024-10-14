@@ -1,12 +1,12 @@
 # 快速开始
 
 >**说明：**
->* 飞桨低代码开发工具[PaddleX](https://github.com/PaddlePaddle/PaddleX/tree/release/3.0-beta1)，依托于PaddleDetection的先进技术，支持了目标检测领域的**低代码**开发能力。通过低代码开发，可实现简单且高效的模型使用、组合与定制。
->* PaddleX 致力于实现产线级别的模型训练、推理与部署。模型产线是指一系列预定义好的、针对特定AI任务的开发流程，其中包含能够独立完成某类任务的单模型（单功能模块）组合。本文档提供**目标检测相关产线**的快速使用，单功能模块的快速使用以及更多功能请参考[PaddleDetection低代码开发](./overview.md)中相关章节。
+>* 飞桨低代码开发工具[PaddleX](https://github.com/PaddlePaddle/PaddleX/tree/release/3.0-beta1)，依托于PaddleDetection的先进技术，支持了目标检测领域的**低代码全流程**开发能力。通过低代码全流程开发，可实现简单且高效的模型使用、组合与定制。
+>* PaddleX 致力于实现产线级别的模型训练、推理与部署。模型产线是指一系列预定义好的、针对特定AI任务的开发流程，其中包含能够独立完成某类任务的单模型（单功能模块）组合。本文档提供**目标检测相关产线**的快速使用，单功能模块的快速使用以及更多功能请参考[PaddleDetection低代码全流程开发](./overview.md)中相关章节。
 
 ### 🛠️ 安装
 
-> ❗安装PaddleX前请先确保您有基础的**Python运行环境**。
+> ❗安装PaddleX前请先确保您有基础的**Python运行环境**。（注：当前支持Python 3.8 ～ Python 3.10下运行，更多Python版本适配中）。
 * **安装PaddlePaddle**
 ```bash
 # cpu
