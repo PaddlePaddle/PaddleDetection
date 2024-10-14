@@ -129,7 +129,8 @@ class BBoxPostProcess(object):
                 else:
                     bboxes_i = bboxes[id_start:id_start + bbox_num[i], :]
                     bbox_num_i = bbox_num[i:i + 1]
-                    id_start += bbox_num[i:i + 1]
+                    # id_start: 0-dim, bbox_num: 1-dim. Use bbox_num[i] instead of bbox_num[i:i+1] in pir.
+                    id_start += bbox_num[i]
                 bboxes_list.append(bboxes_i)
                 bbox_num_list.append(bbox_num_i)
             bboxes = paddle.concat(bboxes_list)
@@ -143,8 +144,11 @@ class BBoxPostProcess(object):
             # scale_factor: scale_y, scale_x
             for i in range(bbox_num.shape[0]):
                 expand_shape = paddle.expand(origin_shape[i:i + 1, :],
-                                             [bbox_num[i:i + 1], 2])
-                scale_y, scale_x = scale_factor[i, 0:1], scale_factor[i, 1:2]
+                                             [bbox_num[i:i + 1], 2])                          
+                scale_y, scale_x = scale_factor[i, 0], scale_factor[i, 1]
+                # TODO(PIR): something wrong with slice op, remove unsqueeze in the future.
+                scale_y = paddle.unsqueeze(scale_y, 0)
+                scale_x = paddle.unsqueeze(scale_x, 0)
                 scale = paddle.concat([scale_x, scale_y, scale_x, scale_y])
                 expand_scale = paddle.expand(scale, [bbox_num[i:i + 1], 4])
                 origin_shape_list.append(expand_shape)
