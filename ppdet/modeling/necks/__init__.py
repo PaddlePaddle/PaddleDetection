@@ -24,6 +24,7 @@ from . import lc_pan
 from . import custom_pan
 from . import dilated_encoder
 from . import clrnet_fpn
+from . import channel_mapper
 
 from .fpn import *
 from .yolo_fpn import *
@@ -39,3 +40,4 @@ from .custom_pan import *
 from .dilated_encoder import *
 from .channel_mapper import *
 from .clrnet_fpn import *
+from .channel_mapper import *
