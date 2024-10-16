@@ -1,0 +1,25 @@
+_BASE_: [
+  '../datasets/wider_face.yml',
+  '../runtime.yml',
+  '_base_/optimizer_1000e.yml',
+  '_base_/blazeface.yml',
+  '_base_/face_reader.yml',
+]
+weights: output/blazeface_1000e/model_final
+#multi_scale_eval: True
+
+EvalDataset:
+  !WIDERFaceValDataset
+    dataset_dir: dataset/wider_face
+    image_dir: WIDER_val/images
+    anno_path: wider_face_split/wider_face_val_bbx_gt.txt
+    gt_mat_path: WIDER_val/ground_truth
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'ori_gt_bbox']
+
+EvalReader:
+  collate_batch: false
+  shuffle: false
+  drop_last: false
+
+metric: WiderFaceOnline
+worker_num: 0

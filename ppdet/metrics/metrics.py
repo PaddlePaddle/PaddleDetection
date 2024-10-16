@@ -27,7 +27,8 @@ from pathlib import Path
 
 from .map_utils import prune_zero_padding, DetectionMAP
 from .coco_utils import get_infer_results, cocoapi_eval
-from .widerface_utils import face_eval_run
+from .widerface_utils import (face_eval_run, image_eval, img_pr_info,
+                              dataset_pr_info, voc_ap)
 from ppdet.data.source.category import get_categories
 from ppdet.modeling.rbox_utils import poly2rbox_np
 
@@ -36,7 +37,7 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results',
-    'RBoxMetric', 'SNIPERCOCOMetric'
+    'RBoxMetric', 'SNIPERCOCOMetric', 'WiderFaceOnlineMetric'
 ]
 
 COCO_SIGMAS = np.array([
@@ -353,6 +354,93 @@ class WiderFaceMetric(Metric):
             eval_mode='widerface',
             multi_scale=self.multi_scale)
 
+class WiderFaceOnlineMetric(Metric):
+    def __init__(self, iou_thresh=0.5):
+        self.iou_thresh = iou_thresh
+        self.reset()
+
+    def reset(self):
+        self.pred_boxes_list = []
+        self.gt_boxes_list = []
+        self.aps = []
+
+        self.hard_ignore_list = []
+        self.medium_ignore_list = []
+        self.easy_ignore_list = []
+    def update(self, data, outs):
+        batch_pred_bboxes = outs['bbox']
+        batch_pred_bboxes_num = outs['bbox_num']
+        assert len(batch_pred_bboxes_num) == len(data['gt_bbox'])
+        batch_size = len(data['gt_bbox'])
+        box_cnt = 0
+        for batch_id in range(batch_size):
+            pred_bboxes_num = batch_pred_bboxes_num[batch_id]
+            pred_bboxes = batch_pred_bboxes[box_cnt: box_cnt + 
+                                            pred_bboxes_num].numpy() 
+            box_cnt += pred_bboxes_num
+
+            det_conf = pred_bboxes[:, 1]
+            det_xmin = pred_bboxes[:, 2]
+            det_ymin = pred_bboxes[:, 3]
+            det_xmax = pred_bboxes[:, 4]
+            det_ymax = pred_bboxes[:, 5]
+            det = np.column_stack((det_xmin, det_ymin, det_xmax, 
+                                   det_ymax, det_conf))
+            self.pred_boxes_list.append(det) # xyxy conf
+            self.gt_boxes_list.append(data['gt_ori_bbox'][batch_id].numpy()) # xywh
+            self.hard_ignore_list.append(
+                data['gt_hard_ignore'][batch_id].numpy())
+            self.medium_ignore_list.append(
+                data['gt_medium_ignore'][batch_id].numpy())
+            self.easy_ignore_list.append(
+                data['gt_easy_ignore'][batch_id].numpy())
+    
+    def accumulate(self):
+        total_num = len(self.gt_boxes_list)
+        settings = ['easy', 'medium', 'hard']
+        setting_ingores = [self.easy_ignore_list, 
+                           self.medium_ignore_list, 
+                           self.hard_ignore_list]
+        thresh_num = 1000
+        aps = []
+        for setting_id in range(3):
+            count_face = 0
+            pr_curve = np.zeros((thresh_num, 2)).astype(np.float32)
+            gt_ignore_list = setting_ingores[setting_id]
+            for i in range(total_num):
+                pred_boxes = self.pred_boxes_list[i] # xyxy conf
+                gt_boxes = self.gt_boxes_list[i] # xywh
+                ignore = gt_ignore_list[i]
+                count_face += np.sum(ignore)
+
+                if len(gt_boxes) == 0 or len(pred_boxes) == 0:
+                    continue
+                pred_recall, proposal_list = image_eval(pred_boxes, gt_boxes, 
+                                                        ignore, self.iou_thresh)
+                _img_pr_info = img_pr_info(thresh_num, pred_boxes,
+                                           proposal_list, pred_recall)
+                pr_curve += _img_pr_info
+            pr_curve = dataset_pr_info(thresh_num, pr_curve, count_face)
+
+            propose = pr_curve[:, 0]
+            recall = pr_curve[:, 1]
+
+            ap = voc_ap(recall, propose)
+            aps.append(ap)
+        self.aps = aps
+    
+    def log(self):
+        logger.info("==================== Results ====================")
+        logger.info("Easy   Val AP: {}".format(self.aps[0]))
+        logger.info("Medium Val AP: {}".format(self.aps[1]))
+        logger.info("Hard   Val AP: {}".format(self.aps[2]))
+        logger.info("=================================================")
+    
+    def get_results(self):
+        return {
+            'easy_ap': self.aps[0],
+            'medium_ap': self.aps[1],
+            'hard_ap': self.aps[2]}
 
 class RBoxMetric(Metric):
     def __init__(self, anno_file, **kwargs):

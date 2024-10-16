@@ -40,7 +40,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, convert_to_dict
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, WiderFaceOnlineMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -276,8 +276,8 @@ class Trainer(object):
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
             self._callbacks = [LogPrinter(self)]
-            if self.cfg.metric == 'WiderFace':
-                self._callbacks.append(WiferFaceEval(self))
+            # if self.cfg.metric == 'WiderFace':
+            #     self._callbacks.append(WiferFaceEval(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'test' and self.cfg.get('use_vdl', False):
             self._callbacks = [VisualDLWriter(self)]
@@ -388,6 +388,10 @@ class Trainer(object):
                                            self.dataset.image_dir),
                     anno_file=self.dataset.get_anno(),
                     multi_scale=multi_scale)
+            ]
+        elif self.cfg.metric == 'WiderFaceOnline':
+            self._metrics = [
+                WiderFaceOnlineMetric()
             ]
         elif self.cfg.metric == 'KeyPointTopDownCOCOEval':
             eval_dataset = self.cfg['EvalDataset']

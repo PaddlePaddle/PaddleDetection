@@ -265,9 +265,10 @@ class HybridEncoder(nn.Layer):
             feat_heigh = self.lateral_convs[len(self.in_channels) - 1 - idx](
                 feat_heigh)
             inner_outs[0] = feat_heigh
-
+            # upsample_feat = F.interpolate(
+            #     feat_heigh, scale_factor=2., mode="nearest")
             upsample_feat = F.interpolate(
-                feat_heigh, scale_factor=2., mode="nearest")
+                 feat_heigh, feat_low.shape[2:], mode="nearest")
             inner_out = self.fpn_blocks[len(self.in_channels) - 1 - idx](
                 paddle.concat(
                     [upsample_feat, feat_low], axis=1))
