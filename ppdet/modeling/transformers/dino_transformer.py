@@ -162,7 +162,7 @@ class DINOTransformerDecoder(nn.Layer):
         ref_points = F.sigmoid(ref_points_unact)
         for i, layer in enumerate(self.layers):
             reference_points_input = ref_points.detach().unsqueeze(
-                2) * valid_ratios.tile([1, 1, 2]).unsqueeze(1)
+                2) * paddle.concat([valid_ratios, valid_ratios], -1).unsqueeze(1)
             query_pos_embed = get_sine_pos_embed(
                 reference_points_input[..., 0, :], self.hidden_dim // 2)
             query_pos_embed = query_pos_head(query_pos_embed)
