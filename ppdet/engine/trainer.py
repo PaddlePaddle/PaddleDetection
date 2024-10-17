@@ -1269,7 +1269,6 @@ class Trainer(object):
         if hasattr(self.model, 'aux_head'):
             self.model.__delattr__('aux_head')
         self.model.eval()
-        model = copy.deepcopy(self.model)
 
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
         if for_fd:
@@ -1285,7 +1284,7 @@ class Trainer(object):
             os.makedirs(save_dir)
 
         static_model, pruned_input_spec = self._get_infer_cfg_and_input_spec(
-            save_dir, yaml_name=yaml_name, model=model)
+            save_dir, yaml_name=yaml_name, model=self.model)
 
         # dy2st and save model
         if 'slim' not in self.cfg or 'QAT' not in self.cfg['slim_type']:
@@ -1298,6 +1297,7 @@ class Trainer(object):
                 self.model,
                 os.path.join(save_dir, save_name),
                 input_spec=pruned_input_spec)
+        self.model.forward.rollback() 
         logger.info("Export model and saved in {}".format(save_dir))
 
     def post_quant(self, output_dir='output_inference'):
