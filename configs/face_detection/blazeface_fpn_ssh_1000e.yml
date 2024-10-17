@@ -6,4 +6,4 @@ _BASE_: [
   '_base_/face_reader.yml',
 ]
 weights: output/blazeface_fpn_ssh_1000e/model_final
-multi_scale_eval: True
+snapshot_epoch: 10

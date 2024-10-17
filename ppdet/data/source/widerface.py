@@ -12,8 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from collections import defaultdict
 import os
 import numpy as np
+from scipy.io import loadmat
 
 from ppdet.core.workspace import register, serializable
 from .dataset import DetDataset
@@ -178,3 +180,82 @@ class WIDERFaceDataSet(DetDataset):
 def widerface_label():
     labels_map = {'face': 0}
     return labels_map
+
+
+@register
+@serializable
+class WIDERFaceValDataset(WIDERFaceDataSet):
+    def __init__(self,
+                 dataset_dir=None,
+                 image_dir=None,
+                 anno_path=None,
+                 gt_mat_path=None,
+                 data_fields=['image'],
+                 sample_num=-1,
+                 with_lmk=False):
+        super().__init__(
+            dataset_dir=dataset_dir,
+            image_dir=image_dir,
+            anno_path=anno_path,
+            data_fields=data_fields,
+            sample_num=sample_num,
+            with_lmk=with_lmk)
+        self.gt_mat_path = gt_mat_path
+        self.val_mat = os.path.join(self.dataset_dir, self.gt_mat_path, 'wider_face_val.mat')
+        self.hard_mat_path = os.path.join(self.dataset_dir, self.gt_mat_path, 'wider_hard_val.mat')
+        self.medium_mat_path = os.path.join(self.dataset_dir, self.gt_mat_path, 'wider_medium_val.mat')
+        self.easy_mat_path = os.path.join(self.dataset_dir, self.gt_mat_path, 'wider_easy_val.mat')
+
+        assert os.path.exists(self.val_mat), f'{self.val_mat} not exist'
+        assert os.path.exists(self.hard_mat_path), f'{self.hard_mat_path} not exist'
+        assert os.path.exists(self.medium_mat_path), f'{self.medium_mat_path} not exist'
+        assert os.path.exists(self.easy_mat_path), f'{self.easy_mat_path} not exist'
+
+    def parse_dataset(self):
+        super().parse_dataset()
+
+        box_list, flie_list, event_list, hard_info_list, medium_info_list, \
+            easy_info_list = self.get_gt_infos()
+        setting_infos = [easy_info_list, medium_info_list, hard_info_list]
+        settings = ['easy', 'medium', 'hard']
+        info_by_name = defaultdict(dict)
+        for setting_id in range(3):
+            info_list = setting_infos[setting_id]
+            setting = settings[setting_id]
+            for i in range(len(event_list)):
+                img_list = flie_list[i][0]
+                gt_box_list = box_list[i][0]
+                sub_info_list = info_list[i][0]
+                for j in range(len(img_list)):
+                    img_name = str(img_list[j][0][0])
+                    gt_boxes = gt_box_list[j][0].astype(np.float32)
+                    info_by_name[img_name]['gt_ori_bbox'] = gt_boxes
+
+                    keep_index = sub_info_list[j][0]
+                    ignore = np.zeros(gt_boxes.shape[0])
+                    if len(keep_index) != 0:
+                        ignore[keep_index-1] = 1
+                    info_by_name[img_name][f'gt_{setting}_ignore'] = ignore
+
+        for roidb in self.roidbs:
+            img_file = roidb['im_file'].split('/')[-1]
+            img_name = ".".join(img_file.split(".")[:-1])
+            roidb.update(info_by_name[img_name])
+
+    def get_gt_infos(self):
+        """ gt dir: (wider_face_val.mat, wider_easy_val.mat, wider_medium_val.mat, wider_hard_val.mat)"""
+
+        val_mat = loadmat(self.val_mat)
+        hard_mat = loadmat(self.hard_mat_path)
+        medium_mat = loadmat(self.medium_mat_path)
+        easy_mat = loadmat(self.easy_mat_path)
+
+        box_list = val_mat['face_bbx_list']
+        file_list = val_mat['file_list']
+        event_list = val_mat['event_list']
+
+        hard_info_list = hard_mat['gt_list']
+        medium_info_list = medium_mat['gt_list']
+        easy_info_list = easy_mat['gt_list']
+
+        return box_list, file_list, event_list, hard_info_list, medium_info_list, easy_info_list
