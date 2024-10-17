@@ -37,7 +37,7 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results',
-    'RBoxMetric', 'SNIPERCOCOMetric', 'WiderFaceOnlineMetric'
+    'RBoxMetric', 'SNIPERCOCOMetric'
 ]
 
 COCO_SIGMAS = np.array([
@@ -338,23 +338,6 @@ class VOCMetric(Metric):
 
 
 class WiderFaceMetric(Metric):
-    def __init__(self, image_dir, anno_file, multi_scale=True):
-        self.image_dir = image_dir
-        self.anno_file = anno_file
-        self.multi_scale = multi_scale
-        self.clsid2catid, self.catid2name = get_categories('widerface')
-
-    def update(self, model):
-
-        face_eval_run(
-            model,
-            self.image_dir,
-            self.anno_file,
-            pred_dir='output/pred',
-            eval_mode='widerface',
-            multi_scale=self.multi_scale)
-
-class WiderFaceOnlineMetric(Metric):
     def __init__(self, iou_thresh=0.5):
         self.iou_thresh = iou_thresh
         self.reset()
@@ -367,6 +350,7 @@ class WiderFaceOnlineMetric(Metric):
         self.hard_ignore_list = []
         self.medium_ignore_list = []
         self.easy_ignore_list = []
+
     def update(self, data, outs):
         batch_pred_bboxes = outs['bbox']
         batch_pred_bboxes_num = outs['bbox_num']
