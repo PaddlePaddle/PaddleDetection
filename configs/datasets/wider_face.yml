@@ -9,11 +9,12 @@ TrainDataset:
     data_fields: ['image', 'gt_bbox', 'gt_class']
 
 EvalDataset:
-  !WIDERFaceDataSet
+  !WIDERFaceValDataset
     dataset_dir: dataset/wider_face
-    anno_path: wider_face_split/wider_face_val_bbx_gt.txt
     image_dir: WIDER_val/images
-    data_fields: ['image']
+    anno_path: wider_face_split/wider_face_val_bbx_gt.txt
+    gt_mat_path: WIDER_val/ground_truth
+    data_fields: ['image', 'gt_bbox', 'gt_class', 'ori_gt_bbox']
 
 TestDataset:
   !ImageFolder

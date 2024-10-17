@@ -422,6 +422,7 @@ def image_eval(pred, gt, ignore, iou_thresh):
         pred_recall[h] = len(r_keep_index)
     return pred_recall, proposal_list
     
+
 def bbox_overlaps(boxes1, boxes2):
     """
     Parameters
@@ -432,8 +433,6 @@ def bbox_overlaps(boxes1, boxes2):
     -------
     overlaps: (N, K) ndarray of overlap between boxes1 and boxes2
     """
-    N = boxes1.shape[0]
-    K = boxes2.shape[0]
     # Calculate the area of each box
     box_areas1 = (boxes1[:, 2] - boxes1[:, 0] + 1) * (
         boxes1[:, 3] - boxes1[:, 1] + 1)
