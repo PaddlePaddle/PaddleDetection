@@ -17,6 +17,7 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import gc
 import sys
 import datetime
 import six
@@ -179,6 +180,7 @@ class Checkpointer(Callback):
         self.best_ap = -1000.
         self.save_dir = self.model.cfg.save_dir
         self.uniform_output_enabled = self.model.cfg.get("uniform_output_enabled", False)
+        self.export_during_train = self.model.cfg.get("export_during_train", False)
         if hasattr(self.model.model, 'student_model'):
             self.weight = self.model.model.student_model
         else:
@@ -261,8 +263,9 @@ class Checkpointer(Callback):
                             save_name,
                             epoch_id + 1,
                             ema_model=weight)
-                        if self.uniform_output_enabled:
+                        if self.export_during_train:
                             self.model.export(output_dir=os.path.join(self.save_dir, save_name, "inference"), for_fd=True)
+                            gc.collect()
                     else:
                         # save model(student model) and ema_model(teacher model)
                         # in DenseTeacher SSOD, the teacher model will be higher,
@@ -281,8 +284,9 @@ class Checkpointer(Callback):
                 else:
                     save_model(weight, self.model.optimizer, os.path.join(self.save_dir, save_name) if self.uniform_output_enabled else self.save_dir,
                                save_name, epoch_id + 1)
-                    if self.uniform_output_enabled:
+                    if self.export_during_train:
                         self.model.export(output_dir=os.path.join(self.save_dir, save_name, "inference"), for_fd=True)
+                        gc.collect()
 
 
 class WiferFaceEval(Callback):

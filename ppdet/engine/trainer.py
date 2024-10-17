@@ -77,7 +77,8 @@ class Trainer(object):
         self.custom_black_list = self.cfg.get('custom_black_list', None)
         self.use_master_grad = self.cfg.get('master_grad', False)
         self.uniform_output_enabled = self.cfg.get('uniform_output_enabled', False)
-        if ('slim' in cfg and cfg['slim_type'] == 'PTQ') or self.uniform_output_enabled:
+        self.export_during_train = self.cfg.get('export_during_train', False)
+        if ('slim' in cfg and cfg['slim_type'] == 'PTQ') or self.export_during_train:
             self.cfg['TestDataset'] = create('TestDataset')()
         log_ranks = cfg.get('log_ranks', '0')
         if isinstance(log_ranks, str):
