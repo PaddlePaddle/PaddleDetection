@@ -1,4 +1,4 @@
-worker_num: 2
+worker_num: 8
 TrainReader:
   inputs_def:
     num_max_boxes: 90
@@ -23,7 +23,7 @@ TrainReader:
   batch_transforms:
     - NormalizeImage: {mean:  [123, 117, 104], std: [127.502231, 127.502231, 127.502231], is_scale: false}
     - Permute: {}
-  batch_size: 8
+  batch_size: 16
   shuffle: true
   drop_last: true
 
@@ -34,6 +34,9 @@ EvalReader:
     - NormalizeImage: {mean:  [123, 117, 104], std: [127.502231, 127.502231, 127.502231], is_scale: false}
     - Permute: {}
   batch_size: 1
+  collate_samples: false
+  shuffle: false
+  drop_last: false
 
 
 TestReader:

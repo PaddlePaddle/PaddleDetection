@@ -276,8 +276,8 @@ class Trainer(object):
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'eval':
             self._callbacks = [LogPrinter(self)]
-            if self.cfg.metric == 'WiderFace':
-                self._callbacks.append(WiferFaceEval(self))
+            # if self.cfg.metric == 'WiderFace':
+            #     self._callbacks.append(WiferFaceEval(self))
             self._compose_callback = ComposeCallback(self._callbacks)
         elif self.mode == 'test' and self.cfg.get('use_vdl', False):
             self._callbacks = [VisualDLWriter(self)]
@@ -381,13 +381,8 @@ class Trainer(object):
                     save_prediction_only=save_prediction_only)
             ]
         elif self.cfg.metric == 'WiderFace':
-            multi_scale = self.cfg.multi_scale_eval if 'multi_scale_eval' in self.cfg else True
             self._metrics = [
-                WiderFaceMetric(
-                    image_dir=os.path.join(self.dataset.dataset_dir,
-                                           self.dataset.image_dir),
-                    anno_file=self.dataset.get_anno(),
-                    multi_scale=multi_scale)
+                WiderFaceMetric()
             ]
         elif self.cfg.metric == 'KeyPointTopDownCOCOEval':
             eval_dataset = self.cfg['EvalDataset']
