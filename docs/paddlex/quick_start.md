@@ -1,7 +1,7 @@
 # 快速开始
 
 >**说明：**
->* 飞桨低代码开发工具[PaddleX](https://github.com/PaddlePaddle/PaddleX/tree/release/3.0-beta1)，依托于PaddleDetection的先进技术，支持了目标检测领域的**低代码全流程**开发能力。通过低代码全流程开发，可实现简单且高效的模型使用、组合与定制。
+>* 飞桨低代码开发工具[PaddleX](https://github.com/PaddlePaddle/PaddleX)，依托于PaddleDetection的先进技术，支持了目标检测领域的**低代码全流程**开发能力。通过低代码全流程开发，可实现简单且高效的模型使用、组合与定制。
 >* PaddleX 致力于实现产线级别的模型训练、推理与部署。模型产线是指一系列预定义好的、针对特定AI任务的开发流程，其中包含能够独立完成某类任务的单模型（单功能模块）组合。本文档提供**目标检测相关产线**的快速使用，单功能模块的快速使用以及更多功能请参考[PaddleDetection低代码全流程开发](./overview.md)中相关章节。
 
 ### 🛠️ 安装
@@ -10,23 +10,23 @@
 * **安装PaddlePaddle**
 ```bash
 # cpu
-python -m pip install paddlepaddle==3.0.0b1 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+python -m pip install paddlepaddle==3.0.0b2 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
 
 # gpu，该命令仅适用于 CUDA 版本为 11.8 的机器环境
-python -m pip install paddlepaddle-gpu==3.0.0b1 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
+python -m pip install paddlepaddle-gpu==3.0.0b2 -i https://www.paddlepaddle.org.cn/packages/stable/cu118/
 
 # gpu，该命令仅适用于 CUDA 版本为 12.3 的机器环境
-python -m pip install paddlepaddle-gpu==3.0.0b1 -i https://www.paddlepaddle.org.cn/packages/stable/cu123/
+python -m pip install paddlepaddle-gpu==3.0.0b2 -i https://www.paddlepaddle.org.cn/packages/stable/cu123/
 ```
 > ❗ 更多飞桨 Wheel 版本请参考[飞桨官网](https://www.paddlepaddle.org.cn/install/quick?docurl=/documentation/docs/zh/install/pip/linux-pip.html)。
 
 * **安装PaddleX**
 
 ```bash
-pip install https://paddle-model-ecology.bj.bcebos.com/paddlex/whl/paddlex-3.0.0b1-py3-none-any.whl
+pip install https://paddle-model-ecology.bj.bcebos.com/paddlex/whl/paddlex-3.0.0b2-py3-none-any.whl
 ```
 
-> ❗ 更多安装方式参考[PaddleX安装教程](https://github.com/PaddlePaddle/PaddleX/blob/release/3.0-beta1/docs/installation/installation.md)
+> ❗ 更多安装方式参考[PaddleX安装教程](https://paddlepaddle.github.io/PaddleX/latest/installation/installation.html)
 ### 💻 命令行使用
 
 一行命令即可快速体验产线效果，统一的命令行格式为：
@@ -99,7 +99,7 @@ for res in output:
 
 | 产线名称     | 对应参数                 | 详细说明 |
 |----------|----------------------|------|
-| 通用目标检测       | `object_detection` | [通用目标检测产线Python脚本使用说明](https://github.com/PaddlePaddle/PaddleX/blob/release/3.0-beta1/docs/pipeline_usage/tutorials/cv_pipelines/object_detection.md) |
-| 通用实例分割       | `instance_segmentation` | [通用实例分割产线Python脚本使用说明](https://github.com/PaddlePaddle/PaddleX/blob/release/3.0-beta1/docs/pipeline_usage/tutorials/cv_pipelines/instance_segmentation.md) |
-| 小目标检测         | `small_object_detection` | [小目标检测产线Python脚本使用说明](https://github.com/PaddlePaddle/PaddleX/blob/release/3.0-beta1/docs/pipeline_usage/tutorials/cv_pipelines/small_object_detection.md) |
+| 通用目标检测       | `object_detection` | [通用目标检测产线Python脚本使用说明](https://paddlepaddle.github.io/PaddleX/latest/pipeline_usage/tutorials/cv_pipelines/object_detection.html) |
+| 通用实例分割       | `instance_segmentation` | [通用实例分割产线Python脚本使用说明](https://paddlepaddle.github.io/PaddleX/latest/pipeline_usage/tutorials/cv_pipelines/instance_segmentation.html) |
+| 小目标检测         | `small_object_detection` | [小目标检测产线Python脚本使用说明](https://paddlepaddle.github.io/PaddleX/latest/pipeline_usage/tutorials/cv_pipelines/small_object_detection.html) |
 
