@@ -223,7 +223,7 @@ def distribute_fpn_proposals(fpn_rois,
                              name=None):
     r"""
     
-    **This op only takes LoDTensor as input.** In Feature Pyramid Networks 
+    **This op only takes DenseTensor as input.** In Feature Pyramid Networks 
     (FPN) models, it is needed to distribute all proposals into different FPN 
     level, with respect to scale of the proposals, the referring scale and the 
     referring level. Besides, to restore the order of proposals, we return an 
@@ -260,7 +260,7 @@ def distribute_fpn_proposals(fpn_rois,
     Returns:
         Tuple:
 
-        multi_rois(List) : A list of 2-D LoDTensor with shape [M, 4] 
+        multi_rois(List) : A list of 2-D DenseTensor with shape [M, 4] 
         and data type of float32 and float64. The length is 
         max_level-min_level+1. The proposals in each FPN level.
 
@@ -467,7 +467,7 @@ def multiclass_nms(bboxes,
                            N is the batch size. Each bounding box has four
                            coordinate values and the layout is
                            [xmin, ymin, xmax, ymax], when box size equals to 4.
-                           2. (LoDTensor) A 3-D Tensor with shape [M, C, 4]
+                           2. (DenseTensor) A 3-D Tensor with shape [M, C, 4]
                            M is the number of bounding boxes, C is the
                            class number
         scores (Tensor): Two types of scores are supported:
@@ -478,7 +478,7 @@ def multiclass_nms(bboxes,
                            are total M scores which corresponding M bounding
                            boxes. Please note, M is equal to the 2nd dimension
                            of BBoxes.
-                           2. (LoDTensor) A 2-D LoDTensor with shape [M, C].
+                           2. (DenseTensor) A 2-D DenseTensor with shape [M, C].
                            M is the number of bbox, C is the class number.
                            In this case, input BBoxes should be the second
                            case with shape [M, C, 4].
@@ -506,14 +506,14 @@ def multiclass_nms(bboxes,
     Returns:
         A tuple with two Variables: (Out, Index) if return_index is True,
         otherwise, a tuple with one Variable(Out) is returned.
-        Out: A 2-D LoDTensor with shape [No, 6] represents the detections.
+        Out: A 2-D DenseTensor with shape [No, 6] represents the detections.
         Each row has 6 values: [label, confidence, xmin, ymin, xmax, ymax]
-        or A 2-D LoDTensor with shape [No, 10] represents the detections.
+        or A 2-D DenseTensor with shape [No, 10] represents the detections.
         Each row has 10 values: [label, confidence, x1, y1, x2, y2, x3, y3,
         x4, y4]. No is the total number of detections.
         If all images have not detected results, all elements in LoD will be
         0, and output tensor is empty (None).
-        Index: Only return when return_index is True. A 2-D LoDTensor with
+        Index: Only return when return_index is True. A 2-D DenseTensor with
         shape [No, 1] represents the selected index which type is Integer.
         The index is the absolute value cross batches. No is the same number
         as Out. If the index is used to gather other attribute such as age,
@@ -783,7 +783,7 @@ def box_coder(prior_box,
             data type is float32 or float64. The second is list consist of 
             4 elements shared by all boxes and data type is float32 or float64. 
             Other is None and not involved in calculation. 
-        target_box(Tensor): This input can be a 2-D LoDTensor with shape 
+        target_box(Tensor): This input can be a 2-D DenseTensor with shape 
             [N, 4] when code_type is 'encode_center_size'. This input also can 
             be a 3-D Tensor with shape [N, M, 4] when code_type is 
             'decode_center_size'. Each box is represented as 

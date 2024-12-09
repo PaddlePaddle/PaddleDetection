@@ -313,9 +313,9 @@ class CascadeHead(BBoxHead):
         for p in proposals:
             num_prop.append(p.shape[0])
 
-        # NOTE(dev): num_prob will be tagged as LoDTensorArray because it
+        # NOTE(dev): num_prob will be tagged as DenseTensorArray because it
         # depends on batch_size under @to_static. However the argument
-        # num_or_sections in paddle.split does not support LoDTensorArray,
+        # num_or_sections in paddle.split does not support DenseTensorArray,
         # so we use [-1] to replace it if num_prop is not list. The modification
         # This ensures the correctness of both dynamic and static graphs.
         if not isinstance(num_prop, list):
