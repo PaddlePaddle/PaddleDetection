@@ -83,7 +83,7 @@ class RoIAlign(nn.Layer):
             rois_feat = paddle.vision.ops.roi_align(
                 x=feats[self.start_level],
                 boxes=roi,
-                boxes_num=rois_num,
+                boxes_num=rois_num.astype('int32'),
                 output_size=self.resolution,
                 spatial_scale=self.spatial_scale[0],
                 aligned=self.aligned)
@@ -109,7 +109,7 @@ class RoIAlign(nn.Layer):
                 roi_feat = paddle.vision.ops.roi_align(
                     x=feats[lvl],
                     boxes=rois_dist[lvl],
-                    boxes_num=rois_num_dist[lvl],
+                    boxes_num=rois_num_dist[lvl].astype('int32'),
                     output_size=self.resolution,
                     spatial_scale=self.spatial_scale[lvl],
                     sampling_ratio=self.sampling_ratio,
