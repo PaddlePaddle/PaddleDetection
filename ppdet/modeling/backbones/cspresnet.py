@@ -88,7 +88,7 @@ class RepVggBlock(nn.Layer):
         if hasattr(self, 'conv'):
             y = self.conv(x)
         else:
-            if self.alpha:
+            if self.alpha is not None:
                 y = self.conv1(x) + self.alpha * self.conv2(x)
             else:
                 y = self.conv1(x) + self.conv2(x)
@@ -113,7 +113,7 @@ class RepVggBlock(nn.Layer):
     def get_equivalent_kernel_bias(self):
         kernel3x3, bias3x3 = self._fuse_bn_tensor(self.conv1)
         kernel1x1, bias1x1 = self._fuse_bn_tensor(self.conv2)
-        if self.alpha:
+        if self.alpha is not None:
             return kernel3x3 + self.alpha * self._pad_1x1_to_3x3_tensor(
                 kernel1x1), bias3x3 + self.alpha * bias1x1
         else:
