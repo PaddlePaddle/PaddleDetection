@@ -17,7 +17,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle.nn.initializer import Normal
 
-from ppdet.core.workspace import register
+from ppdet.core.workspace import register, create
 from .anchor_generator import AnchorGenerator
 from .target_layer import RPNTargetAssign
 from .proposal_generator import ProposalGenerator
@@ -68,7 +68,7 @@ class RPNHead(nn.Layer):
             derived by from_config
     """
     __shared__ = ['export_onnx']
-    __inject__ = ['loss_rpn_bbox']
+    __inject__ = ['anchor_generator','loss_rpn_bbox']
 
     def __init__(self,
                  anchor_generator=_get_class_default_kwargs(AnchorGenerator),

@@ -24,6 +24,8 @@ from . import rtdetr_transformer
 from . import hybrid_encoder
 from . import mask_rtdetr_transformer
 from . import rtdetr_transformerv2
+from . import co_deformable_detr_transformer
+from . import co_dino_transformer
 
 from .detr_transformer import *
 from .utils import *
@@ -38,3 +40,5 @@ from .rtdetr_transformer import *
 from .hybrid_encoder import *
 from .mask_rtdetr_transformer import *
 from .rtdetr_transformerv2 import *
+from .co_deformable_detr_transformer import *
+from .co_dino_transformer import *
