@@ -95,7 +95,11 @@ def run(FLAGS, cfg):
 
 
 def main():
-    paddle.set_device("cpu")
+    if 'npu' in paddle.device.get_device():
+        paddle.set_device("npu")
+    else:
+        paddle.set_device("cpu")
+        
     FLAGS = parse_args()
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
