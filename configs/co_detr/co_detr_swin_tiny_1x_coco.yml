@@ -1,0 +1,24 @@
+_BASE_: [
+  'co_detr_r50_1x_coco.yml',
+]
+
+weights: output/co_detr_swin_tiny_1x/model_final
+find_unused_parameters: True
+pretrain_weights: https://bj.bcebos.com/v1/paddledet/models/pretrained/swin_tiny_patch4_window7_224_22kto1k_pretrained.pdparams
+
+CO_DETR:
+  backbone: SwinTransformer
+
+SwinTransformer:
+  arch: 'swin_T_224' # ['swin_T_224', 'swin_S_224', 'swin_B_224', 'swin_L_224', 'swin_B_384', 'swin_L_384']
+  out_indices: [1, 2, 3]
+  ape: false
+  drop_path_rate: 0.2
+  patch_norm: true
+
+ChannelMapper:
+  in_channels: [192, 384, 768]
+
+OptimizerBuilder:
+  optimizer:
+    weight_decay: 0.05

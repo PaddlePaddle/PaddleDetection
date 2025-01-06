@@ -45,8 +45,6 @@ class ChannelMapper(nn.Layer):
         num_outs (int, optional): Number of output feature maps. There
             would be extra_convs when num_outs larger than the length
             of in_channels.
-        init_cfg (dict or list[dict], optional): Initialization config dict.
-        
     """
 
     def __init__(self,
@@ -57,13 +55,15 @@ class ChannelMapper(nn.Layer):
                  norm_groups=32,
                  act='relu',
                  num_outs=None,
-                 init_cfg=dict(
-                     type='Xavier', layer='Conv2d', distribution='uniform')):
+                 strides=[8., 16., 32., 64.]):
         super(ChannelMapper, self).__init__()
+        self.out_channels = out_channels
         assert isinstance(in_channels, list)
         self.extra_convs = None
         if num_outs is None:
             num_outs = len(in_channels)
+        assert len(strides) == num_outs
+        self.strides = strides
         self.convs = nn.LayerList()
         for in_channel in in_channels:
             self.convs.append(
@@ -71,8 +71,8 @@ class ChannelMapper(nn.Layer):
                     ch_in=in_channel,
                     ch_out=out_channels,
                     filter_size=kernel_size,
-                    norm_type='gn',
-                    norm_groups=32,
+                    norm_type=norm_type,
+                    norm_groups=norm_groups,
                     act=act))
 
         if num_outs > len(in_channels):
@@ -88,8 +88,8 @@ class ChannelMapper(nn.Layer):
                         ch_out=out_channels,
                         filter_size=3,
                         stride=2,
-                        norm_type='gn',
-                        norm_groups=32,
+                        norm_type=norm_type,
+                        norm_groups=norm_groups,
                         act=act))
         self.init_weights()
 
@@ -109,8 +109,8 @@ class ChannelMapper(nn.Layer):
     def out_shape(self):
         return [
             ShapeSpec(
-                channels=self.out_channel, stride=1. / s)
-            for s in self.spatial_scales
+                channels=self.out_channels, stride=s)
+            for s in self.strides
         ]
 
     def init_weights(self):

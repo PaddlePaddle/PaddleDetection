@@ -186,7 +186,7 @@ class PETRHead(nn.Layer):
                  loss_oks='OKSLoss',
                  loss_hm='CenterFocalLoss',
                  with_kpt_refine=True,
-                 assigner='PoseHungarianAssigner',
+                 assigner='HungarianAssigner',
                  sampler='PseudoSampler',
                  loss_kpt_rpn='L1Loss',
                  loss_kpt_refine='L1Loss',
