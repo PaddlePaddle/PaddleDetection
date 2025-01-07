@@ -43,6 +43,7 @@ from .utils import (_get_clones, get_valid_ratio,
 __all__ = ['DINOTransformer']
 
 
+@register
 class DINOTransformerDecoderLayer(nn.Layer):
     def __init__(self,
                  d_model=256,
@@ -127,7 +128,10 @@ class DINOTransformerDecoderLayer(nn.Layer):
         return tgt
 
 
+@register
 class DINOTransformerDecoder(nn.Layer):
+    __inject__ = ['decoder_layer']
+
     def __init__(self,
                  hidden_dim,
                  decoder_layer,

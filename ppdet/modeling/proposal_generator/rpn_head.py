@@ -68,7 +68,7 @@ class RPNHead(nn.Layer):
             derived by from_config
     """
     __shared__ = ['export_onnx']
-    __inject__ = ['loss_rpn_bbox']
+    __inject__ = ['anchor_generator','loss_rpn_bbox']
 
     def __init__(self,
                  anchor_generator=_get_class_default_kwargs(AnchorGenerator),

@@ -1,0 +1,179 @@
+architecture: CO_DETR
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_cos_pretrained.pdparams
+
+# model settings
+num_dec_layer: &num_dec_layer 6
+lambda_2: &lambda_2 2.0
+
+CO_DETR:
+  backbone: ResNet
+  backbone_lr_mult: 0.1
+  neck: ChannelMapper
+  query_head: CoDeformDETRHead
+  rpn_head: RPNHead
+  roi_head: Co_RoiHead
+  bbox_head:
+    name: CoATSSHead
+    in_channels: 256
+    stacked_convs: 1
+    feat_channels: 256
+    bbox_weight: [10., 10., 5., 5.]
+    anchor_generator:
+      name: CoAnchorGenerator
+      octave_base_scale: 8
+      scales_per_octave: 1
+      aspect_ratios: [1.0]
+      strides: [8., 16., 32., 64., 128.]
+    assigner:
+      name: ATSSAssigner
+      topk: 9
+      sm_use: True
+    loss_cls:
+      name: Weighted_FocalLoss
+      use_sigmoid: true
+      gamma: 2.0
+      alpha: 0.25
+      loss_weight: 12.0
+    loss_bbox:
+      name: GIoULoss
+      loss_weight: 24.0
+      reduction: sum
+    loss_cent_weight: 12.0
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1, 2, 3]
+  num_stages: 4
+
+ChannelMapper:
+  in_channels: [512, 1024, 2048]
+  kernel_size: 1
+  out_channels: 256
+  norm_type: "gn"
+  norm_groups: 32
+  act: None
+  num_outs: 4
+  strides: [8., 16., 32., 64.]
+
+
+CoDeformDETRHead:
+  num_query: 300
+  in_channels: 2048
+  sync_cls_avg_factor: True
+  with_box_refine: True
+  as_two_stage: True
+  mixed_selection: True
+  transformer:
+    name: CoDeformableDetrTransformer
+    num_co_heads: 2
+    as_two_stage: True
+    mixed_selection: True
+    embed_dims: &embed_dims 256
+    encoder:
+      name: DeformableTransformerEncoder
+      num_layers: *num_dec_layer
+      encoder_layer:
+        name: DeformableTransformerEncoderLayer
+        d_model: *embed_dims
+        n_head: 8
+        dim_feedforward: 2048
+        n_levels: 4
+        n_points: 4
+        dropout: 0.0
+    decoder:
+      name: CoDeformableDetrTransformerDecoder
+      num_layers: *num_dec_layer
+      return_intermediate: True
+      look_forward_twice: True
+      decoder_layer:
+        name: DeformableTransformerDecoderLayer
+        d_model: *embed_dims
+        dim_feedforward: 2048
+        dropout: 0.0
+  positional_encoding:
+    name: PositionEmbedding
+    num_pos_feats: 128
+    normalize: true
+    offset: -0.5
+  loss_cls:
+    name: Weighted_FocalLoss
+    use_sigmoid: true
+    gamma: 2.0
+    alpha: 0.25
+    loss_weight: 2.0
+  loss_bbox:
+    name: L1Loss
+    loss_weight: 5.0
+  loss_iou:
+    name: GIoULoss
+    loss_weight: 2.0
+    reduction: sum
+  assigner:
+    name: HungarianAssigner
+    cls_cost:
+      name: FocalLossCost
+      weight: 2.0
+    reg_cost:
+      name: BBoxL1Cost
+      weight: 5.0
+      box_format: xywh
+    iou_cost:
+      name: IoUCost
+      iou_mode: giou
+      weight: 2.0
+  test_cfg:
+    max_per_img: 100
+    score_thr: 0.0
+
+RPNHead:
+  loss_rpn_bbox:
+    name: L1Loss
+    reduction: sum
+    loss_weight: 12.0
+  in_channel: 256
+  anchor_generator:
+    name: RetinaAnchorGenerator
+    octave_base_scale: 4
+    scales_per_octave: 3
+    aspect_ratios: [0.5, 1.0, 2.0]
+    strides: [8.0, 16.0, 32.0, 64.0, 128.0]
+  rpn_target_assign:
+    batch_size_per_im: 256
+    fg_fraction: 0.5
+    negative_overlap: 0.3
+    positive_overlap: 0.7
+    use_random: True
+  train_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 4000
+    post_nms_top_n: 1000
+    topk_after_collect: True
+  test_proposal:
+    min_size: 0.0
+    nms_thresh: 0.7
+    pre_nms_top_n: 1000
+    post_nms_top_n: 1000
+
+Co_RoiHead:
+  in_channel: 256
+  loss_normalize_pos: True
+  head: TwoFCHead
+  roi_extractor:
+    resolution: 7
+    sampling_ratio: 0
+    aligned: True
+  bbox_assigner:
+    name: BBoxAssigner
+    batch_size_per_im: 512
+    bg_thresh: 0.5
+    fg_thresh: 0.5
+    fg_fraction: 0.25
+    use_random: True
+  bbox_loss:
+    name: GIoULoss
+    loss_weight: 120.0
+  cls_loss_weight: 12.0

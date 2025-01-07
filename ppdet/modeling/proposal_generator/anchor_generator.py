@@ -23,7 +23,7 @@ import numpy as np
 
 from ppdet.core.workspace import register
 
-__all__ = ['AnchorGenerator', 'RetinaAnchorGenerator', 'S2ANetAnchorGenerator']
+__all__ = ['AnchorGenerator', 'RetinaAnchorGenerator', 'S2ANetAnchorGenerator','CoAnchorGenerator']
 
 
 @register
@@ -51,15 +51,17 @@ class AnchorGenerator(nn.Layer):
                  aspect_ratios=[0.5, 1.0, 2.0],
                  strides=[16.0],
                  variance=[1.0, 1.0, 1.0, 1.0],
-                 offset=0.):
+                 offset=0.,
+                 ):
         super(AnchorGenerator, self).__init__()
         self.anchor_sizes = anchor_sizes
         self.aspect_ratios = aspect_ratios
         self.strides = strides
+        self.num_levels = len(self.strides)
         self.variance = variance
         self.cell_anchors = self._calculate_anchors(len(strides))
         self.offset = offset
-
+        
     def _broadcast_params(self, params, num_features):
         if not isinstance(params[0], (list, tuple)):  # list[float]
             return [params] * num_features
@@ -121,6 +123,7 @@ class AnchorGenerator(nn.Layer):
         anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)
         return anchors_over_all_feature_maps
 
+
     @property
     def num_anchors(self):
         """
@@ -155,7 +158,100 @@ class RetinaAnchorGenerator(AnchorGenerator):
             variance=variance,
             offset=offset)
 
+    
+@register
+class CoAnchorGenerator(AnchorGenerator):
+    def __init__(self,
+                 octave_base_scale=4,
+                 scales_per_octave=3,
+                 aspect_ratios=[0.5, 1.0, 2.0],
+                 strides=[8.0, 16.0, 32.0, 64.0, 128.0],
+                 variance=[1.0, 1.0, 1.0, 1.0],
+                 offset=0.0):
+        anchor_sizes = []
+        for s in strides:
+            anchor_sizes.append([
+                s * octave_base_scale * 2**(i/scales_per_octave) \
+                for i in range(scales_per_octave)])
+        super(CoAnchorGenerator, self).__init__(
+            anchor_sizes=anchor_sizes,
+            aspect_ratios=aspect_ratios,
+            strides=strides,
+            variance=variance,
+            offset=offset)
+        
+    def _meshgrid(self, x, y, row_major=True):
+        yy, xx = paddle.meshgrid(y, x)
+        yy = yy.reshape([-1])
+        xx = xx.reshape([-1])
+        if row_major:
+            return xx, yy
+        else:
+            return yy, xx
+        
+    def valid_flags(self, featmap_sizes, pad_shape):
+        """Generate valid flags of anchors in multiple feature levels.
 
+        Args:
+            featmap_sizes (list(tuple)): List of feature map sizes in
+                multiple feature levels.
+            pad_shape (tuple): The padded shape of the image.
+            device (str): Device where the anchors will be put on.
+
+        Return:
+            list(torch.Tensor): Valid flags of anchors in multiple levels.
+        """
+        featmap_sizes = [feature_map.shape[-2:] for feature_map in featmap_sizes]
+        num_base_anchors = [base_anchors.shape[0] for base_anchors in self.cell_anchors]
+        assert self.num_levels == len(featmap_sizes)
+        multi_level_flags = []
+        for i in range(self.num_levels):
+            anchor_stride = self.strides[i]
+            feat_h, feat_w = featmap_sizes[i]
+            h, w = pad_shape[:2]
+            valid_feat_h = min(int(np.ceil(h / anchor_stride)), feat_h)
+            valid_feat_w = min(int(np.ceil(w / anchor_stride)), feat_w)
+            flags = self.single_level_valid_flags((feat_h, feat_w),
+                                                  (valid_feat_h, valid_feat_w),
+                                                   num_base_anchors[i],
+                                                  )
+            multi_level_flags.append(flags)
+        return multi_level_flags
+    
+    def single_level_valid_flags(self,
+                                 featmap_size,
+                                 valid_size,
+                                 num_base_anchors,
+                                 ):
+        """Generate the valid flags of anchor in a single feature map.
+
+        Args:
+            featmap_size (tuple[int]): The size of feature maps, arrange
+                as (h, w).
+            valid_size (tuple[int]): The valid size of the feature maps.
+            num_base_anchors (int): The number of base anchors.
+            device (str, optional): Device where the flags will be put on.
+                Defaults to 'cuda'.
+
+        Returns:
+            torch.Tensor: The valid flags of each anchor in a single level \
+                feature map.
+        """
+        feat_h, feat_w = featmap_size
+        valid_h, valid_w = valid_size
+        assert valid_h <= feat_h and valid_w <= feat_w
+        valid_x = paddle.zeros(feat_w, dtype=paddle.int32)
+        valid_y = paddle.zeros(feat_h, dtype=paddle.int32)
+        valid_x[:valid_w] = 1
+        valid_y[:valid_h] = 1
+        valid_xx, valid_yy = self._meshgrid(valid_x, valid_y)
+        valid = valid_xx & valid_yy
+        valid = paddle.reshape(valid, [-1, 1])
+        valid = paddle.expand(valid, [-1, num_base_anchors]).reshape([-1])
+        
+        return valid
+    
+    
 @register
 class S2ANetAnchorGenerator(nn.Layer):
     """

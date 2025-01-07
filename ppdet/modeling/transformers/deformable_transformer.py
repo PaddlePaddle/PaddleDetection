@@ -24,6 +24,7 @@ import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
 from paddle import ParamAttr
+from paddle.distributed.fleet.utils import recompute
 
 from ppdet.core.workspace import register
 from ..layers import MultiHeadAttention
@@ -65,6 +66,7 @@ class MSDeformableAttention(nn.Layer):
         self.output_proj = nn.Linear(embed_dim, embed_dim)
         try:
             # use cuda op
+            print('use cuda ms_deformable_attn op!')
             from deformable_detr_ops import ms_deformable_attn
         except:
             # use paddle func
@@ -158,6 +160,7 @@ class MSDeformableAttention(nn.Layer):
         return output
 
 
+@register
 class DeformableTransformerEncoderLayer(nn.Layer):
     def __init__(self,
                  d_model=256,
@@ -221,11 +224,15 @@ class DeformableTransformerEncoderLayer(nn.Layer):
         return src
 
 
+@register
 class DeformableTransformerEncoder(nn.Layer):
-    def __init__(self, encoder_layer, num_layers):
+    __inject__ = ["encoder_layer"]
+    def __init__(self, encoder_layer, num_layers, with_rp=-1):
         super(DeformableTransformerEncoder, self).__init__()
         self.layers = _get_clones(encoder_layer, num_layers)
         self.num_layers = num_layers
+        assert with_rp <= num_layers
+        self.with_rp = with_rp
 
     @staticmethod
     def get_reference_points(spatial_shapes, valid_ratios, offset=0.5):
@@ -255,13 +262,19 @@ class DeformableTransformerEncoder(nn.Layer):
                 [feat.shape[0], spatial_shapes.shape[0], 2])
         reference_points = self.get_reference_points(spatial_shapes,
                                                      valid_ratios)
-        for layer in self.layers:
-            feat = layer(feat, reference_points, spatial_shapes,
-                         level_start_index, feat_mask, query_pos_embed)
+        for i, layer in enumerate(self.layers):
+            if self.training and i < self.with_rp:
+                feat = recompute(layer, feat, reference_points, spatial_shapes,
+                             level_start_index, feat_mask, query_pos_embed,
+                             **{"preserve_rng_state": True, "use_reentrant": False})
+            else:
+                feat = layer(feat, reference_points, spatial_shapes,
+                                 level_start_index, feat_mask, query_pos_embed)
 
         return feat
 
 
+@register
 class DeformableTransformerDecoderLayer(nn.Layer):
     def __init__(self,
                  d_model=256,

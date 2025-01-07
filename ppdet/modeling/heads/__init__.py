@@ -42,6 +42,10 @@ from . import sparse_roi_head
 from . import vitpose_head
 from . import clrnet_head
 from . import ppyoloe_ins_head
+from . import co_deformable_detr_head
+from . import co_dino_head
+from . import co_roi_head
+from . import co_atss_head
 
 from .bbox_head import *
 from .mask_head import *
@@ -74,3 +78,7 @@ from .petr_head import *
 from .vitpose_head import *
 from .clrnet_head import *
 from .ppyoloe_ins_head import PPYOLOEInsHead
+from .co_deformable_detr_head import *
+from .co_roi_head import *
+from .co_atss_head import *
+from .co_dino_head import *

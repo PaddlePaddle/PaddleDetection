@@ -1,0 +1,112 @@
+_BASE_: [
+  "co_detr_r50_1x_coco.yml"
+]
+weights: output/co_dino_r50_1x/model_final
+find_unused_parameters: True
+
+num_dec_layer: &num_dec_layer 6
+
+CO_DETR:
+  query_head: CoDINOHead
+  bbox_head:
+    anchor_generator:
+      strides: [4., 8., 16., 32., 64., 128.]
+
+ResNet:
+  return_idx: [0, 1, 2, 3]
+
+ChannelMapper:
+  in_channels: [256, 512, 1024, 2048]
+  num_outs: 5
+  strides: [4., 8., 16., 32., 64.]
+
+CoDINOHead:
+  num_query: 900
+  num_dn_query: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  in_channels: 2048
+  sync_cls_avg_factor: True
+  with_box_refine: True
+  as_two_stage: True
+  mixed_selection: True
+  transformer:
+    name: CoDINOTransformer
+    two_stage_num_proposals: 900
+    with_pos_coord: True
+    with_coord_feat: False
+    num_co_heads: 2
+    num_feature_levels: 5
+    as_two_stage: True
+    mixed_selection: True
+    embed_dims: &embed_dims 256
+    encoder:
+      name: DeformableTransformerEncoder
+      num_layers: *num_dec_layer
+      with_rp: 6
+      encoder_layer:
+        name: DeformableTransformerEncoderLayer
+        d_model: *embed_dims
+        n_head: 8
+        dim_feedforward: 2048
+        n_levels: 5
+        n_points: 4
+        dropout: 0.0
+    decoder:
+      name: DINOTransformerDecoder
+      hidden_dim: *embed_dims
+      num_layers: *num_dec_layer
+      decoder_layer:
+        name: DINOTransformerDecoderLayer
+        d_model: *embed_dims
+        n_head: 8
+        dim_feedforward: 2048
+        n_points: 4
+        n_levels: 5
+        dropout: 0.0
+  positional_encoding:
+    name: PositionEmbedding
+    num_pos_feats: 128
+    temperature: 20
+    normalize: true
+  loss_cls:
+    name: QualityFocalLoss
+    use_sigmoid: true
+    beta: 2.0
+    loss_weight: 1.0
+  loss_bbox:
+    name: L1Loss
+    loss_weight: 5.0
+  loss_iou:
+    name: GIoULoss
+    loss_weight: 2.0
+    reduction: sum
+  assigner:
+    name: HungarianAssigner
+    cls_cost:
+      name: FocalLossCost
+      weight: 2.0
+    reg_cost:
+      name: BBoxL1Cost
+      weight: 5.0
+      box_format: xywh
+    iou_cost:
+      name: IoUCost
+      iou_mode: giou
+      weight: 2.0
+  test_cfg:
+    max_per_img: 300
+    score_thr: 0.0
+  nms:
+    name: MultiClassNMS
+    keep_top_k: -1
+    score_threshold: 0.0
+    nms_threshold: 0.8
+
+RPNHead:
+  anchor_generator:
+    strides: [4., 8., 16., 32., 64., 128.]
+
+Co_RoiHead:
+  roi_extractor:
+    end_level: 4
