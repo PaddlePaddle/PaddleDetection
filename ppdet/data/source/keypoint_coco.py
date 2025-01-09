@@ -503,6 +503,7 @@ class KeypointTopDownCocoDataset(KeypointTopDownBaseDataset):
         self.image_thre = image_thre
         self.center_scale = center_scale
         self.dataset_name = 'coco'
+        self.num_joints = num_joints
 
     def parse_dataset(self):
         if self.use_gt_bbox:
