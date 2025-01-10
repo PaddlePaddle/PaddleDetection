@@ -43,10 +43,10 @@ Dependency of PaddleDetection and PaddlePaddle:
 ```
 
 # CUDA10.2
-python -m pip install paddlepaddle-gpu==2.3.2 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle-gpu==2.3.2 -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # CPU
-python -m pip install paddlepaddle==2.3.2 -i https://mirror.baidu.com/pypi/simple
+python -m pip install paddlepaddle==2.3.2 -i https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
 - For more CUDA version or environment to quick install, please refer to the [PaddlePaddle Quick Installation document](https://www.paddlepaddle.org.cn/install/quick)
