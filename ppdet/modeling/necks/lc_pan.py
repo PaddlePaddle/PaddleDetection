@@ -87,7 +87,8 @@ class LCPAN(nn.Layer):
                         num_filters=out_c,
                         dw_size=k,
                         stride=s,
-                        use_se=se)
+                        use_se=se,
+                        act=act)
                     for i, (k, in_c, out_c, s, se) in enumerate(NET_CONFIG[
                         "block1"])
                 ]))
@@ -110,7 +111,8 @@ class LCPAN(nn.Layer):
                         num_filters=out_c,
                         dw_size=k,
                         stride=s,
-                        use_se=se)
+                        use_se=se,
+                        act=act)
                     for i, (k, in_c, out_c, s, se) in enumerate(NET_CONFIG[
                         "block2"])
                 ]))
