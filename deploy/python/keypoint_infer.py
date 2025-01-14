@@ -42,9 +42,39 @@ from infer import Detector, get_test_images, print_arguments
 # Global dictionary
 KEYPOINT_SUPPORT_MODELS = {
     'HigherHRNet': 'keypoint_bottomup',
-    'HRNet': 'keypoint_topdown'
+    'HRNet': 'keypoint_topdown',
+    'VitPose_TopDown_WholeBody': 'keypoint_topdown_wholebody'
 }
 
+
+def _box2cs(image_size, box):
+    """This encodes bbox(x,y,w,h) into (center, scale)
+
+    Args:
+        x, y, w, h
+
+    Returns:
+        tuple: A tuple containing center and scale.
+
+        - np.ndarray[float32](2,): Center of the bbox (x, y).
+        - np.ndarray[float32](2,): Scale of the bbox w & h.
+    """
+
+    x, y, w, h = box[:4]
+    input_size = image_size
+    aspect_ratio = input_size[0] / input_size[1]
+    center = np.array([x + w * 0.5, y + h * 0.5], dtype=np.float32)
+
+    if w > aspect_ratio * h:
+        h = w * 1.0 / aspect_ratio
+    elif w < aspect_ratio * h:
+        w = h * aspect_ratio
+
+    # pixel std is 200.0
+    scale = np.array([w / 200.0, h / 200.0], dtype=np.float32)
+    scale = scale * 1.25
+
+    return center, scale
 
 class KeyPointDetector(Detector):
     """
@@ -137,6 +167,23 @@ class KeyPointDetector(Detector):
             imshape = inputs['im_shape'][:, ::-1]
             center = np.round(imshape / 2.)
             scale = imshape / 200.
+            keypoint_postprocess = HRNetPostProcess(use_dark=self.use_dark)
+            kpts, scores = keypoint_postprocess(np_heatmap, center, scale)
+            results['keypoint'] = kpts
+            results['score'] = scores
+            return results
+        elif KEYPOINT_SUPPORT_MODELS[
+                self.pred_config.arch] == 'keypoint_topdown_wholebody':
+            results = {}
+            imshape = inputs['im_shape'][:, ::-1]
+            center = []
+            scale = []
+            for i in range(len(inputs['im_shape'])):
+                transize = np.shape(inputs["image"])
+                tmp_center, tmp_scale = _box2cs([np.shape(inputs["image"])[-1],np.shape(inputs["image"])[-2]], [0,0,inputs['im_shape'][i][1],inputs['im_shape'][i][0]] )
+                center.append(tmp_center)
+                scale.append(tmp_scale)
+
             keypoint_postprocess = HRNetPostProcess(use_dark=self.use_dark)
             kpts, scores = keypoint_postprocess(np_heatmap, center, scale)
             results['keypoint'] = kpts

@@ -198,7 +198,6 @@ class TopdownHeatmapSimpleHead(nn.Layer):
         x = self._transform_inputs(x)
         x = self.deconv_layers(x)
         x = self.final_layer(x)
-
         return x
 
     def inference_model(self, x, flip_pairs=None):
