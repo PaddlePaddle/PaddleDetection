@@ -252,7 +252,8 @@ def visualize_pose_point131(imgfile,
                    returnimg=False,
                    ids=None):
     pose_local_visualizer = PoseLocalVisualizer(vis_backends= [{'type': 'LocalVisBackend'}], name= 'visualizer', radius= 3, alpha= 0.8, line_width= 1)
-    with open("/paddle/mmpose-dev-1.x/dataset_meta.json", 'r') as f:
+    # with open("/paddle/mmpose-dev-1.x/dataset_meta.json", 'r') as f:
+    with open("deploy/python/dataset_meta.json", 'r') as f:
         meta_data = json.load(f)
 
     pred_instances = InstanceData()
