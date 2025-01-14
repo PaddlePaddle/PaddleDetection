@@ -34,7 +34,7 @@ sys.path.insert(0, parent_path)
 from benchmark_utils import PaddleInferBenchmark
 from picodet_postprocess import PicoDetPostProcess
 from preprocess import preprocess, Resize, NormalizeImage, Permute, PadStride, LetterBoxResize, WarpAffine, Pad, decode_image, CULaneResize
-from keypoint_preprocess import EvalAffine, TopDownEvalAffine, expand_crop
+from keypoint_preprocess import EvalAffine, TopDownEvalAffine, TopDownAffineImage, expand_crop
 from clrnet_postprocess import CLRNetPostProcess
 from visualize import visualize_box_mask, imshow_lanes
 from utils import argsparser, Timer, get_current_memory_mb, multiclass_nms, coco_clsid2catid

@@ -24,14 +24,15 @@ from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
 from infer import Detector, DetectorPicoDet, PredictConfig, print_arguments, get_test_images, bench_log
 from keypoint_infer import KeyPointDetector, PredictConfig_KeyPoint
-from visualize import visualize_pose
+from visualize import visualize_pose, visualize_pose_point131
 from benchmark_utils import PaddleInferBenchmark
 from utils import get_current_memory_mb
 from keypoint_postprocess import translate_to_ori_images
 
 KEYPOINT_SUPPORT_MODELS = {
     'HigherHRNet': 'keypoint_bottomup',
-    'HRNet': 'keypoint_topdown'
+    'HRNet': 'keypoint_topdown',
+    'VitPose_TopDown_WholeBody': 'keypoint_topdown_wholebody'
 }
 
 
@@ -178,7 +179,7 @@ def topdown_unite_predict_video(detector,
 
             keypoint_res['keypoint'][0][0] = smooth_keypoints.tolist()
 
-        im = visualize_pose(
+        im = visualize_pose_point131(
             frame,
             keypoint_res,
             visual_thresh=FLAGS.keypoint_threshold,
@@ -329,8 +330,7 @@ def main():
         enable_mkldnn=FLAGS.enable_mkldnn,
         use_dark=FLAGS.use_dark)
     keypoint_arch = topdown_keypoint_detector.pred_config.arch
-    assert KEYPOINT_SUPPORT_MODELS[
-        keypoint_arch] == 'keypoint_topdown', 'Detection-Keypoint unite inference only supports topdown models.'
+    assert KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown' or KEYPOINT_SUPPORT_MODELS[keypoint_arch] == 'keypoint_topdown_wholebody', 'Detection-Keypoint unite inference only supports topdown models.'
 
     # predict from video file or camera video stream
     if FLAGS.video_file is not None or FLAGS.camera_id != -1:

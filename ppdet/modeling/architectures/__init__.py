@@ -26,6 +26,7 @@ from . import s2anet
 from . import keypoint_hrhrnet
 from . import keypoint_hrnet
 from . import keypoint_vitpose
+from . import keypoint_vitpose_wholebody
 from . import jde
 from . import deepsort
 from . import fairmot
@@ -60,6 +61,7 @@ from .s2anet import *
 from .keypoint_hrhrnet import *
 from .keypoint_hrnet import *
 from .keypoint_vitpose import *
+from .keypoint_vitpose_wholebody import *
 from .jde import *
 from .deepsort import *
 from .fairmot import *

@@ -858,6 +858,46 @@ class HRNet(nn.Layer):
 
         return res
 
+    def forward_features(self, inputs):
+        x = inputs
+        conv1 = self.conv_layer1_1(x)
+        conv2 = self.conv_layer1_2(conv1)
+
+        la1 = self.la1(conv2)
+        tr1 = self.tr1([la1])
+        st2 = self.st2(tr1)
+        tr2 = self.tr2(st2)
+
+        st3 = self.st3(tr2)
+        tr3 = self.tr3(st3)
+
+        st4 = self.st4(tr3)
+
+        if self.upsample:
+            # Upsampling
+            x0_h, x0_w = st4[0].shape[2:4]
+            x1 = F.upsample(st4[1], size=(x0_h, x0_w), mode='bilinear')
+            x2 = F.upsample(st4[2], size=(x0_h, x0_w), mode='bilinear')
+            x3 = F.upsample(st4[3], size=(x0_h, x0_w), mode='bilinear')
+            x = paddle.concat([st4[0], x1, x2, x3], 1)
+            return x
+
+        if self.downsample:
+            y = self.incre_modules[0](st4[0])
+            for i in range(len(self.downsamp_modules)):
+                y = self.incre_modules[i+1](st4[i+1]) + \
+                            self.downsamp_modules[i](y)
+            y = self.final_layer(y)
+            return y
+
+        res = []
+        for i, layer in enumerate(st4):
+            if i == self.freeze_at:
+                layer.stop_gradient = True
+            if i in self.return_idx:
+                res.append(layer)
+        return res
+
     @property
     def out_shape(self):
         if self.upsample:
