@@ -23,12 +23,6 @@ from PIL import Image, ImageDraw, ImageFile
 import json
 
 
-from mmengine.structures import InstanceData
-from mmpose.structures import PoseDataSample
-from mmpose.visualization import PoseLocalVisualizer
-
-from mmpose.structures import merge_data_samples, split_instances
-
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def imagedraw_textsize_c(draw, text):
@@ -243,56 +237,14 @@ def get_color(idx):
     color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
     return color
 
-
-def visualize_pose_point131(imgfile,
-                   results,
-                   visual_thresh=0.3,
-                   save_name='pose.jpg',
-                   save_dir='output',
-                   returnimg=False,
-                   ids=None):
-    pose_local_visualizer = PoseLocalVisualizer(vis_backends= [{'type': 'LocalVisBackend'}], name= 'visualizer', radius= 3, alpha= 0.8, line_width= 1)
-    # with open("/paddle/mmpose-dev-1.x/dataset_meta.json", 'r') as f:
-    with open("deploy/python/dataset_meta.json", 'r') as f:
-        meta_data = json.load(f)
-
-    pred_instances = InstanceData()
-    pose_local_visualizer.set_dataset_meta(meta_data, skeleton_style="mmpose")
-    image = cv2.imread(imgfile) if type(imgfile) == str else imgfile
-    skeletons, score = results['keypoint']
-    keypoints = []
-    scores = []
-    for i in range(len(skeletons[0])):
-        keypoints.append([skeletons[0][i][0], skeletons[0][i][1]])
-        scores.append(skeletons[0][i][2])
-    keypoints = [keypoints]
-    skeletons = np.array(skeletons)
-    scores = np.array(scores)
-    pred_instances.keypoints = skeletons
-    
-    pred_pose_data_sample = PoseDataSample()
-    pred_pose_data_sample.pred_instances = pred_instances
-
-    blank_image = np.zeros(image.shape, dtype=np.uint8)
-    pose_local_visualizer.add_datasample('image', blank_image, data_sample=pred_pose_data_sample,
-            draw_gt=False,
-            draw_heatmap=False,
-            draw_bbox=True,
-            show_kpt_idx=False,
-            skeleton_style='mmpose',
-            show=False,
-            wait_time=0,
-            kpt_thr=visual_thresh)
-
-    return pose_local_visualizer.get_image()
-
 def visualize_pose(imgfile,
                    results,
                    visual_thresh=0.6,
                    save_name='pose.jpg',
                    save_dir='output',
                    returnimg=False,
-                   ids=None):
+                   ids=None,
+                   draw_box=False):
     try:
         import matplotlib.pyplot as plt
         import matplotlib
@@ -303,22 +255,28 @@ def visualize_pose(imgfile,
         raise e
     skeletons, scores = results['keypoint']
     skeletons = np.array(skeletons)
-    kpt_nums = 17
+    kpt_nums = np.shape(skeletons)[1]
     if len(skeletons) > 0:
         kpt_nums = skeletons.shape[1]
     if kpt_nums == 17:  #plot coco keypoint
         EDGES = [(0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (5, 7), (6, 8),
                  (7, 9), (8, 10), (5, 11), (6, 12), (11, 13), (12, 14),
                  (13, 15), (14, 16), (11, 12)]
+    elif kpt_nums == 133:
+        EDGES = [(15, 13), (13, 11), (16, 14), (14, 12), (11, 12), (5, 11), (6, 12), (5, 6), (5, 7), (6, 8), (7, 9), (8, 10), (1, 2), (0, 1), (0, 2), (1, 3), (2, 4), (3, 5), (4, 6), (15, 17), (15, 18), (15, 19), (16, 20), (16, 21), (16, 22), (91, 92), (92, 93), (93, 94), (94, 95), (91, 96), (96, 97), (97, 98), (98, 99), (91, 100), (100, 101), (101, 102), (102, 103), (91, 104), (104, 105), (105, 106), (106, 107), (91, 108), (108, 109), (109, 110), (110, 111), (112, 113), (113, 114), (114, 115), (115, 116), (112, 117), (117, 118), (118, 119), (119, 120), (112, 121), (121, 122), (122, 123), (123, 124), (112, 125), (125, 126), (126, 127), (127, 128), (112, 129), (129, 130), (130, 131), (131, 132)]
+    
     else:  #plot mpii keypoint
         EDGES = [(0, 1), (1, 2), (3, 4), (4, 5), (2, 6), (3, 6), (6, 7), (7, 8),
                  (8, 9), (10, 11), (11, 12), (13, 14), (14, 15), (8, 12),
                  (8, 13)]
     NUM_EDGES = len(EDGES)
-
-    colors = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], \
-            [0, 255, 85], [0, 255, 170], [0, 255, 255], [0, 170, 255], [0, 85, 255], [0, 0, 255], [85, 0, 255], \
-            [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
+    if kpt_nums == 133:
+        colors = [(51, 153, 255), (51, 153, 255), (51, 153, 255), (51, 153, 255), (51, 153, 255), (0, 255, 0), (255, 128, 0), (0, 255, 0), (255, 128, 0), (0, 255, 0), (255, 128, 0), (0, 255, 0), (255, 128, 0), (0, 255, 0), (255, 128, 0), (0, 255, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 255, 255), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 153, 255), (255, 153, 255), (255, 153, 255), (255, 153, 255), (102, 178, 255), (102, 178, 255), (102, 178, 255), (102, 178, 255), (255, 51, 51), (255, 51, 51), (255, 51, 51), (255, 51, 51), (0, 255, 0), (0, 255, 0), (0, 255, 0), (0, 255, 0), (255, 255, 255), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 153, 255), (255, 153, 255), (255, 153, 255), (255, 153, 255), (102, 178, 255), (102, 178, 255), (102, 178, 255), (102, 178, 255), (255, 51, 51), (255, 51, 51), (255, 51, 51), (255, 51, 51), (0, 255, 0), (0, 255, 0), (0, 255, 0), (0, 255, 0)]
+        skeleton_link_colors = [(0, 255, 0), (0, 255, 0), (255, 128, 0), (255, 128, 0), (51, 153, 255), (51, 153, 255), (51, 153, 255), (51, 153, 255), (0, 255, 0), (255, 128, 0), (0, 255, 0), (255, 128, 0), (51, 153, 255), (51, 153, 255), (51, 153, 255), (51, 153, 255), (51, 153, 255), (51, 153, 255), (51, 153, 255), (0, 255, 0), (0, 255, 0), (0, 255, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 153, 255), (255, 153, 255), (255, 153, 255), (255, 153, 255), (102, 178, 255), (102, 178, 255), (102, 178, 255), (102, 178, 255), (255, 51, 51), (255, 51, 51), (255, 51, 51), (255, 51, 51), (0, 255, 0), (0, 255, 0), (0, 255, 0), (0, 255, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 128, 0), (255, 153, 255), (255, 153, 255), (255, 153, 255), (255, 153, 255), (102, 178, 255), (102, 178, 255), (102, 178, 255), (102, 178, 255), (255, 51, 51), (255, 51, 51), (255, 51, 51), (255, 51, 51), (0, 255, 0), (0, 255, 0), (0, 255, 0), (0, 255, 0)]
+    else:
+        colors = [[255, 0, 0], [255, 85, 0], [255, 170, 0], [255, 255, 0], [170, 255, 0], [85, 255, 0], [0, 255, 0], \
+                [0, 255, 85], [0, 255, 170], [0, 255, 255], [0, 170, 255], [0, 85, 255], [0, 0, 255], [85, 0, 255], \
+                [170, 0, 255], [255, 0, 255], [255, 0, 170], [255, 0, 85]]
     cmap = matplotlib.cm.get_cmap('hsv')
     plt.figure()
 
@@ -326,7 +284,7 @@ def visualize_pose(imgfile,
 
     color_set = results['colors'] if 'colors' in results else None
 
-    if 'bbox' in results and ids is None:
+    if 'bbox' in results and ids is None and draw_box:
         bboxs = results['bbox']
         for j, rect in enumerate(bboxs):
             xmin, ymin, xmax, ymax = rect
@@ -376,7 +334,7 @@ def visualize_pose(imgfile,
                                        (int(length / 2), stickwidth),
                                        int(angle), 0, 360, 1)
             if ids is None:
-                color = colors[i] if color_set is None else colors[color_set[j]
+                color = skeleton_link_colors[i] if color_set is None else colors[color_set[j]
                                                                    %
                                                                    len(colors)]
             else:

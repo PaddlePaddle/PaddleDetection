@@ -24,7 +24,7 @@ from det_keypoint_unite_utils import argsparser
 from preprocess import decode_image
 from infer import Detector, DetectorPicoDet, PredictConfig, print_arguments, get_test_images, bench_log
 from keypoint_infer import KeyPointDetector, PredictConfig_KeyPoint
-from visualize import visualize_pose, visualize_pose_point131
+from visualize import visualize_pose
 from benchmark_utils import PaddleInferBenchmark
 from utils import get_current_memory_mb
 from keypoint_postprocess import translate_to_ori_images
@@ -178,9 +178,10 @@ def topdown_unite_predict_video(detector,
                 current_keypoints)
 
             keypoint_res['keypoint'][0][0] = smooth_keypoints.tolist()
-
-        im = visualize_pose_point131(
-            frame,
+            
+        zero = np.zeros((height, width, 3), dtype=np.uint8)
+        im = visualize_pose(
+            zero,
             keypoint_res,
             visual_thresh=FLAGS.keypoint_threshold,
             returnimg=True)
