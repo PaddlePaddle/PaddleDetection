@@ -167,8 +167,8 @@ python -m paddle.distributed.launch --gpus 0,1,2,3,4,5,6,7 tools/train.py -c con
 ```
 
 **Notes:**
-- If you need to evaluate while training, please add `--eval`.
-- PP-YOLOE+ supports mixed precision training, please add `--amp`.
+- If you need to evaluate while training, please add flag `--eval`.
+- PP-YOLOE+ supports mixed precision training, please add flag `--amp`.
 - PaddleDetection supports multi-machine distributed training, you can refer to [DistributedTraining tutorial](../../docs/tutorials/DistributedTraining_en.md).
 
 
