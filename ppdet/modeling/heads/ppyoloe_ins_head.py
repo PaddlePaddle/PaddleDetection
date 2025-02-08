@@ -789,7 +789,7 @@ class PPYOLOEInsHead(nn.Layer):
             mask_logits = mask_logits[..., :int(ori_h), :int(ori_w)]
 
         masks = mask_logits.squeeze(0)
-        mask_pred = masks > self.mask_thr_binary
+        mask_pred = paddle.to_tensor(masks > self.mask_thr_binary).cast("float32")
 
         # scale bbox to origin
         scale_factor = scale_factor.flip(-1).tile([1, 2])
