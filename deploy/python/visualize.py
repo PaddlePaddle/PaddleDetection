@@ -20,6 +20,15 @@ import math
 import numpy as np
 import PIL
 from PIL import Image, ImageDraw, ImageFile
+import json
+
+
+from mmengine.structures import InstanceData
+from mmpose.structures import PoseDataSample
+from mmpose.visualization import PoseLocalVisualizer
+
+from mmpose.structures import merge_data_samples, split_instances
+
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 def imagedraw_textsize_c(draw, text):
@@ -234,6 +243,48 @@ def get_color(idx):
     color = ((37 * idx) % 255, (17 * idx) % 255, (29 * idx) % 255)
     return color
 
+
+def visualize_pose_point131(imgfile,
+                   results,
+                   visual_thresh=0.3,
+                   save_name='pose.jpg',
+                   save_dir='output',
+                   returnimg=False,
+                   ids=None):
+    pose_local_visualizer = PoseLocalVisualizer(vis_backends= [{'type': 'LocalVisBackend'}], name= 'visualizer', radius= 3, alpha= 0.8, line_width= 1)
+    # with open("/paddle/mmpose-dev-1.x/dataset_meta.json", 'r') as f:
+    with open("deploy/python/dataset_meta.json", 'r') as f:
+        meta_data = json.load(f)
+
+    pred_instances = InstanceData()
+    pose_local_visualizer.set_dataset_meta(meta_data, skeleton_style="mmpose")
+    image = cv2.imread(imgfile) if type(imgfile) == str else imgfile
+    skeletons, score = results['keypoint']
+    keypoints = []
+    scores = []
+    for i in range(len(skeletons[0])):
+        keypoints.append([skeletons[0][i][0], skeletons[0][i][1]])
+        scores.append(skeletons[0][i][2])
+    keypoints = [keypoints]
+    skeletons = np.array(skeletons)
+    scores = np.array(scores)
+    pred_instances.keypoints = skeletons
+    
+    pred_pose_data_sample = PoseDataSample()
+    pred_pose_data_sample.pred_instances = pred_instances
+
+    blank_image = np.zeros(image.shape, dtype=np.uint8)
+    pose_local_visualizer.add_datasample('image', blank_image, data_sample=pred_pose_data_sample,
+            draw_gt=False,
+            draw_heatmap=False,
+            draw_bbox=True,
+            show_kpt_idx=False,
+            skeleton_style='mmpose',
+            show=False,
+            wait_time=0,
+            kpt_thr=visual_thresh)
+
+    return pose_local_visualizer.get_image()
 
 def visualize_pose(imgfile,
                    results,

@@ -55,10 +55,11 @@ TRT_MIN_SUBGRAPH = {
     'YOLOF': 40,
     'METRO_Body': 3,
     'DETR': 3,
-    'CLRNet': 3
+    'CLRNet': 3,
+    'VitPose_TopDown_WholeBody': 3
 }
 
-KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet']
+KEYPOINT_ARCH = ['HigherHRNet', 'TopDownHRNet', 'VitPose_TopDown_WholeBody']
 MOT_ARCH = ['JDE', 'FairMOT', 'DeepSORT', 'ByteTrack', 'CenterTrack']
 LANE_ARCH = ['CLRNet']
 

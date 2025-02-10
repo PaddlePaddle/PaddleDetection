@@ -18,6 +18,83 @@ import cv2
 import numpy as np
 
 
+def _box2cs(image_size, box):
+    """This encodes bbox(x,y,w,h) into (center, scale)
+
+    Args:
+        x, y, w, h
+
+    Returns:
+        tuple: A tuple containing center and scale.
+
+        - np.ndarray[float32](2,): Center of the bbox (x, y).
+        - np.ndarray[float32](2,): Scale of the bbox w & h.
+    """
+
+    x, y, w, h = box[:4]
+    input_size = image_size
+    aspect_ratio = input_size[0] / input_size[1]
+    center = np.array([x + w * 0.5, y + h * 0.5], dtype=np.float32)
+
+    if w > aspect_ratio * h:
+        h = w * 1.0 / aspect_ratio
+    elif w < aspect_ratio * h:
+        w = h * aspect_ratio
+
+    # pixel std is 200.0
+    scale = np.array([w / 200.0, h / 200.0], dtype=np.float32)
+    scale = scale * 1.25
+
+    return center, scale
+
+class TopDownAffineImage(object):
+    """apply affine transform to image and coords
+
+    Args:
+        trainsize (list): [w, h], the standard size used to train
+        use_udp (bool): whether to use Unbiased Data Processing.
+        records(dict): the dict contained the image and coords
+
+    Returns:
+        records (dict): contain the image and coords after tranformed
+
+    """
+
+    def __init__(self, trainsize, use_udp=False, use_box2cs=True):
+        self.trainsize = trainsize
+        self.use_udp = use_udp
+        self.use_box2cs = use_box2cs
+
+    def __call__(self, records, im_info):
+        if self.use_box2cs:
+            center, scale = _box2cs(self.trainsize, [0,0,im_info['im_shape'][1],im_info['im_shape'][0]]) 
+        else:
+            imshape = im_info['im_shape'][::-1]
+            center = im_info['center'] if 'center' in im_info else imshape / 2.
+            scale = im_info['scale'] if 'scale' in im_info else imshape
+
+        image = records
+        rot = records['rotate'] if "rotate" in records else 0
+        if self.use_udp:
+            trans = get_warp_matrix(
+                rot, center * 2.0,
+                [self.trainsize[0] - 1.0, self.trainsize[1] - 1.0],
+                scale * 200.0)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+            joints[:, 0:2] = warp_affine_joints(joints[:, 0:2].copy(), trans)
+        else:
+            trans = get_affine_transform(center, scale *
+                                         200, rot, self.trainsize)
+            image = cv2.warpAffine(
+                image,
+                trans, (int(self.trainsize[0]), int(self.trainsize[1])),
+                flags=cv2.INTER_LINEAR)
+        return image, im_info
+
+
 class EvalAffine(object):
     def __init__(self, size, stride=64):
         super(EvalAffine, self).__init__()

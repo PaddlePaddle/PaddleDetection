@@ -75,7 +75,7 @@ PaddleDetection是一个基于PaddlePaddle的目标检测端到端开发套件�
      * 🎨 [**模型丰富一键调用**](docs/paddlex/quick_start.md)：将通用目标检测、小目标检测和实例分割涉及的**55个模型**整合为3条模型产线，通过极简的**Python API一键调用**，快速体验模型效果。此外，同一套API，也支持图像分类、图像分割、文本图像智能分析、通用OCR、时序预测等共计**200+模型**，形成20+单功能模块，方便开发者进行**模型组合使用**。
      * 🚀 [**提高效率降低门槛**](docs/paddlex/overview.md)：提供基于**统一命令**和**图形界面**两种方式，实现模型简洁高效的使用、组合与定制。支持**高性能部署、服务化部署和端侧部署**等多种部署方式。此外，对于各种主流硬件如**英伟达GPU、昆仑芯、昇腾、寒武纪和海光**等，进行模型开发时，都可以**无缝切换**。
      
-  *  添加实例分割SOTA模型[**Mask-RT-DETR**](https://github.com/PaddlePaddle/PaddleX/blob/release/3.0-beta1/docs/module_usage/tutorials/cv_modules/instance_segmentation.md)
+  *  添加实例分割SOTA模型[**Mask-RT-DETR**](https://paddlepaddle.github.io/PaddleX/latest/module_usage/tutorials/cv_modules/instance_segmentation.html)
 
 **🔥超越YOLOv8，飞桨推出精度最高的实时检测器RT-DETR！**
 
