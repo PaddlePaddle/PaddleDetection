@@ -160,7 +160,7 @@ def deformable_attention_core_func_v2(value,
     split_shape = [h * w for h, w in value_spatial_shapes]
     value_list = value.split(split_shape, axis=-1)
     value_list = [
-        value.reshape([batch_num * num_heads, head_dim, h, w])
+        value.reshape([-1, head_dim, h, w])
         for value, (h, w) in zip(value_list, value_spatial_shapes)
     ]
 
