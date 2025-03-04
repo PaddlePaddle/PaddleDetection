@@ -24,7 +24,7 @@ import pycocotools.mask as mask_util
 from ..initializer import linear_init_, constant_
 from ..transformers.utils import inverse_sigmoid
 
-__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead']
+__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead', 'DINOv3Head']
 
 
 class MLP(nn.Layer):
@@ -537,3 +537,109 @@ class MaskDINOHead(nn.Layer):
                 dn_meta=dn_meta)
         else:
             return (dec_out_bboxes[-1], dec_out_logits[-1], dec_out_masks[-1])
+
+@register
+class DINOv3Head(nn.Layer):
+    __inject__ = ['loss']
+    __shared__ = ['o2m_branch', 'num_queries_o2m']
+
+
+    def __init__(self, loss='DINOLoss', eval_idx=-1, o2m=4, o2m_branch=False, num_queries_o2m=450):
+        super(DINOv3Head, self).__init__()
+        self.loss = loss
+        self.eval_idx = eval_idx
+        self.o2m = o2m
+        self.o2m_branch = o2m_branch
+        self.num_queries_o2m = num_queries_o2m
+
+    def forward(self, out_transformer, body_feats, inputs=None):
+        (dec_out_bboxes, dec_out_logits, enc_topk_bboxes, enc_topk_logits,
+         dn_meta) = out_transformer
+        if self.training:
+            assert inputs is not None
+            assert 'gt_bbox' in inputs and 'gt_class' in inputs
+
+            if dn_meta is not None:
+                num_groups = len(dn_meta)
+                total_dec_queries = dec_out_bboxes.shape[2]
+                total_enc_queries = enc_topk_bboxes.shape[1]
+                loss = {}
+                if self.o2m_branch:
+                    dec_out_bboxes, dec_out_bboxes_o2m = paddle.split(dec_out_bboxes, [total_dec_queries - self.num_queries_o2m, self.num_queries_o2m], axis=2)
+                    dec_out_logits, dec_out_logits_o2m = paddle.split(dec_out_logits, [total_dec_queries - self.num_queries_o2m, self.num_queries_o2m], axis=2)
+                    enc_topk_bboxes, enc_topk_bboxes_o2m = paddle.split(enc_topk_bboxes, [total_enc_queries - self.num_queries_o2m, self.num_queries_o2m], axis=1)
+                    enc_topk_logits, enc_topk_logits_o2m = paddle.split(enc_topk_logits, [total_enc_queries - self.num_queries_o2m, self.num_queries_o2m], axis=1)
+
+                    out_bboxes_o2m = paddle.concat([enc_topk_bboxes_o2m.unsqueeze(0), dec_out_bboxes_o2m])
+                    out_logits_o2m = paddle.concat([enc_topk_logits_o2m.unsqueeze(0), dec_out_logits_o2m])
+                    loss_o2m = self.loss(
+                        out_bboxes_o2m,
+                        out_logits_o2m,
+                        inputs['gt_bbox'],
+                        inputs['gt_class'],
+                        dn_out_bboxes=None,
+                        dn_out_logits=None,
+                        dn_meta=None,
+                        o2m=self.o2m)
+                    for key, value in loss_o2m.items():
+                        key = key + '_o2m_branch'
+                        loss.update({
+                            key: loss.get(key, paddle.zeros([1])) + value
+                        })
+                
+                split_dec_num = [sum(dn['dn_num_split']) for dn in dn_meta]
+                split_enc_num = [dn['dn_num_split'][1] for dn in dn_meta]
+                dec_out_bboxes = paddle.split(dec_out_bboxes, split_dec_num, axis=2)
+                dec_out_logits = paddle.split(dec_out_logits, split_dec_num, axis=2)
+                enc_topk_bboxes = paddle.split(enc_topk_bboxes, split_enc_num, axis=1)
+                enc_topk_logits = paddle.split(enc_topk_logits, split_enc_num, axis=1)
+
+                for g_id in range(num_groups):
+                    dn_out_bboxes_gid, dec_out_bboxes_gid = paddle.split(
+                        dec_out_bboxes[g_id], dn_meta[g_id]['dn_num_split'], axis=2)
+                    dn_out_logits_gid, dec_out_logits_gid = paddle.split(
+                        dec_out_logits[g_id], dn_meta[g_id]['dn_num_split'], axis=2)
+                    out_bboxes_gid = paddle.concat([
+                        enc_topk_bboxes[g_id].unsqueeze(0), dec_out_bboxes_gid])
+                    out_logits_gid = paddle.concat([
+                        enc_topk_logits[g_id].unsqueeze(0), dec_out_logits_gid])
+                    
+                    loss_gid = self.loss(
+                        out_bboxes_gid,
+                        out_logits_gid,
+                        inputs['gt_bbox'],
+                        inputs['gt_class'],
+                        dn_out_bboxes=dn_out_bboxes_gid,
+                        dn_out_logits=dn_out_logits_gid,
+                        dn_meta=dn_meta[g_id])
+                    # sum loss
+                    for key, value in loss_gid.items():
+                        loss.update({
+                            key: loss.get(key, paddle.zeros([1])) + value
+                        })
+
+                # average across (dual_groups + 1)
+                for key, value in loss.items():
+                    if '_o2m_branch' not in key:
+                        loss.update({key: value / num_groups})
+                return loss
+            else:
+                dn_out_bboxes, dn_out_logits = None, None
+
+            out_bboxes = paddle.concat(
+                [enc_topk_bboxes.unsqueeze(0), dec_out_bboxes])
+            out_logits = paddle.concat(
+                [enc_topk_logits.unsqueeze(0), dec_out_logits])
+
+            return self.loss(
+                out_bboxes,
+                out_logits,
+                inputs['gt_bbox'],
+                inputs['gt_class'],
+                dn_out_bboxes=dn_out_bboxes,
+                dn_out_logits=dn_out_logits,
+                dn_meta=dn_meta,
+                gt_score=inputs.get('gt_score', None))
+        else:
+            return (dec_out_bboxes[self.eval_idx],
+                    dec_out_logits[self.eval_idx], None)

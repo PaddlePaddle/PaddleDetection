@@ -1,0 +1,25 @@
+_BASE_: [
+  '../datasets/coco_detection.yml',
+  '../runtime.yml',
+  '_base_/optimizer_6x.yml',
+  '_base_/rtdetrv3_r50vd.yml',
+  '_base_/rtdetr_reader.yml',
+]
+
+weights: output/rtdetrv3_r50vd_6x_coco/model_final
+find_unused_parameters: True
+log_iter: 200
+
+o2m_branch: True
+num_queries_o2m: 450
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+
+
+RTDETRTransformerv3:
+  eval_idx: -1
+  num_decoder_layers: 6
+  num_noises: 2
+  num_noise_queries: [300, 300]
+  num_noise_denoising: 100
+  learnt_init_query: False

@@ -1,0 +1,100 @@
+architecture: RTDETRV3
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_ssld_v2_pretrained.pdparams
+norm_type: sync_bn
+use_ema: True
+ema_decay: 0.9999
+ema_decay_type: "exponential"
+ema_filter_no_grad: True
+hidden_dim: 256
+use_focal_loss: True
+eval_size: [640, 640]
+
+
+RTDETRV3:
+  backbone: ResNet
+  neck: HybridEncoder
+  transformer: RTDETRTransformerv3
+  detr_head: DINOv3Head
+  aux_o2m_head: PPYOLOEHead
+  post_process: DETRPostProcess
+
+ResNet:
+  # index 0 stands for res2
+  depth: 50
+  variant: d
+  norm_type: bn
+  freeze_at: 0
+  return_idx: [1, 2, 3]
+  lr_mult_list: [0.1, 0.1, 0.1, 0.1]
+  num_stages: 4
+  freeze_stem_only: True
+
+HybridEncoder:
+  hidden_dim: 256
+  use_encoder_idx: [2]
+  num_encoder_layers: 1
+  encoder_layer:
+    name: TransformerLayer
+    d_model: 256
+    nhead: 8
+    dim_feedforward: 1024
+    dropout: 0.
+    activation: 'gelu'
+  expansion: 1.0
+
+
+RTDETRTransformerv3:
+  num_queries: 300
+  position_embed_type: sine
+  feat_strides: [8, 16, 32]
+  num_levels: 3
+  nhead: 8
+  num_decoder_layers: 6
+  dim_feedforward: 1024
+  dropout: 0.0
+  activation: relu
+  num_denoising: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  learnt_init_query: False
+  num_noises: 0
+  num_noise_queries: []
+  num_noise_denoising: 100
+  learnt_init_query: False
+
+
+DINOv3Head:
+  o2m: 4
+  loss:
+    name: DINOv3Loss
+    loss_coeff: {class: 1, bbox: 5, giou: 2}
+    aux_loss: True
+    use_vfl: True
+    matcher:
+      name: HungarianMatcher
+      matcher_coeff: {class: 2, bbox: 5, giou: 2}
+
+PPYOLOEHead:
+  fpn_strides: [8, 16, 32]
+  grid_cell_scale: 5.0
+  grid_cell_offset: 0.5
+  static_assigner_epoch: 30
+  use_varifocal_loss: True
+  loss_weight: {class: 1.0, iou: 2.5, dfl: 0.5}
+  static_assigner:
+    name: ATSSAssigner
+    topk: 9
+  assigner:
+    name: TaskAlignedAssigner
+    topk: 13
+    alpha: 1.0
+    beta: 6.0
+  nms:
+    name: MultiClassNMS
+    nms_top_k: 1000
+    keep_top_k: 300
+    score_threshold: 0.01
+    nms_threshold: 0.7
+
+DETRPostProcess:
+  num_top_queries: 300

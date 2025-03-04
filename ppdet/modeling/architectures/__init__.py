@@ -83,3 +83,6 @@ from .keypoint_petr import *
 from .detr_ssod import *
 from .multi_stream_detector import *
 from .clrnet import *
+
+from . import rtdetrv3
+from .rtdetrv3 import *
