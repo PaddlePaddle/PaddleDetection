@@ -255,7 +255,7 @@ def map_path(url, root_dir, path_depth=1):
     zip_formats = ['.zip', '.tar', '.gz']
     for zip_format in zip_formats:
         fpath = fpath.replace(zip_format, '')
-    return osp.join(root_dir, fpath)
+    return osp.join(osp.expanduser(root_dir), fpath)
 
 
 def get_path(url, root_dir, md5sum=None, check_exist=True):
