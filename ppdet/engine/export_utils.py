@@ -382,20 +382,31 @@ def _dump_infer_config(config, path, image_shape, model, input_spec):
     infer_cfg['Preprocess'], infer_cfg['label_list'] = _parse_reader(
         reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape[1:])
     if config.get("uniform_output_enabled", None):
+        models_require_bs_1 = ["PP-YOLOE_seg-S", "SOLOv2"]
+        pdx_model_name = config.get('pdx_model_name', None)
+        if pdx_model_name and any(name in pdx_model_name for name in models_require_bs_1):
+            batch_sizes = [1, 1, 1]
+        else:
+            batch_sizes = [1, 1, 8]
+
         for d in input_spec:
             if 'image' in d:
                 hpi_dynamic_shape = list(d['image'].shape[2:])
         def get_dynamic_shapes(hpi_shape):
-            return [[1, 3] + hpi_shape, [1, 3] + hpi_shape, [8, 3] + hpi_shape]
+            return [
+                [batch_sizes[0], 3] + hpi_shape, 
+                [batch_sizes[1], 3] + hpi_shape, 
+                [batch_sizes[2], 3] + hpi_shape
+            ]
 
         dynamic_shapes = get_dynamic_shapes(hpi_dynamic_shape) if hpi_dynamic_shape != [-1, -1] else [
-            [1, 3, 320, 320],
-            [1, 3, 640, 640],
-            [8, 3, 1280, 1280]
+            [batch_sizes[0], 3, 320, 320],
+            [batch_sizes[1], 3, 640, 640],
+            [batch_sizes[2], 3, 1280, 1280]
         ]
         shapes = {
             "image": dynamic_shapes,
-            "scale_factor": [[1, 2], [1, 2], [8, 2]]
+            "scale_factor": [[batch_sizes[0], 2], [batch_sizes[1], 2], [batch_sizes[2], 2]]
         }
         trt_dynamic_shape_input_data = {
             "scale_factor": [
@@ -415,8 +426,8 @@ def _dump_infer_config(config, path, image_shape, model, input_spec):
             "PP-YOLOE_seg",
             "SOLOv2"
         ]
-        if any(name in config.get('pdx_model_name', None) for name in model_names_required_imgsize):
-            shapes["im_shape"] = [[1, 2], [1, 2], [8, 2]]
+        if any(name in pdx_model_name for name in model_names_required_imgsize):
+            shapes["im_shape"] = [[batch_sizes[0], 2], [batch_sizes[1], 2], [batch_sizes[2], 2]]
             trt_dynamic_shape = [
                 [dim for _ in range(shape[0]) for dim in shape[2:]]
                 for shape in dynamic_shapes
