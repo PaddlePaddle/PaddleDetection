@@ -382,7 +382,7 @@ def _dump_infer_config(config, path, image_shape, model, input_spec):
     infer_cfg['Preprocess'], infer_cfg['label_list'] = _parse_reader(
         reader_cfg, dataset_cfg, config['metric'], label_arch, image_shape[1:])
     if config.get("uniform_output_enabled", None):
-        models_require_bs_1 = ["PP-YOLOE_seg-S", "SOLOv2"]
+        models_require_bs_1 = ["PP-YOLOE_seg-S", "SOLOv2", "PP-ShiTuV2_det"]
         pdx_model_name = config.get('pdx_model_name', None)
         if pdx_model_name and any(name in pdx_model_name for name in models_require_bs_1):
             batch_sizes = [1, 1, 1]
