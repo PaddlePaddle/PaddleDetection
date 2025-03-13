@@ -152,7 +152,7 @@ class KeyPointDetector(Detector):
             repeats (int): repeat number for prediction
         Returns:
             results (dict): include 'boxes': np.ndarray: shape:[N,6], N: number of box,
-                            matix element:[class, score, x_min, y_min, x_max, y_max]
+                            matrix element:[class, score, x_min, y_min, x_max, y_max]
                             MaskRCNN's results include 'masks': np.ndarray:
                             shape: [N, im_h, im_w]
         '''

@@ -2,7 +2,7 @@
 
 <img src="https://user-images.githubusercontent.com/48054808/185032511-0c97b21c-8bab-4ab1-89ee-16e5e81c22cc.png" title="" alt="" data-align="center">
 
-**PaddleDetection has provide out-of-the-box tools in pedestrian and vehicle analysis, and it support multiple input format such as images/videos/multi-videos/online video streams. This make it popular in smart-city\smart transportation and so on. It can be deployed easily with GPU server and TensorRT, which achieves real-time performace.**
+**PaddleDetection has provide out-of-the-box tools in pedestrian and vehicle analysis, and it support multiple input format such as images/videos/multi-videos/online video streams. This make it popular in smart-city\smart transportation and so on. It can be deployed easily with GPU server and TensorRT, which achieves real-time performance.**
 
 - 🚶‍♂️🚶‍♀️ **PP-Human has four major toolbox for pedestrian analysis: five example of behavior analysis、26 attributes recognition、in-out counting、multi-target-multi-camera tracking(REID).**
 

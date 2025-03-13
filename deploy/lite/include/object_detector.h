@@ -41,7 +41,7 @@ std::vector<int> GenerateColorMap(int num_class);
 // Visualiztion Detection Result
 cv::Mat VisualizeResult(const cv::Mat& img,
                         const std::vector<PaddleDetection::ObjectResult>& results,
-                        const std::vector<std::string>& lables,
+                        const std::vector<std::string>& labels,
                         const std::vector<int>& colormap,
                         const bool is_rbox);
 

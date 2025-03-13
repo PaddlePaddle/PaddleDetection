@@ -141,10 +141,10 @@ def load_det_results(det_file, num_frames):
     results_list = []
     for frame_i in range(num_frames):
         results = {'bbox': [], 'score': [], 'cls_id': []}
-        lables_with_frame = labels[labels[:, 0] == frame_i + 1]
-        # each line of lables_with_frame:
+        labels_with_frame = labels[labels[:, 0] == frame_i + 1]
+        # each line of labels_with_frame:
         # [frame_id],[x0],[y0],[w],[h],[score],[class_id]
-        for l in lables_with_frame:
+        for l in labels_with_frame:
             results['bbox'].append(l[1:5])
             results['score'].append(l[5:6])
             results['cls_id'].append(l[6:7])

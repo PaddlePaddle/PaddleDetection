@@ -1118,7 +1118,7 @@ class PipePredictor(object):
             ids = np.zeros([0])
             scores = np.zeros([0])
 
-        # single class, still need to be defaultdict type for ploting
+        # single class, still need to be defaultdict type for plotting
         num_classes = 1
         online_tlwhs = defaultdict(list)
         online_scores = defaultdict(list)

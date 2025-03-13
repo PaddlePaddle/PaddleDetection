@@ -173,7 +173,7 @@ def rbox_iou(g, p):
 
 def multiclass_nms_rotated(pred_bboxes,
                            pred_scores,
-                           iou_threshlod=0.1,
+                           iou_threshold=0.1,
                            score_threshold=0.1):
     """
     Args:
@@ -198,14 +198,14 @@ def multiclass_nms_rotated(pred_bboxes,
             score = score[idx]
             keep_idx = []
             for i, b in enumerate(bbox):
-                supressed = False
+                suppressed = False
                 for gi in keep_idx:
                     g = bbox[gi]
-                    if rbox_iou(b, g) > iou_threshlod:
-                        supressed = True
+                    if rbox_iou(b, g) > iou_threshold:
+                        suppressed = True
                         break
 
-                if supressed:
+                if suppressed:
                     continue
 
                 keep_idx.append(i)

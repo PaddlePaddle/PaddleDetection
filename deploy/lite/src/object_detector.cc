@@ -32,7 +32,7 @@ void ObjectDetector::LoadModel(std::string model_file, int num_theads) {
 // Visualiztion MaskDetector results
 cv::Mat VisualizeResult(const cv::Mat& img,
                         const std::vector<PaddleDetection::ObjectResult>& results,
-                        const std::vector<std::string>& lables,
+                        const std::vector<std::string>& labels,
                         const std::vector<int>& colormap,
                         const bool is_rbox = false) {
   cv::Mat vis_img = img.clone();
@@ -40,7 +40,7 @@ cv::Mat VisualizeResult(const cv::Mat& img,
     // Configure color and text size
     std::ostringstream oss;
     oss << std::setiosflags(std::ios::fixed) << std::setprecision(4);
-    oss << lables[results[i].class_id] << " ";
+    oss << labels[results[i].class_id] << " ";
     oss << results[i].confidence;
     std::string text = oss.str();
     int c1 = colormap[3 * results[i].class_id + 0];

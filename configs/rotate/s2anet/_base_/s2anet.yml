@@ -3,7 +3,7 @@ pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet50_vd_
 weights: output/s2anet_r50_fpn_1x_dota/model_final.pdparams
 
 
-# Model Achitecture
+# Model Architecture
 S2ANet:
   backbone: ResNet
   neck: FPN
