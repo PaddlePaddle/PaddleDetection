@@ -110,7 +110,17 @@ class VideoActionRecognizer(object):
         elif device == "NPU" or device == "npu":
             self.config.enable_custom_device('npu')
         elif device == "GCU" or device == "gcu":
+            assert paddle.device.is_compiled_with_custom_device("gcu"), (
+                "Device cannot be set as GCU while your paddle "
+                "is not compiled with gcu! \nPlease try: \n"
+                "\t1. Install paddle-custom-gcu to run model on GCU. \n"
+                "\t2. Set device to CPU in config to run model on CPU."
+            )
+            import paddle_custom_device.gcu.passes as gcu_passes
+            gcu_passes.setUp()
             self.config.enable_custom_device('gcu')
+            self.config.enable_new_ir(True)
+            self.config.enable_new_executor(True)
         else:
             self.config.disable_gpu()
         if self.enable_mkldnn:

@@ -150,6 +150,18 @@ def create_predictor(args, cfg, mode):
                 config.set_trt_dynamic_shape_info(
                     min_input_shape, max_input_shape, opt_input_shape)
 
+    elif args.device == "GCU":
+        assert paddle.device.is_compiled_with_custom_device("gcu"), (
+            "Device cannot be set as GCU while your paddle "
+            "is not compiled with gcu! \nPlease try: \n"
+            "\t1. Install paddle-custom-gcu to run model on GCU. \n"
+            "\t2. Set device to CPU in config to run model on CPU."
+        )
+        import paddle_custom_device.gcu.passes as gcu_passes
+        gcu_passes.setUp()
+        config.enable_custom_device('gcu')
+        config.enable_new_ir(True)
+        config.enable_new_executor(True)
     else:
         config.disable_gpu()
         if hasattr(args, "cpu_threads"):
