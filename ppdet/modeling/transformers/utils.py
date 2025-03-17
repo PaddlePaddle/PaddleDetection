@@ -248,8 +248,8 @@ def get_denoising_training_group(targets,
     num_denoising = int(max_gt_num * num_group)
 
     if label_noise_ratio > 0:
-        input_query_class = input_query_class.flatten()
-        pad_gt_mask = pad_gt_mask.flatten()
+        input_query_class = paddle.assign(input_query_class.flatten())
+        pad_gt_mask = paddle.assign(pad_gt_mask.flatten())
         # half of bbox prob, cast mask from bool to float bacause dtype promotaion
         # between bool and float is not supported in static mode.
         mask = paddle.cast(
@@ -356,8 +356,8 @@ def get_contrastive_denoising_training_group(targets,
     num_denoising = int(max_gt_num * 2 * num_group)
 
     if label_noise_ratio > 0:
-        input_query_class = input_query_class.flatten()
-        pad_gt_mask = pad_gt_mask.flatten()
+        input_query_class = paddle.assign(input_query_class.flatten())
+        pad_gt_mask = paddle.assign(pad_gt_mask.flatten())
         # half of bbox prob
         mask = paddle.rand(input_query_class.shape) < (label_noise_ratio * 0.5)
         chosen_idx = paddle.nonzero(mask.cast(pad_gt_mask.dtype) *
