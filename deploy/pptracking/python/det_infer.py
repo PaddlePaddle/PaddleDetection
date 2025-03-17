@@ -440,9 +440,17 @@ def load_predictor(model_dir,
             config.enable_lite_engine()
         config.enable_custom_device('npu')
     elif device == 'GCU':
-        if config.lite_engine_enabled():
-            config.enable_lite_engine()
+        assert paddle.device.is_compiled_with_custom_device("gcu"), (
+            "Device cannot be set as GCU while your paddle "
+            "is not compiled with gcu! \nPlease try: \n"
+            "\t1. Install paddle-custom-gcu to run model on GCU. \n"
+            "\t2. Set device to CPU in config to run model on CPU."
+        )
+        import paddle_custom_device.gcu.passes as gcu_passes
+        gcu_passes.setUp()
         config.enable_custom_device('gcu')
+        config.enable_new_ir(True)
+        config.enable_new_executor(True)
     else:
         config.disable_gpu()
         config.set_cpu_math_library_num_threads(cpu_threads)
