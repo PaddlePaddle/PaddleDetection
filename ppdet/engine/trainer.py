@@ -22,6 +22,7 @@ import copy
 import time
 import yaml
 import shutil
+from collections import defaultdict
 from tqdm import tqdm
 
 import numpy as np
@@ -42,7 +43,7 @@ from ppdet.core.workspace import create
 from ppdet.utils.checkpoint import load_weight, load_pretrain_weight, convert_to_dict
 from ppdet.utils.visualizer import visualize_results, save_result
 from ppdet.metrics import get_infer_results, KeyPointTopDownCOCOEval, KeyPointTopDownCOCOWholeBadyHandEval, KeyPointTopDownMPIIEval, Pose3DEval
-from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric
+from ppdet.metrics import Metric, COCOMetric, VOCMetric, WiderFaceMetric, RBoxMetric, JDEDetMetric, SNIPERCOCOMetric, CULaneMetric, MOTMetric
 from ppdet.data.source.sniper_coco import SniperCOCODataSet
 from ppdet.data.source.category import get_categories
 import ppdet.utils.stats as stats
@@ -50,6 +51,7 @@ from ppdet.utils.fuse_utils import fuse_conv_bn
 from ppdet.utils import profiler
 from ppdet.modeling.post_process import multiclass_nms
 from ppdet.modeling.lane_utils import imshow_lanes
+from ppdet.modeling.mot.utils import write_mot_results, MOTTimer
 
 from .callbacks import Callback, ComposeCallback, LogPrinter, Checkpointer, WiferFaceEval, VisualDLWriter, SniperProposalsGenerator, WandbCallback, SemiCheckpointer, SemiLogPrinter
 from .export_utils import _dump_infer_config, _prune_input_spec, apply_to_static
@@ -80,7 +82,10 @@ class Trainer(object):
         self.use_master_grad = self.cfg.get('master_grad', False)
         self.uniform_output_enabled = self.cfg.get('uniform_output_enabled', False)
         if ('slim' in cfg and cfg['slim_type'] == 'PTQ') or self.uniform_output_enabled:
-            self.cfg['TestDataset'] = create('TestDataset')()
+            if cfg.architecture in MOT_ARCH and cfg['metric'] == 'MOT':
+                self.cfg['TestMOTDataset'] = create('TestMOTDataset')()
+            else:
+                self.cfg['TestDataset'] = create('TestDataset')()
         log_ranks = cfg.get('log_ranks', '0')
         if isinstance(log_ranks, str):
             self.log_ranks = [int(i) for i in log_ranks.split(',')]
@@ -115,9 +120,9 @@ class Trainer(object):
             logger.error('DeepSORT has no need of training on mot dataset.')
             sys.exit(1)
 
-        if cfg.architecture == 'FairMOT' and self.mode == 'eval':
-            images = self.parse_mot_images(cfg)
-            self.dataset.set_images(images)
+        # if cfg.architecture == 'FairMOT' and self.mode == 'eval':
+        #     images = self.parse_mot_images(cfg)
+        #     self.dataset.set_images(images)
 
         if self.mode == 'train':
             self.loader = create('{}Reader'.format(capital_mode))(
@@ -168,12 +173,10 @@ class Trainer(object):
         # EvalDataset build with BatchSampler to evaluate in single device
         # TODO: multi-device evaluate
         if self.mode == 'eval':
-            if cfg.architecture == 'FairMOT':
-                self.loader = create('EvalMOTReader')(self.dataset, 0)
-            elif cfg.architecture == "METRO_Body":
+            if cfg.architecture == "METRO_Body":
                 reader_name = '{}Reader'.format(self.mode.capitalize())
                 self.loader = create(reader_name)(self.dataset, cfg.worker_num)
-            else:
+            elif cfg.architecture != "FairMOT":
                 self._eval_batch_sampler = paddle.io.BatchSampler(
                     self.dataset, batch_size=self.cfg.EvalReader['batch_size'])
                 reader_name = '{}Reader'.format(self.mode.capitalize())
@@ -443,6 +446,8 @@ class Trainer(object):
                     split=self.dataset.split,
                     dataset_dir=self.cfg.dataset_dir)
             ]
+        elif self.cfg.metric == "MOT":
+            self._metrics = [MOTMetric(), ]
         else:
             logger.warning("Metric not support for metric type {}".format(
                 self.cfg.metric))
@@ -496,8 +501,11 @@ class Trainer(object):
         assert self.mode == 'train', "Model not in 'train' mode"
         Init_mark = False
         if validate:
-            self.cfg['EvalDataset'] = self.cfg.EvalDataset = create(
-                "EvalDataset")()
+            if self.cfg.architecture in MOT_ARCH and self.cfg['metric'] == 'MOT':
+                self.cfg['EvalMOTDataset'] = self.cfg.EvalMOTDataset = create('EvalMOTDataset')()
+            else:
+                self.cfg['EvalDataset'] = self.cfg.EvalDataset = create(
+                    "EvalDataset")()
 
         model = self.model
         if self.cfg.get('to_static', False):
@@ -657,7 +665,7 @@ class Trainer(object):
             self._compose_callback.on_epoch_end(self.status)
 
             if validate and is_snapshot:
-                if not hasattr(self, '_eval_loader'):
+                if not hasattr(self, '_eval_loader') and self.cfg.metric != "MOT":
                     # build evaluation dataset and loader
                     self._eval_dataset = self.cfg.EvalDataset
                     self._eval_batch_sampler = \
@@ -684,7 +692,10 @@ class Trainer(object):
 
                 with paddle.no_grad():
                     self.status['save_best_model'] = True
-                    self._eval_with_loader(self._eval_loader)
+                    if self.cfg.metric == "MOT":
+                        self._eval_seq_jde()
+                    else:
+                        self._eval_with_loader(self._eval_loader)
 
             if is_snapshot and self.use_ema:
                 # reset original weight
@@ -741,6 +752,109 @@ class Trainer(object):
         # reset metric states for metric may performed multiple times
         self._reset_metrics()
 
+    def _eval_seq_jde(self):
+        if not hasattr(self, '_eval_mot_dataset'):
+            self._eval_mot_dataset = create('EvalMOTDataset')()
+        self.status['mode'] = 'eval'
+        self.model.eval()
+        dataset_dir = self.cfg['EvalMOTDataset'].dataset_dir
+        data_root = self.cfg['EvalMOTDataset'].data_root
+        data_root = '{}/{}'.format(dataset_dir, data_root)
+        tracker = self.model.tracker
+        output_dir = self.cfg['save_dir']
+        if not os.path.exists(output_dir): os.makedirs(output_dir)
+        result_root = os.path.join(output_dir, 'mot_results')
+        if not os.path.exists(result_root): os.makedirs(result_root)
+        seqs = os.listdir(data_root)
+        seqs.sort()
+
+        num_samples = 0
+        timer_avgs, timer_calls = [], []
+        for seq in seqs:
+            infer_dir = os.path.join(data_root, seq)
+            if not os.path.exists(infer_dir) or not os.path.isdir(infer_dir):
+                logger.warning("Seq {} error, {} has no images.".format(
+                    seq, infer_dir))
+                continue
+            if os.path.exists(os.path.join(infer_dir, 'img1')):
+                infer_dir = os.path.join(infer_dir, 'img1')
+
+            logger.info('Evaluate seq: {}'.format(seq))
+
+            self._eval_mot_dataset.set_images(self.parse_mot_images(infer_dir))
+            dataloader = create('EvalMOTReader')(
+                self._eval_mot_dataset, 0, 
+                paddle.io.BatchSampler(
+                    self._eval_mot_dataset, batch_size=self.cfg.EvalReader['batch_size']
+                )
+            )
+
+            result_filename = os.path.join(result_root, '{}.txt'.format(seq))
+
+            with paddle.no_grad():
+                results = defaultdict(list)  # support single class and multi classes
+                frame_id = 0
+                timer = MOTTimer()
+                for step_id, data in enumerate(dataloader):
+                    self.status['step_id'] = step_id
+                    # forward
+                    timer.tic()
+                    pred_dets, pred_embs = self.model(data)
+
+                    pred_dets, pred_embs = pred_dets.numpy(), pred_embs.numpy()
+                    online_targets_dict = self.model.tracker.update(pred_dets,
+                                                                    pred_embs)
+                    online_tlwhs = defaultdict(list)
+                    online_scores = defaultdict(list)
+                    online_ids = defaultdict(list)
+                    for cls_id in range(self.cfg.num_classes):
+                        online_targets = online_targets_dict[cls_id]
+                        for t in online_targets:
+                            tlwh = t.tlwh
+                            tid = t.track_id
+                            tscore = t.score
+                            if tlwh[2] * tlwh[3] <= tracker.min_box_area: continue
+                            if tracker.vertical_ratio > 0 and tlwh[2] / tlwh[
+                                    3] > tracker.vertical_ratio:
+                                continue
+                            online_tlwhs[cls_id].append(tlwh)
+                            online_ids[cls_id].append(tid)
+                            online_scores[cls_id].append(tscore)
+                        # save results
+                        results[cls_id].append(
+                            (frame_id + 1, online_tlwhs[cls_id], online_scores[cls_id],
+                            online_ids[cls_id]))
+
+                    timer.toc()
+                    frame_id += 1
+                    self._compose_callback.on_step_end(self.status)
+
+            write_mot_results(result_filename, results, "mot",
+                              self.cfg.num_classes)
+            num_samples += frame_id
+            timer_avgs.append(timer.average_time)
+            timer_calls.append(timer.calls)
+
+            # update metrics
+            for metric in self._metrics:
+                metric.update(data_root, seq, "mot", result_root,
+                              result_filename)
+        timer_avgs = np.asarray(timer_avgs)
+        timer_calls = np.asarray(timer_calls)
+        all_time = np.dot(timer_avgs, timer_calls)
+        avg_time = all_time / np.sum(timer_calls)
+        
+        self.status['sample_num'] = num_samples
+        self.status['cost_time'] = all_time 
+
+        # accumulate metric to log out
+        for metric in self._metrics:
+            metric.accumulate()
+            metric.log()
+        self._compose_callback.on_epoch_end(self.status)
+        # reset metric states for metric may performed multiple times
+        self._reset_metrics()
+
     def evaluate(self):
         # get distributed model
         if self.cfg.get('fleet', False):
@@ -752,7 +866,10 @@ class Trainer(object):
             self.model = paddle.DataParallel(
                 self.model, find_unused_parameters=find_unused_parameters)
         with paddle.no_grad():
-            self._eval_with_loader(self.loader)
+            if self.cfg.metric == "MOT":
+                self._eval_seq_jde()
+            else:
+                self._eval_with_loader(self.loader)
 
     def _eval_with_loader_slice(self,
                                 loader,
@@ -1372,31 +1489,23 @@ class Trainer(object):
         logger.info(" Model FLOPs : {:.6f}G. (image shape is {})".format(
             flops, input_data['image'][0].unsqueeze(0).shape))
 
-    def parse_mot_images(self, cfg):
+    def parse_mot_images(self, infer_dir):
         import glob
         # for quant
-        dataset_dir = cfg['EvalMOTDataset'].dataset_dir
-        data_root = cfg['EvalMOTDataset'].data_root
-        data_root = '{}/{}'.format(dataset_dir, data_root)
-        seqs = os.listdir(data_root)
-        seqs.sort()
-        all_images = []
-        for seq in seqs:
-            infer_dir = os.path.join(data_root, seq)
-            assert infer_dir is None or os.path.isdir(infer_dir), \
-                "{} is not a directory".format(infer_dir)
-            images = set()
-            exts = ['jpg', 'jpeg', 'png', 'bmp']
-            exts += [ext.upper() for ext in exts]
-            for ext in exts:
-                images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
-            images = list(images)
-            images.sort()
-            assert len(images) > 0, "no image found in {}".format(infer_dir)
-            all_images.extend(images)
-            logger.info("Found {} inference images in total.".format(
-                len(images)))
-        return all_images
+        assert infer_dir is None or os.path.isdir(infer_dir), \
+            "{} is not a directory".format(infer_dir)
+        images = set()
+        assert os.path.isdir(infer_dir), \
+            "infer_dir {} is not a directory".format(infer_dir)
+        exts = ['jpg', 'jpeg', 'png', 'bmp']
+        exts += [ext.upper() for ext in exts]
+        for ext in exts:
+            images.update(glob.glob('{}/*.{}'.format(infer_dir, ext)))
+        images = list(images)
+        images.sort()
+        assert len(images) > 0, "no image found in {}".format(infer_dir)
+        logger.info("Found {} inference images in total.".format(len(images)))
+        return images
 
     def predict_culane(self,
                        images,

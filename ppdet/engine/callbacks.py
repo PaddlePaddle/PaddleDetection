@@ -205,27 +205,32 @@ class Checkpointer(Callback):
             elif mode == 'eval':
                 for metric in self.model._metrics:
                     map_res = metric.get_results()
-                    eval_func = "ap"
-                    if 'pose3d' in map_res:
-                        key = 'pose3d'
-                        eval_func = "mpjpe"
-                    elif 'bbox' in map_res:
-                        key = 'bbox'
-                    elif 'keypoint' in map_res:
-                        key = 'keypoint'
+                    if "MOTA" in map_res:
+                        key = "mot"
+                        eval_func = "mota"
+                        epoch_ap = float(map_res.split(' ')[-9].rstrip("%")) / 100
                     else:
-                        key = 'mask'
+                        eval_func = "ap"
+                        if 'pose3d' in map_res:
+                            key = 'pose3d'
+                            eval_func = "mpjpe"
+                        elif 'bbox' in map_res:
+                            key = 'bbox'
+                        elif 'keypoint' in map_res:
+                            key = 'keypoint'
+                        else:
+                            key = 'mask'
 
-                    key = self.model.cfg.get('target_metrics', key)
+                        key = self.model.cfg.get('target_metrics', key)
 
-                    if key not in map_res:
-                        logger.warning("Evaluation results empty, this may be due to " \
-                                    "training iterations being too few or not " \
-                                    "loading the correct weights.")
-                        key = '' # To adapt to PaddleX: Save model weights even when evaluation results are empty.
-                        epoch_ap = 0.0
-                    else:
-                        epoch_ap = map_res[key][0]
+                        if key not in map_res:
+                            logger.warning("Evaluation results empty, this may be due to " \
+                                        "training iterations being too few or not " \
+                                        "loading the correct weights.")
+                            key = '' # To adapt to PaddleX: Save model weights even when evaluation results are empty.
+                            epoch_ap = 0.0
+                        else:
+                            epoch_ap = map_res[key][0]
                     epoch_metric = {
                         'metric': abs(epoch_ap),
                         'epoch': epoch_id + 1
@@ -353,10 +358,17 @@ class VisualDLWriter(Callback):
         if dist.get_world_size() < 2 or dist.get_rank() == 0:
             if mode == 'eval':
                 for metric in self.model._metrics:
-                    for key, map_value in metric.get_results().items():
-                        self.vdl_writer.add_scalar("{}-mAP".format(key),
-                                                   map_value[0],
-                                                   self.vdl_mAP_step)
+                    res = metric.get_results()
+                    if "MOTA" in res:
+                        mota = float(res.split(' ')[-9].rstrip("%")) / 100
+                        self.vdl_writer.add_scalar("mot-mota",
+                                                    mota,
+                                                    self.vdl_mAP_step)
+                    else:
+                        for key, map_value in metric.get_results().items():
+                            self.vdl_writer.add_scalar("{}-mAP".format(key),
+                                                    map_value[0],
+                                                    self.vdl_mAP_step)
                 self.vdl_mAP_step += 1
 
 
