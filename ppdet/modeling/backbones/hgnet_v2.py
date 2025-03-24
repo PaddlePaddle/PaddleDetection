@@ -176,8 +176,13 @@ class StemBlock(nn.Layer):
             stride=1,
             use_lab=use_lab,
             lr_mult=lr_mult)
-        self.pool = nn.MaxPool2D(
-            kernel_size=2, stride=1, ceil_mode=True, padding="SAME")
+        # ceilmode=True is not supported in xpu3, so it is temporarily set to False
+        if "xpu" in paddle.device.get_device():
+            self.pool = nn.MaxPool2D(
+                kernel_size=2, stride=1, ceil_mode=False, padding="SAME")
+        else:
+            self.pool = nn.MaxPool2D(
+                kernel_size=2, stride=1, ceil_mode=True, padding="SAME")
 
     def forward(self, x):
         x = self.stem1(x)
