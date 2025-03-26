@@ -103,6 +103,9 @@ class HungarianMatcher(nn.Layer):
         out_bbox = boxes.detach().flatten(0, 1)
 
         # Also concat the target labels and boxes
+        if 'npu' in paddle.device.get_device():
+            gt_class = [tensor.to(paddle.int32) for tensor in gt_class]
+            
         tgt_ids = paddle.concat(gt_class).flatten()
         tgt_bbox = paddle.concat(gt_bbox)
 

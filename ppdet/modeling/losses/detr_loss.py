@@ -281,10 +281,16 @@ class DETRLoss(nn.Layer):
         ])
         src_idx = paddle.concat([src for (src, _) in match_indices])
         src_idx += (batch_idx * num_query_objects)
-        target_assign = paddle.concat([
-            paddle.gather(
-                t, dst, axis=0) for t, (_, dst) in zip(target, match_indices)
-        ])
+        if 'npu' in paddle.device.get_device():
+            target_assign = paddle.concat([
+                paddle.gather(
+                    t.to(paddle.int32), dst.to(paddle.int32), axis=0) for t, (_, dst) in zip(target, match_indices)
+            ])
+        else:
+            target_assign = paddle.concat([
+                paddle.gather(
+                    t, dst, axis=0) for t, (_, dst) in zip(target, match_indices)
+            ])
         return src_idx, target_assign
 
     def _get_src_target_assign(self, src, target, match_indices):
