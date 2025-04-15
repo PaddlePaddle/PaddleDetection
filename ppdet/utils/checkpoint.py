@@ -34,6 +34,14 @@ except ImportError:
     logger.info("Skipping import of the encryption module.")
     encrypted = False
 
+# just to determine the inference model file format
+def get_FLAGS_json_format_model():
+    # json format by default
+    return os.environ.get("FLAGS_json_format_model", "1").lower() in ("1", "true", "t")
+
+FLAGS_json_format_model = get_FLAGS_json_format_model()
+
+
 def convert_to_dict(obj):
     if isinstance(obj, dict):
         return {k: convert_to_dict(v) for k, v in obj.items()}
@@ -315,7 +323,7 @@ def save_model(model,
     """
     if paddle.distributed.get_rank() != 0:
         return
-        
+
     save_dir = os.path.normpath(save_dir)
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
@@ -414,9 +422,20 @@ def update_train_results(config,
     train_results_path = os.path.join(config["save_dir"],
                                       "train_result.json")
     save_model_tag = ["pdparams", "pdopt", "pdstates"]
-    save_inference_tag = [
-        "inference_config", "pdmodel", "pdiparams", "pdiparams.info"
-    ]
+
+    if FLAGS_json_format_model:
+        save_inference_files = {
+            "inference_config": "inference.yml",
+            "pdmodel": "inference.json",
+            "pdiparams": "inference.pdiparams",
+        }
+    else:
+        save_inference_files = {
+            "inference_config": "inference.yml",
+            "pdmodel": "inference.pdmodel",
+            "pdiparams": "inference.pdiparams",
+            "pdiparams.info": "inference.pdiparams.info"
+        }
     if ema:
         save_model_tag.append("pdema")
     if os.path.exists(train_results_path):
@@ -443,9 +462,9 @@ def update_train_results(config,
             else:
                 train_results["models"]["best"][tag] = os.path.join(
                     prefix, f"{prefix}.{tag}")
-        for tag in save_inference_tag:
-            train_results["models"]["best"][tag] = os.path.join(
-                prefix, "inference", f"inference.{tag}" if tag != "inference_config" else "inference.yml")
+        for key in save_inference_files:
+            train_results["models"]["best"][key] = os.path.join(
+                prefix, "inference", save_inference_files[key])
     else:
         for i in range(last_num - 1, 0, -1):
             train_results["models"][f"last_{i + 1}"] = train_results["models"][
@@ -458,9 +477,9 @@ def update_train_results(config,
             else:
                 train_results["models"][f"last_{1}"][tag] = os.path.join(
                     prefix, f"{prefix}.{tag}")
-        for tag in save_inference_tag:
-            train_results["models"][f"last_{1}"][tag] = os.path.join(
-                prefix, "inference", f"inference.{tag}" if tag != "inference_config" else "inference.yml")
+        for key in save_inference_files:
+            train_results["models"][f"last_{1}"][key] = os.path.join(
+                prefix, "inference", save_inference_files[key])
 
     with open(train_results_path, "w") as fp:
         json.dump(train_results, fp)
