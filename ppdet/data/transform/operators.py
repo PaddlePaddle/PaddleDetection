@@ -3165,7 +3165,7 @@ class RandomSizeCrop(BaseOperator):
                     [0, 4], dtype=np.float32)
             sample['gt_class'] = sample['gt_class'][keep_index] if len(
                 keep_index) > 0 else np.zeros(
-                    [0, 1], dtype=np.float32)
+                    [0, 1], dtype=np.int32)
             if 'gt_score' in sample:
                 sample['gt_score'] = sample['gt_score'][keep_index] if len(
                     keep_index) > 0 else np.zeros(
@@ -3173,7 +3173,7 @@ class RandomSizeCrop(BaseOperator):
             if 'is_crowd' in sample:
                 sample['is_crowd'] = sample['is_crowd'][keep_index] if len(
                     keep_index) > 0 else np.zeros(
-                        [0, 1], dtype=np.float32)
+                        [0, 1], dtype=np.int32)
             if 'gt_areas' in sample:
                 sample['gt_areas'] = np.take(
                     sample['gt_areas'], keep_index, axis=0)
