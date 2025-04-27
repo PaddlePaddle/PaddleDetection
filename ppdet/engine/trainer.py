@@ -1388,6 +1388,8 @@ class Trainer(object):
             self.model.__delattr__('aux_neck')
         if hasattr(self.model, 'aux_head'):
             self.model.__delattr__('aux_head')
+        if hasattr(self.model, 'inputs'):
+            self.model.__delattr__('inputs')
         self.model.eval()
         model = copy.deepcopy(self.model)
         convert_bn(model)
