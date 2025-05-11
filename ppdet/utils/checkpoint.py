@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import os
 import json
 import numpy as np
+from packaging import version
 import paddle
 import paddle.nn as nn
 from .download import get_weights_path
@@ -422,8 +423,8 @@ def update_train_results(config,
     train_results_path = os.path.join(config["save_dir"],
                                       "train_result.json")
     save_model_tag = ["pdparams", "pdopt", "pdstates"]
-
-    if FLAGS_json_format_model:
+    paddle_version = version.parse(paddle.__version__)
+    if FLAGS_json_format_model or paddle_version >= version.parse("3.0.0"):
         save_inference_files = {
             "inference_config": "inference.yml",
             "pdmodel": "inference.json",
