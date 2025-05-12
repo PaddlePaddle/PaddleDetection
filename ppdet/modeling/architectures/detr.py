@@ -35,6 +35,7 @@ class DETR(BaseArch):
                  transformer='DETRTransformer',
                  detr_head='DETRHead',
                  neck=None,
+                 aux_o2m_head=None,
                  post_process='DETRPostProcess',
                  post_process_semi=None,
                  with_mask=False,
@@ -44,6 +45,7 @@ class DETR(BaseArch):
         self.transformer = transformer
         self.detr_head = detr_head
         self.neck = neck
+        self.aux_o2m_head = aux_o2m_head
         self.post_process = post_process
         self.with_mask = with_mask
         self.exclude_post_process = exclude_post_process
@@ -69,11 +71,16 @@ class DETR(BaseArch):
         }
         detr_head = create(cfg['detr_head'], **kwargs)
 
+        if 'aux_o2m_head' in cfg:
+            kwargs = {'input_shape': neck.out_shape}
+            aux_o2m_head = create(cfg['aux_o2m_head'], **kwargs)
+
         return {
             'backbone': backbone,
             'transformer': transformer,
             "detr_head": detr_head,
-            "neck": neck
+            "neck": neck,
+            "aux_o2m_head": aux_o2m_head
         }
 
     def _forward(self):
@@ -96,6 +103,13 @@ class DETR(BaseArch):
                 'loss': paddle.add_n(
                     [v for k, v in detr_losses.items() if 'log' not in k])
             })
+            if self.aux_o2m_head is not None:
+                aux_o2m_losses = self.aux_o2m_head(body_feats, self.inputs)
+                for k, v in aux_o2m_losses.items():
+                    if k == 'loss':
+                        detr_losses[k] += v
+                    k = k + '_aux_o2m'
+                    detr_losses[k] = v
             return detr_losses
         else:
             preds = self.detr_head(out_transformer, body_feats)

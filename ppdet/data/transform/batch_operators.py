@@ -1093,11 +1093,12 @@ class PadGT(BaseOperator):
                                 1 means bbox, 0 means no bbox.
     """
 
-    def __init__(self, return_gt_mask=True, pad_img=False, minimum_gtnum=0):
+    def __init__(self, return_gt_mask=True, pad_img=False, minimum_gtnum=0, only_origin_box=False):
         super(PadGT, self).__init__()
         self.return_gt_mask = return_gt_mask
         self.pad_img = pad_img
         self.minimum_gtnum = minimum_gtnum
+        self.only_origin_box = only_origin_box
 
     def _impad(self,
                img: np.ndarray,
@@ -1198,64 +1199,87 @@ class PadGT(BaseOperator):
         num_max_boxes = max(self.minimum_gtnum, num_max_boxes)
         if self.pad_img:
             maxshape = self.checkmaxshape(samples)
-        for sample in samples:
-            if self.pad_img:
-                img = sample['image']
-                padimg = self._impad(img, shape=maxshape)
-                sample['image'] = padimg
-            if self.return_gt_mask:
-                sample['pad_gt_mask'] = np.zeros(
-                    (num_max_boxes, 1), dtype=np.float32)
-            if num_max_boxes == 0:
-                continue
 
-            num_gt = len(sample['gt_bbox'])
-            pad_gt_class = np.zeros((num_max_boxes, 1), dtype=np.int32)
-            pad_gt_bbox = np.zeros((num_max_boxes, 4), dtype=np.float32)
-            if num_gt > 0:
-                pad_gt_class[:num_gt] = sample['gt_class']
-                pad_gt_bbox[:num_gt] = sample['gt_bbox']
-            sample['gt_class'] = pad_gt_class
-            sample['gt_bbox'] = pad_gt_bbox
-            # pad_gt_mask
-            if 'pad_gt_mask' in sample:
-                sample['pad_gt_mask'][:num_gt] = 1
-            # gt_score
-            if 'gt_score' in sample:
-                pad_gt_score = np.zeros((num_max_boxes, 1), dtype=np.float32)
+        if self.only_origin_box:
+            for sample in samples:
+                if self.pad_img:
+                    img = sample['image']
+                    padimg = self._impad(img, shape=maxshape)
+                    sample['image'] = padimg
+                if self.return_gt_mask:
+                    sample['pad_origin_gt_mask'] = np.zeros(
+                        (num_max_boxes, 1), dtype=np.float32)
+                if num_max_boxes == 0:
+                    continue
+                num_gt = len(sample['origin_gt_bbox'])
+                pad_origin_gt_class = np.zeros((num_max_boxes, 1), dtype=np.int32)
+                pad_origin_gt_bbox = np.zeros((num_max_boxes, 4), dtype=np.float32)
                 if num_gt > 0:
-                    pad_gt_score[:num_gt] = sample['gt_score']
-                sample['gt_score'] = pad_gt_score
-            if 'is_crowd' in sample:
-                pad_is_crowd = np.zeros((num_max_boxes, 1), dtype=np.int32)
+                    pad_origin_gt_class[:num_gt] = sample['origin_gt_class']
+                    pad_origin_gt_bbox[:num_gt] = sample['origin_gt_bbox']
+                sample['origin_gt_class'] = pad_origin_gt_class
+                sample['origin_gt_bbox'] = pad_origin_gt_bbox
+                if 'pad_origin_gt_mask' in sample:
+                    sample['pad_origin_gt_mask'][:num_gt] = 1
+        else:
+            for sample in samples:
+                if self.pad_img:
+                    img = sample['image']
+                    padimg = self._impad(img, shape=maxshape)
+                    sample['image'] = padimg
+                if self.return_gt_mask:
+                    sample['pad_gt_mask'] = np.zeros(
+                        (num_max_boxes, 1), dtype=np.float32)
+                if num_max_boxes == 0:
+                    continue
+
+                num_gt = len(sample['gt_bbox'])
+                pad_gt_class = np.zeros((num_max_boxes, 1), dtype=np.int32)
+                pad_gt_bbox = np.zeros((num_max_boxes, 4), dtype=np.float32)
                 if num_gt > 0:
-                    pad_is_crowd[:num_gt] = sample['is_crowd']
-                sample['is_crowd'] = pad_is_crowd
-            if 'difficult' in sample:
-                pad_diff = np.zeros((num_max_boxes, 1), dtype=np.int32)
-                if num_gt > 0:
-                    pad_diff[:num_gt] = sample['difficult']
-                sample['difficult'] = pad_diff
-            if 'gt_joints' in sample:
-                num_joints = sample['gt_joints'].shape[1]
-                pad_gt_joints = np.zeros(
-                    (num_max_boxes, num_joints, 3), dtype=np.float32)
-                if num_gt > 0:
-                    pad_gt_joints[:num_gt] = sample['gt_joints']
-                sample['gt_joints'] = pad_gt_joints
-            if 'gt_areas' in sample:
-                pad_gt_areas = np.zeros((num_max_boxes, 1), dtype=np.float32)
-                if num_gt > 0:
-                    pad_gt_areas[:num_gt, 0] = sample['gt_areas']
-                sample['gt_areas'] = pad_gt_areas
-            # gt_segm
-            if 'gt_segm' in sample:
-                pad_gt_segm = np.zeros(
-                    (num_max_boxes, *sample['gt_segm'].shape[-2:]),
-                    dtype=np.uint8)
-                if num_gt > 0:
-                    pad_gt_segm[:num_gt] = sample['gt_segm']
-                sample['gt_segm'] = pad_gt_segm.astype(np.float32)
+                    pad_gt_class[:num_gt] = sample['gt_class']
+                    pad_gt_bbox[:num_gt] = sample['gt_bbox']
+                sample['gt_class'] = pad_gt_class
+                sample['gt_bbox'] = pad_gt_bbox
+                # pad_gt_mask
+                if 'pad_gt_mask' in sample:
+                    sample['pad_gt_mask'][:num_gt] = 1
+                # gt_score
+                if 'gt_score' in sample:
+                    pad_gt_score = np.zeros((num_max_boxes, 1), dtype=np.float32)
+                    if num_gt > 0:
+                        pad_gt_score[:num_gt] = sample['gt_score']
+                    sample['gt_score'] = pad_gt_score
+                if 'is_crowd' in sample:
+                    pad_is_crowd = np.zeros((num_max_boxes, 1), dtype=np.int32)
+                    if num_gt > 0:
+                        pad_is_crowd[:num_gt] = sample['is_crowd']
+                    sample['is_crowd'] = pad_is_crowd
+                if 'difficult' in sample:
+                    pad_diff = np.zeros((num_max_boxes, 1), dtype=np.int32)
+                    if num_gt > 0:
+                        pad_diff[:num_gt] = sample['difficult']
+                    sample['difficult'] = pad_diff
+                if 'gt_joints' in sample:
+                    num_joints = sample['gt_joints'].shape[1]
+                    pad_gt_joints = np.zeros(
+                        (num_max_boxes, num_joints, 3), dtype=np.float32)
+                    if num_gt > 0:
+                        pad_gt_joints[:num_gt] = sample['gt_joints']
+                    sample['gt_joints'] = pad_gt_joints
+                if 'gt_areas' in sample:
+                    pad_gt_areas = np.zeros((num_max_boxes, 1), dtype=np.float32)
+                    if num_gt > 0:
+                        pad_gt_areas[:num_gt, 0] = sample['gt_areas']
+                    sample['gt_areas'] = pad_gt_areas
+                # gt_segm
+                if 'gt_segm' in sample:
+                    pad_gt_segm = np.zeros(
+                        (num_max_boxes, *sample['gt_segm'].shape[-2:]),
+                        dtype=np.uint8)
+                    if num_gt > 0:
+                        pad_gt_segm[:num_gt] = sample['gt_segm']
+                    sample['gt_segm'] = pad_gt_segm.astype(np.float32)
         return samples
 
 

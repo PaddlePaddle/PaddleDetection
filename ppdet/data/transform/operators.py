@@ -2087,12 +2087,17 @@ class Mixup(BaseOperator):
 class NormalizeBox(BaseOperator):
     """Transform the bounding box's coornidates to [0,1]."""
 
-    def __init__(self):
+    def __init__(self, retain_origin_box=False):
         super(NormalizeBox, self).__init__()
+        self.retain_origin_box = retain_origin_box
 
     def apply(self, sample, context):
         im = sample['image']
         if 'gt_bbox' in sample.keys():
+            if self.retain_origin_box:
+                sample['origin_gt_bbox'] = sample['gt_bbox'].copy()
+                sample['origin_gt_class'] = sample['gt_class'].copy()
+
             gt_bbox = sample['gt_bbox']
             height, width, _ = im.shape
             for i in range(gt_bbox.shape[0]):

@@ -24,7 +24,7 @@ from .iou_loss import GIoULoss
 from ..transformers import bbox_cxcywh_to_xyxy, sigmoid_focal_loss, varifocal_loss_with_logits
 from ..bbox_utils import bbox_iou
 
-__all__ = ['DETRLoss', 'DINOLoss']
+__all__ = ['DETRLoss', 'DINOLoss', 'RTDETRv3Loss']
 
 
 @register
@@ -489,6 +489,102 @@ class DINOLoss(DETRLoss):
             # compute denoising training loss
             num_gts *= dn_num_group
             dn_loss = super(DINOLoss, self).forward(
+                dn_out_bboxes,
+                dn_out_logits,
+                gt_bbox,
+                gt_class,
+                postfix="_dn",
+                dn_match_indices=dn_match_indices,
+                num_gts=num_gts,
+                gt_score=gt_score)
+            total_loss.update(dn_loss)
+        else:
+            total_loss.update(
+                {k + '_dn': paddle.to_tensor([0.])
+                 for k in total_loss.keys()})
+
+        return total_loss
+
+    @staticmethod
+    def get_dn_match_indices(labels, dn_positive_idx, dn_num_group):
+        dn_match_indices = []
+        for i in range(len(labels)):
+            num_gt = len(labels[i])
+            if num_gt > 0:
+                gt_idx = paddle.arange(end=num_gt, dtype="int64")
+                gt_idx = gt_idx.tile([dn_num_group])
+                assert len(dn_positive_idx[i]) == len(gt_idx)
+                dn_match_indices.append((dn_positive_idx[i], gt_idx))
+            else:
+                dn_match_indices.append((paddle.zeros(
+                    [0], dtype="int64"), paddle.zeros(
+                        [0], dtype="int64")))
+        return dn_match_indices
+
+
+@register
+class RTDETRv3Loss(DETRLoss):
+    def forward(self,
+                boxes,
+                logits,
+                gt_bbox,
+                gt_class,
+                masks=None,
+                gt_mask=None,
+                postfix="",
+                dn_out_bboxes=None,
+                dn_out_logits=None,
+                dn_meta=None,
+                gt_score=None,
+                o2m=1,
+                **kwargs):
+        if o2m != 1:
+            gt_boxes_copy = [box.tile([o2m, 1]) for box in gt_bbox]
+            gt_class_copy = [label.tile([o2m, 1]) for label in gt_class]
+        else:
+            gt_boxes_copy = gt_bbox
+            gt_class_copy = gt_class
+        num_gts_copy = self._get_num_gts(gt_class_copy)
+        total_loss = self._get_prediction_loss(
+            boxes[-1],
+            logits[-1],
+            gt_boxes_copy,
+            gt_class_copy,
+            masks=masks[-1] if masks is not None else None,
+            gt_mask=gt_mask,
+            postfix=postfix,
+            dn_match_indices=None,
+            num_gts=num_gts_copy,
+            gt_score=gt_score if gt_score is not None else None)
+
+        if self.aux_loss:
+            total_loss.update(
+                self._get_loss_aux(
+                    boxes[:-1],
+                    logits[:-1],
+                    gt_boxes_copy,
+                    gt_class_copy,
+                    self.num_classes,
+                    num_gts_copy,
+                    dn_match_indices=None,
+                    postfix=postfix,
+                    masks=masks[:-1] if masks is not None else None,
+                    gt_mask=gt_mask,
+                    gt_score=gt_score if gt_score is not None else None))
+
+        if dn_meta is not None:
+            num_gts = self._get_num_gts(gt_class)
+            dn_positive_idx, dn_num_group = \
+                dn_meta["dn_positive_idx"], dn_meta["dn_num_group"]
+            assert len(gt_class) == len(dn_positive_idx)
+
+            # denoising match indices
+            dn_match_indices = self.get_dn_match_indices(
+                gt_class, dn_positive_idx, dn_num_group)
+
+            # compute denoising training loss
+            num_gts *= dn_num_group
+            dn_loss = super(RTDETRv3Loss, self).forward(
                 dn_out_bboxes,
                 dn_out_logits,
                 gt_bbox,
