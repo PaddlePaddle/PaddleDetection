@@ -424,7 +424,10 @@ def _dump_infer_config(config, path, image_shape, model, input_spec):
             "BlazeFace",
             "BlazeFace-FPN-SSH",
             "PP-YOLOE_seg",
-            "SOLOv2"
+            "SOLOv2",
+            "PP-DocLayout-L",
+            "PP-DocLayout_plus-L",
+            "PP-DocBlockLayout",
         ]
         if any(name in pdx_model_name for name in model_names_required_imgsize):
             shapes["im_shape"] = [[batch_sizes[0], 2], [batch_sizes[1], 2], [batch_sizes[2], 2]]
