@@ -55,11 +55,13 @@ class CosineDecay(object):
                  max_epochs=1000,
                  use_warmup=True,
                  min_lr_ratio=0.,
-                 last_plateau_epochs=0):
+                 last_plateau_epochs=0,
+                 start_epochs=0):
         self.max_epochs = max_epochs
         self.use_warmup = use_warmup
         self.min_lr_ratio = min_lr_ratio
         self.last_plateau_epochs = last_plateau_epochs
+        self.start_epochs = start_epochs
 
     def __call__(self,
                  base_lr=None,
@@ -70,37 +72,49 @@ class CosineDecay(object):
 
         max_iters = self.max_epochs * int(step_per_epoch)
         last_plateau_iters = self.last_plateau_epochs * int(step_per_epoch)
+        start_iters = self.start_epochs * int(step_per_epoch)
         min_lr = base_lr * self.min_lr_ratio
-        if boundary is not None and value is not None and self.use_warmup:
-            # use warmup
-            warmup_iters = len(boundary)
-            for i in range(int(boundary[-1]), max_iters):
-                boundary.append(i)
-                if i < max_iters - last_plateau_iters:
-                    decayed_lr = min_lr + (base_lr - min_lr) * 0.5 * (math.cos(
-                        (i - warmup_iters) * math.pi /
-                        (max_iters - warmup_iters - last_plateau_iters)) + 1)
-                    value.append(decayed_lr)
-                else:
-                    value.append(min_lr)
-            return optimizer.lr.PiecewiseDecay(boundary, value)
-        elif last_plateau_iters > 0:
-            # not use warmup, but set `last_plateau_epochs` > 0
+
+        if not self.use_warmup:
+            assert boundary is None and value is None
+
+            if start_iters <= 0 and last_plateau_iters <= 0:
+                return optimizer.lr.CosineAnnealingDecay(
+                    base_lr, T_max=max_iters, eta_min=min_lr)
+
             boundary = []
             value = []
-            for i in range(max_iters):
-                if i < max_iters - last_plateau_iters:
-                    decayed_lr = min_lr + (base_lr - min_lr) * 0.5 * (math.cos(
-                        i * math.pi / (max_iters - last_plateau_iters)) + 1)
-                    value.append(decayed_lr)
-                else:
-                    value.append(min_lr)
-                if i > 0:
-                    boundary.append(i)
-            return optimizer.lr.PiecewiseDecay(boundary, value)
+            warmup_iters = 0
+        else:
+            assert boundary is not None and value is not None
+            assert len(boundary) > 0
 
-        return optimizer.lr.CosineAnnealingDecay(
-            base_lr, T_max=max_iters, eta_min=min_lr)
+            warmup_iters = int(boundary[-1])
+
+        start_iters = max(start_iters, warmup_iters)
+        for i in range(warmup_iters, max_iters):
+            if i > 0:
+                boundary.append(i)
+
+            # boundary: [warmup_iters, start_iters)
+            # value:    [base_lr,      base_lr)
+            if i < start_iters:
+                value.append(base_lr)
+
+            # boundary: [start_iters, max_iters - last_plateau_iters)
+            # value:    [base_lr,     min_lr)
+            elif i < max_iters - last_plateau_iters:
+                decayed_lr = min_lr + (base_lr - min_lr) * 0.5 * (math.cos(
+                    (i - start_iters) * math.pi /
+                    (max_iters - start_iters - last_plateau_iters)) + 1)
+                value.append(decayed_lr)
+
+            # boundary: [max_iters - last_plateau_iters, max_iters)
+            # value:    [min_lr,                         min_lr)
+            else:
+                value.append(min_lr)
+
+        return optimizer.lr.PiecewiseDecay(boundary, value)
 
 
 @serializable

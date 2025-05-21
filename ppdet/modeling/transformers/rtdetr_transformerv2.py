@@ -296,6 +296,8 @@ class RTDETRTransformerv2(nn.Layer):
                  eval_size=None,
                  eval_idx=-1,
                  eps=1e-2,
+                 mlp_act='relu',
+                 query_pos_method='default',
                  cross_attn_sampling_method='default'):
         super(RTDETRTransformerv2, self).__init__()
         assert position_embed_type in ['sine', 'learned'], \
@@ -341,7 +343,11 @@ class RTDETRTransformerv2(nn.Layer):
         self.learnt_init_query = learnt_init_query
         if learnt_init_query:
             self.tgt_embed = nn.Embedding(num_queries, hidden_dim)
-        self.query_pos_head = MLP(4, 2 * hidden_dim, hidden_dim, num_layers=2)
+
+        if query_pos_method == 'as_reg':
+            self.query_pos_head = MLP(4, hidden_dim, hidden_dim, 3, act=mlp_act)
+        else:
+            self.query_pos_head = MLP(4, 2 * hidden_dim, hidden_dim, num_layers=2, act=mlp_act)
         self.query_pos_head_inv_sig = query_pos_head_inv_sig
 
         # encoder head
@@ -352,7 +358,7 @@ class RTDETRTransformerv2(nn.Layer):
                 weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
                 bias_attr=ParamAttr(regularizer=L2Decay(0.0))))
         self.enc_score_head = nn.Linear(hidden_dim, num_classes)
-        self.enc_bbox_head = MLP(hidden_dim, hidden_dim, 4, num_layers=3)
+        self.enc_bbox_head = MLP(hidden_dim, hidden_dim, 4, num_layers=3, act=mlp_act)
 
         # decoder head
         self.dec_score_head = nn.LayerList([
@@ -360,7 +366,7 @@ class RTDETRTransformerv2(nn.Layer):
             for _ in range(num_decoder_layers)
         ])
         self.dec_bbox_head = nn.LayerList([
-            MLP(hidden_dim, hidden_dim, 4, num_layers=3)
+            MLP(hidden_dim, hidden_dim, 4, num_layers=3, act=mlp_act)
             for _ in range(num_decoder_layers)
         ])
 

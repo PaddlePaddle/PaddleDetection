@@ -558,6 +558,8 @@ class Trainer(object):
             self.status['epoch_id'] = epoch_id
             self._compose_callback.on_epoch_begin(self.status)
             self.loader.dataset.set_epoch(epoch_id)
+            if hasattr(self.loader._batch_sampler, 'set_epoch'):
+                self.loader._batch_sampler.set_epoch(epoch_id)
             model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):

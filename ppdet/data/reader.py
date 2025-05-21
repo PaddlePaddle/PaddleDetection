@@ -26,6 +26,7 @@ import paddle
 import paddle.nn.functional as F
 
 from copy import deepcopy
+from typing import Sequence
 
 from paddle.io import DataLoader, DistributedBatchSampler
 from .utils import default_collate_fn
@@ -54,6 +55,8 @@ class Compose(object):
                 self.transforms_cls.append(f)
 
     def _update_transforms_cls(self, data):
+        if isinstance(data, Sequence):
+            data = data[0]
         if 'transform_schedulers' in data:
             def is_valid(op):
                 op_name = op.__class__.__name__
@@ -94,7 +97,7 @@ class BatchCompose(Compose):
         self.collate_batch = collate_batch
 
     def __call__(self, data):
-        transforms_cls = self._update_transforms_cls(data[0])
+        transforms_cls = self._update_transforms_cls(data)
         for f in transforms_cls:
             try:
                 data = f(data)
@@ -221,7 +224,6 @@ class BaseDataLoader(object):
             num_workers=worker_num,
             return_list=return_list,
             use_shared_memory=use_shared_memory)
-        self.loader = iter(self.dataloader)
 
         return self
 
@@ -229,18 +231,7 @@ class BaseDataLoader(object):
         return len(self._batch_sampler)
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            return next(self.loader)
-        except StopIteration:
-            self.loader = iter(self.dataloader)
-            six.reraise(*sys.exc_info())
-
-    def next(self):
-        # python2 compatibility
-        return self.__next__()
+        return iter(self.dataloader)
 
 
 @register
@@ -597,21 +588,14 @@ class BaseSemiDataLoader(object):
 
         self.dataloader = CombineSSODLoader(self.dataloader_label,
                                             self.dataloader_unlabel)
-        self.loader = iter(self.dataloader)
+
         return self
 
     def __len__(self):
         return len(self._batch_sampler_label)
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.loader)
-
-    def next(self):
-        # python2 compatibility
-        return self.__next__()
+        return iter(self.dataloader)
 
 
 @register

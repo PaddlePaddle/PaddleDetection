@@ -27,18 +27,32 @@ from ..transformers.utils import inverse_sigmoid
 __all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead']
 
 
+def get_activation(name="LeakyReLU"):
+    if name == "silu":
+        module = nn.Silu()
+    elif name == "relu":
+        module = nn.ReLU()
+    elif name in ["LeakyReLU", 'leakyrelu', 'lrelu']:
+        module = nn.LeakyReLU(0.1)
+    elif name is None:
+        module = nn.Identity()
+    else:
+        raise AttributeError("Unsupported act type: {}".format(name))
+    return module
+
+
 class MLP(nn.Layer):
     """This code is based on
         https://github.com/facebookresearch/detr/blob/main/models/detr.py
     """
 
-    def __init__(self, input_dim, hidden_dim, output_dim, num_layers):
+    def __init__(self, input_dim, hidden_dim, output_dim, num_layers, act='relu'):
         super().__init__()
         self.num_layers = num_layers
         h = [hidden_dim] * (num_layers - 1)
         self.layers = nn.LayerList(
             nn.Linear(n, k) for n, k in zip([input_dim] + h, h + [output_dim]))
-
+        self.act = get_activation(act)
         self._reset_parameters()
 
     def _reset_parameters(self):
@@ -47,7 +61,7 @@ class MLP(nn.Layer):
 
     def forward(self, x):
         for i, layer in enumerate(self.layers):
-            x = F.relu(layer(x)) if i < self.num_layers - 1 else layer(x)
+            x = self.act(layer(x)) if i < self.num_layers - 1 else layer(x)
         return x
 
 

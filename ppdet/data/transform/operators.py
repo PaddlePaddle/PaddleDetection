@@ -2832,7 +2832,11 @@ class RandomSelect(BaseOperator):
         self.transforms2 = Compose(transforms2)
         self.p = p
 
-    def apply(self, sample, context=None):
+    def __call__(self, sample, context=None):
+        """
+        The case where the sample is a Sequence should not be handled here
+        Instead, transforms1 and transforms2 should handle it internally.
+        """
         if random.random() < self.p:
             return self.transforms1(sample)
         return self.transforms2(sample)
@@ -2858,7 +2862,11 @@ class RandomSelects(BaseOperator):
         self.transforms = [Compose(t) for t in transforms_list]
         self.p = p
 
-    def apply(self, sample, context=None):
+    def __call__(self, sample, context=None):
+        """
+        The case where the sample is a Sequence should not be handled here
+        Instead, transforms should handle it internally.
+        """
         if self.p is None:
             return random.choice(self.transforms)(sample)
         else:
@@ -3591,10 +3599,13 @@ class Mosaic(BaseOperator):
     def __init__(self,
                  prob=1.0,
                  input_dim=[640, 640],
+                 center_ratio_range=(0.5, 1.5),
+                 pad_val=114,
                  degrees=[-10, 10],
                  translate=[-0.1, 0.1],
                  scale=[0.1, 2],
                  shear=[-2, 2],
+                 border_value=(114, 114, 114),
                  enable_mixup=True,
                  mixup_prob=1.0,
                  mixup_scale=[0.5, 1.5],
@@ -3604,10 +3615,13 @@ class Mosaic(BaseOperator):
         if isinstance(input_dim, Integral):
             input_dim = [input_dim, input_dim]
         self.input_dim = input_dim
+        self.center_ratio_range = center_ratio_range
+        self.pad_val = pad_val
         self.degrees = degrees
         self.translate = translate
         self.scale = scale
         self.shear = shear
+        self.border_value = border_value
         self.enable_mixup = enable_mixup
         self.mixup_prob = mixup_prob
         self.mixup_scale = mixup_scale
@@ -3667,7 +3681,7 @@ class Mosaic(BaseOperator):
 
         # warpAffine
         img = cv2.warpAffine(
-            img, M, dsize=tuple(input_dim), borderValue=(114, 114, 114))
+            img, M, dsize=tuple(input_dim), borderValue=self.border_value)
 
         num_gts = len(labels)
         if num_gts > 0:
@@ -3704,9 +3718,9 @@ class Mosaic(BaseOperator):
 
         mosaic_gt_bbox, mosaic_gt_class, mosaic_is_crowd, mosaic_difficult = [], [], [], []
         input_h, input_w = self.input_dim
-        yc = int(random.uniform(0.5 * input_h, 1.5 * input_h))
-        xc = int(random.uniform(0.5 * input_w, 1.5 * input_w))
-        mosaic_img = np.full((input_h * 2, input_w * 2, 3), 114, dtype=np.uint8)
+        yc = int(random.uniform(*self.center_ratio_range) * input_h)
+        xc = int(random.uniform(*self.center_ratio_range) * input_w)
+        mosaic_img = np.full((input_h * 2, input_w * 2, 3), self.pad_val, dtype=np.uint8)
 
         # 1. get mosaic coords
         for mosaic_idx, sp in enumerate(sample[:4]):
@@ -3827,11 +3841,11 @@ class Mosaic(BaseOperator):
         sample0['im_shape'][0] = sample0['h']
         sample0['im_shape'][1] = sample0['w']
         sample0['gt_bbox'] = mosaic_labels[:, :4].astype(np.float32)
-        sample0['gt_class'] = mosaic_labels[:, 4:5].astype(np.float32)
+        sample0['gt_class'] = mosaic_labels[:, 4:5].astype(sample0['gt_class'].dtype)
         if 'is_crowd' in sample[0]:
-            sample0['is_crowd'] = mosaic_labels[:, 5:6].astype(np.float32)
+            sample0['is_crowd'] = mosaic_labels[:, 5:6].astype(sample0['is_crowd'].dtype)
         if 'difficult' in sample[0]:
-            sample0['difficult'] = mosaic_labels[:, 5:6].astype(np.float32)
+            sample0['difficult'] = mosaic_labels[:, 5:6].astype(sample0['difficult'].dtype)
         return sample0
 
     def mixup_augment(self, origin_img, origin_labels, input_dim, cp_labels,
@@ -3840,9 +3854,9 @@ class Mosaic(BaseOperator):
         FLIP = random.uniform(0, 1) > 0.5
         if len(img.shape) == 3:
             cp_img = np.ones(
-                (input_dim[0], input_dim[1], 3), dtype=np.uint8) * 114
+                (input_dim[0], input_dim[1], 3), dtype=np.uint8) * self.pad_val
         else:
-            cp_img = np.ones(input_dim, dtype=np.uint8) * 114
+            cp_img = np.ones(input_dim, dtype=np.uint8) * self.pad_val
 
         cp_scale_ratio = min(input_dim[0] / img.shape[0],
                              input_dim[1] / img.shape[1])

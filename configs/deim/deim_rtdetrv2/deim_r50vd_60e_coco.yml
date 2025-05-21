@@ -1,0 +1,21 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer.yml',
+  '../_base_/deim_reader.yml',
+  '../_base_/rtdetrv2_r50vd.yml',
+]
+
+weights: output/deim_r50_120e_coco/model_final
+find_unused_parameters: False
+log_iter: 200
+
+RTDETRTransformerv2:
+  activation: silu
+  mlp_act: silu
+  query_pos_method: as_reg
+
+DINOHead:
+  loss:
+    use_vfl: False
+    use_mal: True
