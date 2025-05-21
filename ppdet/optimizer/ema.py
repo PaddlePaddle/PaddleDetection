@@ -31,10 +31,13 @@ class ModelEMA(object):
     Exponential Weighted Average for Deep Neutal Networks
     Args:
         model (nn.Layer): Detector of model.
-        decay (int):  The decay used for updating ema parameter.
+        decay (int): The decay used for updating ema parameter.
             Ema's parameter are updated with the formula:
            `ema_param = decay * ema_param + (1 - decay) * cur_param`.
             Defaults is 0.9998.
+        gamma (int): Use a smaller decay early in training and gradually
+            annealing to a smaller value to update the ema model smoothly.
+            Defaults to 2000.
         ema_decay_type (str): type in ['threshold', 'normal', 'exponential'],
             'threshold' as default.
         cycle_epoch (int): The epoch of interval to reset ema_param and
@@ -49,6 +52,7 @@ class ModelEMA(object):
     def __init__(self,
                  model,
                  decay=0.9998,
+                 gamma=2000,
                  ema_decay_type='threshold',
                  cycle_epoch=-1,
                  ema_black_list=None,
@@ -56,6 +60,7 @@ class ModelEMA(object):
         self.step = 0
         self.epoch = 0
         self.decay = decay
+        self.gamma = gamma
         self.ema_decay_type = ema_decay_type
         self.cycle_epoch = cycle_epoch
         self.ema_black_list = self._match_ema_black_list(
@@ -100,7 +105,7 @@ class ModelEMA(object):
         if self.ema_decay_type == 'threshold':
             decay = min(self.decay, (1 + self.step) / (10 + self.step))
         elif self.ema_decay_type == 'exponential':
-            decay = self.decay * (1 - math.exp(-(self.step + 1) / 2000))
+            decay = self.decay * (1 - math.exp(-(self.step + 1) / self.gamma))
         else:
             decay = self.decay
         self._decay = decay
