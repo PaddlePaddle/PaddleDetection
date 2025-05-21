@@ -46,6 +46,7 @@ from . import co_deformable_detr_head
 from . import co_dino_head
 from . import co_roi_head
 from . import co_atss_head
+from . import dfine_head
 
 from .bbox_head import *
 from .mask_head import *
@@ -82,3 +83,4 @@ from .co_deformable_detr_head import *
 from .co_roi_head import *
 from .co_atss_head import *
 from .co_dino_head import *
+from .dfine_head import *

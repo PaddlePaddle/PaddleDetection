@@ -1,0 +1,74 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer.yml',
+  '../_base_/deim_reader.yml',
+  '../_base_/deim_hgnetv2_m.yml',
+]
+
+weights: output/deim_hgnetv2_n_coco/model_final
+find_unused_parameters: False
+log_iter: 100
+hidden_dim: 128
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPHGNetV2_B0_ssld_stage1_pretrained.pdparams
+
+PPHGNetV2:
+  arch: 'N'
+  return_idx: [2, 3]
+
+DFINEHybridEncoder:
+  hidden_dim: 128
+  use_encoder_idx: [1]
+  encoder_layer:
+    d_model: 128
+    dim_feedforward: 512
+  expansion: 0.34
+  depth_mult: 0.5
+
+DFINETransformer:
+  activation: silu
+  mlp_act: silu
+  feat_strides: [16, 32]
+  num_levels: 2
+  num_decoder_points: [6, 6]
+  num_decoder_layers: 3
+  dim_feedforward: 512
+
+epoch: 160
+
+LearningRate:
+  base_lr: 0.0008
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 1.0
+    milestones: [1000]
+    use_warmup: true
+  - !ExpWarmup
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*norm|bn).*$']
+        learning_rate: 0.5
+      - params: ['^(?=.*backbone)(?=.*norm|bn).*$']
+        learning_rate: 0.5
+        weight_decay: 0.
+      - params: ['^(?=.*(?:neck|transformer))(?=.*(?:norm|bn|bias)).*$']
+        weight_decay: 0.
+
+TrainReader:
+  batch_size: 32
+  mosaic_epoch: 78
+  batch_transforms:
+    - MixupBatch: {ratio_range: [0.45, 0.55], prob: 0.5}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  transform_schedulers:
+    # [start_epoch, stop_epoch) | [0, stop_epoch) | [start_epoch, inf)
+    - RandomSelect: {start_epoch: 4, stop_epoch: 78}
+    - RandomSelects: {start_epoch: 78, stop_epoch: 148}
+    - MixupBatch: {start_epoch: 4, stop_epoch: 78}

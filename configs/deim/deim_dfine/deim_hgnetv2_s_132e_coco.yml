@@ -1,0 +1,67 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer.yml',
+  '../_base_/deim_reader.yml',
+  '../_base_/deim_hgnetv2_m.yml',
+]
+
+weights: output/deim_hgnetv2_s_coco/model_final
+find_unused_parameters: False
+log_iter: 200
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPHGNetV2_B0_ssld_stage1_pretrained.pdparams
+
+PPHGNetV2:
+  arch: 'N'
+
+DFINEHybridEncoder:
+  expansion: 0.5
+  depth_mult: 0.34
+
+DFINETransformer:
+  activation: silu
+  mlp_act: silu
+  num_decoder_layers: 3
+
+epoch: 132
+
+LearningRate:
+  base_lr: 0.0004
+  schedulers:
+  - !CosineDecay
+    start_epochs: 64
+    max_epochs: 132
+    min_lr_ratio: 0.5
+    last_plateau_epochs: 12
+  - !ExpWarmup
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*bn).*$']
+        learning_rate: 0.5
+      - params: ['^(?=.*(?:norm|bn)).*$']     # except bias
+        weight_decay: 0.
+
+TrainReader:
+  batch_size: 8
+  mosaic_epoch: 64
+  batch_transforms:
+    - MixupBatch: {ratio_range: [0.45, 0.55], prob: 0.5}
+    - BatchRandomResize: {target_size: [
+        480, 512, 544, 576, 608,
+        640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640, 640,  # 20x
+        672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  transform_schedulers:
+    # [start_epoch, stop_epoch) | [0, stop_epoch) | [start_epoch, inf)
+    - RandomSelect: {start_epoch: 4, stop_epoch: 64}
+    - RandomSelects: {start_epoch: 64, stop_epoch: 120}
+    - Resize: {start_epoch: 120}
+    - BatchRandomResize: {stop_epoch: 120}
+    - MixupBatch: {start_epoch: 4, stop_epoch: 64}

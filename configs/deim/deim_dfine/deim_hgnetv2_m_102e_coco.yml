@@ -1,0 +1,57 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer.yml',
+  '../_base_/deim_reader.yml',
+  '../_base_/deim_hgnetv2_m.yml',
+]
+
+weights: output/deim_hgnetv2_m_coco/model_final
+find_unused_parameters: False
+log_iter: 200
+
+DFINETransformer:
+  activation: silu
+  mlp_act: silu
+
+epoch: 102
+
+LearningRate:
+  base_lr: 0.0004
+  schedulers:
+  - !CosineDecay
+    start_epochs: 49
+    max_epochs: 102
+    min_lr_ratio: 0.5
+    last_plateau_epochs: 12
+  - !ExpWarmup
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*bn).*$']
+        learning_rate: 0.1
+      - params: ['^(?=.*(?:norm|bn)).*$']     # except bias
+        weight_decay: 0.
+
+TrainReader:
+  batch_size: 8
+  mosaic_epoch: 49
+  batch_transforms:
+    - MixupBatch: {ratio_range: [0.45, 0.55], prob: 0.5}
+    - BatchRandomResize: {target_size: [
+        480, 512, 544, 576, 608,
+        640, 640, 640, 640, 640, 640,  # 6x
+        672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  transform_schedulers:
+    # [start_epoch, stop_epoch) | [0, stop_epoch) | [start_epoch, inf)
+    - RandomSelect: {start_epoch: 4, stop_epoch: 49}
+    - RandomSelects: {start_epoch: 49, stop_epoch: 90}
+    - Resize: {start_epoch: 90}
+    - BatchRandomResize: {stop_epoch: 90}
+    - MixupBatch: {start_epoch: 4, stop_epoch: 49}

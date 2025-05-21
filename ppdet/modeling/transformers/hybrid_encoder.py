@@ -25,6 +25,7 @@ from ..initializer import xavier_uniform_, linear_init_
 from ..layers import MultiHeadAttention
 from paddle import ParamAttr
 from paddle.regularizer import L2Decay
+from ppdet.modeling.layers import ConvNormLayer
 
 __all__ = ['HybridEncoder', 'MaskHybridEncoder']
 
@@ -433,3 +434,105 @@ class MaskHybridEncoder(HybridEncoder):
         mask_feat = self.enc_mask_output(mask_feat)
 
         return enc_feats, mask_feat
+
+
+
+class RepNCSPELAN4(nn.Layer):
+    # csp-elan
+    def __init__(self, c1, c2, c3, c4, n=3, bias=False, act="silu"):
+        super().__init__()
+        self.c = c3 // 2
+        self.cv1 = BaseConv(c1, c3, 1, 1, bias=bias, act=act)
+        self.cv2 = nn.Sequential(
+            CSPRepLayer(c3 // 2, c4, n, 1, bias=bias, act=act),
+            BaseConv(c4, c4, 3, 1, bias=bias, act=act))
+        self.cv3 = nn.Sequential(
+            CSPRepLayer(c4, c4, n, 1, bias=bias, act=act),
+            BaseConv(c4, c4, 3, 1, bias=bias, act=act))
+        self.cv4 = BaseConv(c3 + (2 * c4), c2, 1, 1, bias=bias, act=act)
+
+    def forward(self, x):
+        y = list(self.cv1(x).split((self.c, self.c), 1))
+        y.extend(m(y[-1]) for m in [self.cv2, self.cv3])
+        return self.cv4(paddle.concat(y, 1))
+
+
+@register
+@serializable
+class DFINEHybridEncoder(HybridEncoder):
+
+    def __init__(self,
+                 in_channels=[512, 1024, 2048],
+                 feat_strides=[8, 16, 32],
+                 hidden_dim=256,
+                 use_encoder_idx=[2],
+                 num_encoder_layers=1,
+                 encoder_layer='TransformerLayer',
+                 pe_temperature=10000,
+                 expansion=1.0,
+                 depth_mult=1.0,
+                 act='silu',
+                 trt=False,
+                 eval_size=None):
+        super(HybridEncoder, self).__init__()
+        self.in_channels = in_channels
+        self.feat_strides = feat_strides
+        self.hidden_dim = hidden_dim
+        self.use_encoder_idx = use_encoder_idx
+        self.num_encoder_layers = num_encoder_layers
+        self.pe_temperature = pe_temperature
+        self.eval_size = eval_size
+
+        # channel projection
+        self.input_proj = nn.LayerList()
+        for in_channel in in_channels:
+            self.input_proj.append(
+                nn.Sequential(
+                    nn.Conv2D(
+                        in_channel, hidden_dim, kernel_size=1, bias_attr=False),
+                    nn.BatchNorm2D(
+                        hidden_dim,
+                        weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
+                        bias_attr=ParamAttr(regularizer=L2Decay(0.0)))))
+        # encoder transformer
+        self.encoder = nn.LayerList([
+            TransformerEncoder(encoder_layer, num_encoder_layers)
+            for _ in range(len(use_encoder_idx))
+        ])
+
+        act = get_act_fn(
+            act, trt=trt) if act is None or isinstance(act,
+                                                       (str, dict)) else act
+        # top-down fpn
+        self.lateral_convs = nn.LayerList()
+        self.fpn_blocks = nn.LayerList()
+        for idx in range(len(in_channels) - 1, 0, -1):
+            self.lateral_convs.append(
+                ConvNormLayer(hidden_dim, hidden_dim, 1, 1))
+            self.fpn_blocks.append(
+                RepNCSPELAN4(
+                    hidden_dim * 2,
+                    hidden_dim,
+                    hidden_dim * 2,
+                    round(expansion * hidden_dim // 2),
+                    round(3 * depth_mult),
+                    act=act))
+
+        # bottom-up pan
+        self.downsample_convs = nn.LayerList()
+        self.pan_blocks = nn.LayerList()
+        for idx in range(len(in_channels) - 1):
+            self.downsample_convs.append(
+                nn.Sequential(
+                    ConvNormLayer(hidden_dim, hidden_dim, 1, 1),
+                    ConvNormLayer(hidden_dim, hidden_dim, 3, 2, groups=hidden_dim)))
+            self.pan_blocks.append(
+                RepNCSPELAN4(
+                    hidden_dim * 2,
+                    hidden_dim,
+                    hidden_dim * 2,
+                    round(expansion * hidden_dim // 2),
+                    round(3 * depth_mult),
+                    act=act))
+
+        self._reset_parameters()
