@@ -22,6 +22,7 @@ from __future__ import print_function
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
+from paddle.distributed.fleet.utils import recompute
 
 from ppdet.core.workspace import register
 from ..layers import MultiHeadAttention, _convert_attention_mask
@@ -90,16 +91,22 @@ class TransformerEncoderLayer(nn.Layer):
 
 
 class TransformerEncoder(nn.Layer):
-    def __init__(self, encoder_layer, num_layers, norm=None):
+    def __init__(self, encoder_layer, num_layers, norm=None, with_rp=-1):
         super(TransformerEncoder, self).__init__()
         self.layers = _get_clones(encoder_layer, num_layers)
         self.num_layers = num_layers
         self.norm = norm
+        assert with_rp <= num_layers
+        self.with_rp = with_rp
 
     def forward(self, src, src_mask=None, pos_embed=None):
         output = src
-        for layer in self.layers:
-            output = layer(output, src_mask=src_mask, pos_embed=pos_embed)
+        for i, layer in enumerate(self.layers):
+            if self.training and i < self.with_rp:
+                output = recompute(layer, output, src_mask=src_mask, pos_embed=pos_embed,
+                                   **{"preserve_rng_state": True, "use_reentrant": False})
+            else:
+                output = layer(output, src_mask=src_mask, pos_embed=pos_embed)
 
         if self.norm is not None:
             output = self.norm(output)

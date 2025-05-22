@@ -142,7 +142,8 @@ class HybridEncoder(nn.Layer):
                  depth_mult=1.0,
                  act='silu',
                  trt=False,
-                 eval_size=None):
+                 eval_size=None,
+                 with_rp=-1):
         super(HybridEncoder, self).__init__()
         self.in_channels = in_channels
         self.feat_strides = feat_strides
@@ -165,7 +166,7 @@ class HybridEncoder(nn.Layer):
                         bias_attr=ParamAttr(regularizer=L2Decay(0.0)))))
         # encoder transformer
         self.encoder = nn.LayerList([
-            TransformerEncoder(encoder_layer, num_encoder_layers)
+            TransformerEncoder(encoder_layer, num_encoder_layers, with_rp=with_rp)
             for _ in range(len(use_encoder_idx))
         ])
 

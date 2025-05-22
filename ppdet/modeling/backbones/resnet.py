@@ -18,6 +18,7 @@ from numbers import Integral
 import paddle
 import paddle.nn as nn
 import paddle.nn.functional as F
+from paddle.distributed.fleet.utils import recompute
 from ppdet.core.workspace import register, serializable
 from paddle.regularizer import L2Decay
 from paddle.nn.initializer import Uniform
@@ -391,8 +392,10 @@ class Blocks(nn.Layer):
                  norm_decay=0.,
                  freeze_norm=True,
                  dcn_v2=False,
-                 std_senet=False):
+                 std_senet=False,
+                 with_cp=False):
         super(Blocks, self).__init__()
+        self.with_cp = with_cp
 
         self.blocks = []
         for i in range(count):
@@ -420,7 +423,10 @@ class Blocks(nn.Layer):
     def forward(self, inputs):
         block_out = inputs
         for block in self.blocks:
-            block_out = block(block_out)
+            if self.training and self.with_cp:
+                block_out = recompute(block, block_out)
+            else:
+                block_out = block(block_out)
         return block_out
 
 
@@ -444,7 +450,8 @@ class ResNet(nn.Layer):
                  dcn_v2_stages=[-1],
                  num_stages=4,
                  std_senet=False,
-                 freeze_stem_only=False):
+                 freeze_stem_only=False,
+                 with_cp=False):
         """
         Residual Network, see https://arxiv.org/abs/1512.03385
         
@@ -553,7 +560,8 @@ class ResNet(nn.Layer):
                     norm_decay=norm_decay,
                     freeze_norm=freeze_norm,
                     dcn_v2=(i in self.dcn_v2_stages),
-                    std_senet=std_senet))
+                    std_senet=std_senet,
+                    with_cp=with_cp))
             self.res_layers.append(res_layer)
             self.ch_in = self._out_channels[i]
 
