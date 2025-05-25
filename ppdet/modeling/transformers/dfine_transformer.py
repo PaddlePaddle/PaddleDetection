@@ -111,12 +111,14 @@ def translate_gt(gt, reg_max, reg_scale, up):
     left_values = function_values[valid_indices]
     right_values = function_values[valid_indices + 1]
 
-    left_diffs = paddle.abs(gt[valid_idx_mask] - left_values)
-    right_diffs = paddle.abs(right_values - gt[valid_idx_mask])
+    gt_valid = gt[valid_idx_mask]
+    left_diffs = paddle.abs(gt_valid - left_values)
+    right_diffs = paddle.abs(right_values - gt_valid)
 
     # Valid weights
-    weight_right[valid_idx_mask] = left_diffs / (left_diffs + right_diffs)
-    weight_left[valid_idx_mask] = 1.0 - weight_right[valid_idx_mask]
+    valid_idx = paddle.nonzero(valid_idx_mask).flatten()
+    weight_right = paddle.scatter(weight_right, valid_idx, left_diffs / (left_diffs + right_diffs))
+    weight_left = paddle.scatter(weight_left, valid_idx, 1.0 - weight_right[valid_idx_mask])
 
     # Invalid weights (out of range)
     invalid_idx_mask_neg = (indices < 0)

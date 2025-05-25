@@ -359,7 +359,7 @@ class DFINELoss(DINOLoss):
             ind = paddle.stack([idx0, idx1], axis=1)
 
             unique, counts = paddle.unique(ind, return_counts=True, axis=0)
-            count_sort_indices = paddle.argsort(counts, descending=True, stable=True)
+            count_sort_indices = paddle.argsort(counts, descending=True)
             unique_sorted = unique[count_sort_indices]
             column_to_row = {}
             for idx in unique_sorted:

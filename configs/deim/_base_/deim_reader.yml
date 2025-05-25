@@ -5,11 +5,14 @@ TrainReader:
     - RandomSelect:
         transforms1:
           - Mosaic:
-              input_dim: [640, 640]
+              input_dim: [320, 320]
+              output_dim: [640, 640]
+              centered_affine: True
               center_ratio_range: [1.0, 1.0]
+              remove_outside_box: True
               pad_val: 0
               degrees: [-10, 10]
-              scale: [0.25, 0.75]
+              scale: [0.5, 1.5]
               shear: [0, 0]
               translate: [-0.1, 0.1]
               border_value: [0, 0, 0]
