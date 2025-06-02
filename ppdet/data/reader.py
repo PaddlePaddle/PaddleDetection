@@ -115,6 +115,17 @@ class BatchCompose(Compose):
                 if k in sample:
                     sample.pop(k)
 
+        for d in data:
+            empty_fields = []
+            for k in d:
+                if isinstance(d[k], np.ndarray) and d[k].size == 0:
+                    d[k] = np.empty((1, *d[k].shape[1:]), dtype=d[k].dtype)
+                    empty_fields.append(k)
+            d['__empty_fields'] = empty_fields
+        if all(not d['__empty_fields'] for d in data):
+            for d in data:
+                d.pop('__empty_fields')
+
         # batch data, if user-define batch function needed
         # use user-defined here
         if self.collate_batch:
@@ -125,7 +136,7 @@ class BatchCompose(Compose):
                 tmp_data = []
                 for i in range(len(data)):
                     tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
+                if k != '__empty_fields' and not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
                 batch_data[k] = tmp_data
         return batch_data
@@ -250,6 +261,15 @@ class TrainReader(BaseDataLoader):
         super(TrainReader, self).__init__(sample_transforms, batch_transforms,
                                           batch_size, shuffle, drop_last,
                                           num_classes, collate_batch, **kwargs)
+
+    def __iter__(self):
+        for data in self.dataloader:
+            if '__empty_fields' in data:
+                empty_fields = data.pop('__empty_fields')
+                for i, fields in enumerate(empty_fields):
+                    for k in fields:
+                        data[k][i] = data[k][i][:0]
+            yield data
 
 
 @register
