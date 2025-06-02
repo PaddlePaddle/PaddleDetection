@@ -46,7 +46,9 @@ LearningRate:
 OptimizerBuilder:
   optimizer:
     param_groups:
-      - params: ['^(?=.*(?:norm|bn)).*$']
+      - params: ['^(?=.*(?:norm|bn)).*$']     # except bias
+        weight_decay: 0.
+      - params: ['^neck\.input_proj\.\d+\.1.*$', '^transformer\.enc_output\.1.*$']
         weight_decay: 0.
 
 TrainReader:

@@ -57,6 +57,8 @@ OptimizerBuilder:
         weight_decay: 0.
       - params: ['^(?=.*(?:neck|transformer))(?=.*(?:norm|bn|bias)).*$']
         weight_decay: 0.
+      - params: ['^neck\.input_proj\.\d+\.1\.weight$', '^transformer\.enc_output\.1\.weight$']
+        weight_decay: 0.
 
 TrainReader:
   batch_size: 32
