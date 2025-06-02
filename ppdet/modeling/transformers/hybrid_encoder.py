@@ -503,12 +503,17 @@ class DFINEHybridEncoder(HybridEncoder):
         act = get_act_fn(
             act, trt=trt) if act is None or isinstance(act,
                                                        (str, dict)) else act
+
+        initializer = nn.initializer.KaimingUniform(
+            negative_slope=5**0.5, nonlinearity="leaky_relu")
+
         # top-down fpn
         self.lateral_convs = nn.LayerList()
         self.fpn_blocks = nn.LayerList()
         for idx in range(len(in_channels) - 1, 0, -1):
             self.lateral_convs.append(
-                ConvNormLayer(hidden_dim, hidden_dim, 1, 1))
+                ConvNormLayer(hidden_dim, hidden_dim, 1, 1,
+                              initializer=initializer))
             self.fpn_blocks.append(
                 RepNCSPELAN4(
                     hidden_dim * 2,
@@ -524,8 +529,10 @@ class DFINEHybridEncoder(HybridEncoder):
         for idx in range(len(in_channels) - 1):
             self.downsample_convs.append(
                 nn.Sequential(
-                    ConvNormLayer(hidden_dim, hidden_dim, 1, 1),
-                    ConvNormLayer(hidden_dim, hidden_dim, 3, 2, groups=hidden_dim)))
+                    ConvNormLayer(hidden_dim, hidden_dim, 1, 1,
+                                  initializer=initializer),
+                    ConvNormLayer(hidden_dim, hidden_dim, 3, 2,
+                                  groups=hidden_dim, initializer=initializer)))
             self.pan_blocks.append(
                 RepNCSPELAN4(
                     hidden_dim * 2,
