@@ -7,11 +7,11 @@ RTDETRv3采用了模块化的设计架构，充分继承和发展了RT-DETR系�
 
 ## 模型
 
-| Model | Epoch | Backbone  | Input shape | $AP^{val}$ | $AP^{val}_{50}$| Params(M) | FLOPs(G) |  T4 TensorRT FP16(FPS) | Weight | Config | Log
-|:--------------:|:-----:|:----------:| :-------:|:--------------------------:|:---------------------------:|:---------:|:--------:| :---------------------: |:------------------------------------------------------------------------------------:|:-------------------------------------------:|:---|
-| RT-DETRv3-R18 | 6x |  ResNet-18 | 640 | 48.1 | 66.2 | 20 | 60 | 217 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv3_r18vd_6x_coco.pdparams)| [config](./rtdetrv3_r18vd_6x_coco.yml) | 
-| RT-DETRv3-R34 | 6x |  ResNet-34 | 640 | 49.9 | 67.7 | 31 | 92 | 161 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv3_r34vd_6x_coco.pdparams)| [config](./rtdetrv3_r34vd_6x_coco.yml) | 
-| RT-DETRv3-R50 | 6x |  ResNet-50 | 640 | 53.4 | 71.7 | 42 | 136 | 108 | [download](https://bj.bcebos.com/v1/paddledet/models/rtdetrv3_r50vd_6x_coco.pdparams)| [config](./rtdetrv3_r50vd_6x_coco.yml) | 
+| Model | Epoch | Backbone  | Input shape | $AP^{val}$ | $AP^{val}_{50}$| Params(M) | FLOPs(G) |  T4 TensorRT FP16(FPS) | Weight | Config |
+|:--------------:|:-----:|:----------:|:-------:|:--------------------------:|:---------------------------:|:---------:|:--------:|:---------------------:|:------------------------------------------------------------------------------------:|:-------------------------------------------:|
+| RT-DETRv3-R18 | 6x |  ResNet-18 | 640 | 48.1 | 65.6 | 20 | 60 | 217 | [download](https://paddledet.bj.bcebos.com/models/rtdetrv3_r18vd_6x.pdparams)| [config](./rtdetrv3_r18vd_6x_coco.yml) |
+| RT-DETRv3-R34 | 6x |  ResNet-34 | 640 | 49.9 | 67.7 | 31 | 92 | 161 | [download](https://paddledet.bj.bcebos.com/models/rtdetrv3_r34vd_6x.pdparams)| [config](./rtdetrv3_r34vd_6x_coco.yml) |
+| RT-DETRv3-R50 | 6x |  ResNet-50 | 640 | 52.8 | 71.1 | 42 | 136 | 108 | [download](https://paddledet.bj.bcebos.com/models/rtdetrv3_r50vd_6x.pdparams)| [config](./rtdetrv3_r50vd_6x_coco.yml) |
 
 
 **注意事项:**
@@ -58,14 +58,14 @@ python -m paddle.distributed.launch --gpus 0,1,2,3 tools/train.py -c configs/rtd
 
 ```shell
 python tools/eval.py -c configs/rtdetrv3/rtdetrv3_r18vd_6x_coco.yml \
-              -o weights=https://bj.bcebos.com/v1/paddledet/models/rtdetrv3_r18vd_6x_coco.pdparams
+              -o weights=https://paddledet.bj.bcebos.com/models/rtdetrv3_r18vd_6x.pdparams
 ```
 
 - 测试:
 
 ```shell
 python tools/infer.py -c configs/rtdetrv3/rtdetrv3_r18vd_6x_coco.yml \
-              -o weights=https://bj.bcebos.com/v1/paddledet/models/rtdetrv3_r18vd_6x_coco.pdparams \
+              -o weights=https://paddledet.bj.bcebos.com/models/rtdetrv3_r18vd_6x.pdparams \
               --infer_img=./demo/000000570688.jpg
 ```
 
@@ -81,7 +81,7 @@ python tools/infer.py -c configs/rtdetrv3/rtdetrv3_r18vd_6x_coco.yml \
 ```shell
 cd PaddleDetection
 python tools/export_model.py -c configs/rtdetrv3/rtdetrv3_r18vd_6x_coco.yml \
-              -o weights=https://bj.bcebos.com/v1/paddledet/models/rtdetrv3_r18vd_6x_coco.pdparams trt=True \
+              -o weights=https://paddledet.bj.bcebos.com/models/rtdetrv3_r18vd_6x.pdparams trt=True \
               --output_dir=output_inference
 ```
 
