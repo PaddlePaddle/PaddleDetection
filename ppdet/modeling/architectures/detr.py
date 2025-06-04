@@ -71,6 +71,7 @@ class DETR(BaseArch):
         }
         detr_head = create(cfg['detr_head'], **kwargs)
 
+        aux_o2m_head = None
         if 'aux_o2m_head' in cfg:
             kwargs = {'input_shape': neck.out_shape}
             aux_o2m_head = create(cfg['aux_o2m_head'], **kwargs)
