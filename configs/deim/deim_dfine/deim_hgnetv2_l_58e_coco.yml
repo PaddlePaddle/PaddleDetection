@@ -43,7 +43,7 @@ OptimizerBuilder:
   optimizer:
     weight_decay: 0.000125
     param_groups:
-      - params: ['^(?=.*backbone)(?!.*norm|bn).*$']
+      - params: ['^(?=.*backbone)(?!.*bn).*$']
         learning_rate: 0.05
       - params: ['^(?=.*(?:norm|bn)).*$']     # except bias
         weight_decay: 0.
