@@ -54,7 +54,6 @@ TrainReader:
   batch_size: 8
   mosaic_epoch: 29
   batch_transforms:
-    - MixupBatch: {ratio_range: [0.45, 0.55], prob: 0.5}
     - BatchRandomResize: {target_size: [
         480, 512, 544, 576, 608,
         640, 640, 640, 640,  # 4x
@@ -63,6 +62,7 @@ TrainReader:
     - NormalizeBox: {}
     - BboxXYXY2XYWH: {}
     - Permute: {}
+    - MixupBatch: {ratio_range: [0.45, 0.55], prob: 0.5}
   transform_schedulers:
     # [start_epoch, stop_epoch) | [0, stop_epoch) | [start_epoch, inf)
     - RandomSelect: {start_epoch: 4, stop_epoch: 29}

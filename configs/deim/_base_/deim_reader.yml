@@ -32,7 +32,6 @@ TrainReader:
     - RandomFlip: {}
     - Resize: {target_size: [640, 640], keep_ratio: False, interp: 1}
   batch_transforms:
-    - MixupBatch: {ratio_range: [0.45, 0.55], prob: 0.5}
     - BatchRandomResize: {target_size: [
         480, 512, 544, 576, 608,
         640, 640, 640,  # 3x
@@ -41,6 +40,7 @@ TrainReader:
     - NormalizeBox: {}
     - BboxXYXY2XYWH: {}
     - Permute: {}
+    - MixupBatch: {ratio_range: [0.45, 0.55], prob: 0.5}
   mosaic_start_epoch: 4
   mosaic_epoch: 34
   batch_size: 4
