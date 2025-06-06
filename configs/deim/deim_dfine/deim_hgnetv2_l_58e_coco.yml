@@ -10,7 +10,7 @@ weights: output/deim_hgnetv2_l_coco/model_final
 find_unused_parameters: False
 log_iter: 200
 
-pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPHGNetV2_B2_ssld_stage1_pretrained.pdparams
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPHGNetV2_B4_ssld_stage1_pretrained.pdparams
 
 PPHGNetV2:
   arch: 'L'
