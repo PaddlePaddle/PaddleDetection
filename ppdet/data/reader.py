@@ -26,6 +26,7 @@ import paddle
 import paddle.nn.functional as F
 
 from copy import deepcopy
+from typing import Sequence
 
 from paddle.io import DataLoader, DistributedBatchSampler
 from .utils import default_collate_fn
@@ -54,6 +55,8 @@ class Compose(object):
                 self.transforms_cls.append(f)
 
     def _update_transforms_cls(self, data):
+        if isinstance(data, Sequence):
+            data = data[0]
         if 'transform_schedulers' in data:
             def is_valid(op):
                 op_name = op.__class__.__name__
@@ -94,7 +97,7 @@ class BatchCompose(Compose):
         self.collate_batch = collate_batch
 
     def __call__(self, data):
-        transforms_cls = self._update_transforms_cls(data[0])
+        transforms_cls = self._update_transforms_cls(data)
         for f in transforms_cls:
             try:
                 data = f(data)
@@ -112,6 +115,17 @@ class BatchCompose(Compose):
                 if k in sample:
                     sample.pop(k)
 
+        for d in data:
+            empty_fields = []
+            for k in d:
+                if isinstance(d[k], np.ndarray) and d[k].size == 0:
+                    d[k] = np.empty((1, *d[k].shape[1:]), dtype=d[k].dtype)
+                    empty_fields.append(k)
+            d['__empty_fields'] = empty_fields
+        if all(not d['__empty_fields'] for d in data):
+            for d in data:
+                d.pop('__empty_fields')
+
         # batch data, if user-define batch function needed
         # use user-defined here
         if self.collate_batch:
@@ -122,7 +136,7 @@ class BatchCompose(Compose):
                 tmp_data = []
                 for i in range(len(data)):
                     tmp_data.append(data[i][k])
-                if not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
+                if k != '__empty_fields' and not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
                 batch_data[k] = tmp_data
         return batch_data
@@ -221,7 +235,6 @@ class BaseDataLoader(object):
             num_workers=worker_num,
             return_list=return_list,
             use_shared_memory=use_shared_memory)
-        self.loader = iter(self.dataloader)
 
         return self
 
@@ -229,18 +242,7 @@ class BaseDataLoader(object):
         return len(self._batch_sampler)
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            return next(self.loader)
-        except StopIteration:
-            self.loader = iter(self.dataloader)
-            six.reraise(*sys.exc_info())
-
-    def next(self):
-        # python2 compatibility
-        return self.__next__()
+        return iter(self.dataloader)
 
 
 @register
@@ -259,6 +261,15 @@ class TrainReader(BaseDataLoader):
         super(TrainReader, self).__init__(sample_transforms, batch_transforms,
                                           batch_size, shuffle, drop_last,
                                           num_classes, collate_batch, **kwargs)
+
+    def __iter__(self):
+        for data in self.dataloader:
+            if '__empty_fields' in data:
+                empty_fields = data.pop('__empty_fields')
+                for i, fields in enumerate(empty_fields):
+                    for k in fields:
+                        data[k][i] = data[k][i][:0]
+            yield data
 
 
 @register
@@ -597,21 +608,14 @@ class BaseSemiDataLoader(object):
 
         self.dataloader = CombineSSODLoader(self.dataloader_label,
                                             self.dataloader_unlabel)
-        self.loader = iter(self.dataloader)
+
         return self
 
     def __len__(self):
         return len(self._batch_sampler_label)
 
     def __iter__(self):
-        return self
-
-    def __next__(self):
-        return next(self.loader)
-
-    def next(self):
-        # python2 compatibility
-        return self.__next__()
+        return iter(self.dataloader)
 
 
 @register

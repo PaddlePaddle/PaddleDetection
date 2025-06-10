@@ -32,7 +32,8 @@ from ..bbox_utils import bbox_overlaps
 __all__ = [
     '_get_clones', 'bbox_overlaps', 'bbox_cxcywh_to_xyxy',
     'bbox_xyxy_to_cxcywh', 'sigmoid_focal_loss', 'inverse_sigmoid',
-    'deformable_attention_core_func', 'varifocal_loss_with_logits'
+    'deformable_attention_core_func', 'varifocal_loss_with_logits',
+    'mal_loss_with_logits'
 ]
 
 
@@ -501,6 +502,22 @@ def varifocal_loss_with_logits(pred_logits,
                                gamma=2.0):
     pred_score = F.sigmoid(pred_logits)
     weight = alpha * pred_score.pow(gamma) * (1 - label) + gt_score * label
+    loss = F.binary_cross_entropy_with_logits(pred_logits,
+                                              gt_score,
+                                              weight=weight,
+                                              reduction='none')
+    return loss.mean(1).sum() / normalizer
+
+
+def mal_loss_with_logits(pred_logits,
+                         gt_score,
+                         label,
+                         normalizer=1.0,
+                         alpha=1.0,
+                         gamma=1.5):
+    pred_score = F.sigmoid(pred_logits)
+    gt_score = gt_score.pow(gamma)
+    weight = alpha * pred_score.pow(gamma) * (1 - label) + label
     loss = F.binary_cross_entropy_with_logits(pred_logits,
                                               gt_score,
                                               weight=weight,

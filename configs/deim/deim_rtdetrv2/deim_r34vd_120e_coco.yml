@@ -1,0 +1,64 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer.yml',
+  '../_base_/deim_reader.yml',
+  '../_base_/rtdetrv2_r50vd.yml',
+]
+
+weights: output/deim_r34_120e_coco/model_final
+find_unused_parameters: False
+log_iter: 200
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet34_vd_pretrained.pdparams
+
+ResNet:
+  depth: 34
+  freeze_at: -1
+  freeze_norm: false
+
+HybridEncoder:
+  expansion: 0.5
+
+RTDETRTransformerv2:
+  activation: silu
+  mlp_act: silu
+  query_pos_method: as_reg
+  num_decoder_layers: 4
+
+DINOHead:
+  loss:
+    use_vfl: False
+    use_mal: True
+
+epoch: 120
+
+LearningRate:
+  schedulers:
+  - !CosineDecay
+    start_epochs: 64
+    max_epochs: 120
+    min_lr_ratio: 0.5
+    last_plateau_epochs: 3
+  - !ExpWarmup
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*norm).*$']
+        learning_rate: 0.5
+      - params: ['^(?=.*(?:norm|bn)).*$']     # except bias
+        weight_decay: 0.
+      - params: ['^neck\.input_proj\.\d+\.1.*$', '^transformer\.enc_output\.1.*$']
+        weight_decay: 0.
+
+TrainReader:
+  mosaic_epoch: 64
+  transform_schedulers:
+    # [start_epoch, stop_epoch) | [0, stop_epoch) | [start_epoch, inf)
+    - RandomSelect: {start_epoch: 4, stop_epoch: 64}
+    - RandomSelects: {start_epoch: 64, stop_epoch: 117}
+    - Resize: {start_epoch: 117}
+    - BatchRandomResize: {stop_epoch: 117}
+    - MixupBatch: {start_epoch: 4, stop_epoch: 64}

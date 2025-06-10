@@ -238,6 +238,7 @@ class Trainer(object):
         self.use_ema = ('use_ema' in cfg and cfg['use_ema'])
         if self.use_ema:
             ema_decay = self.cfg.get('ema_decay', 0.9998)
+            ema_gamma = self.cfg.get('ema_gamma', 2000)
             ema_decay_type = self.cfg.get('ema_decay_type', 'threshold')
             cycle_epoch = self.cfg.get('cycle_epoch', -1)
             ema_black_list = self.cfg.get('ema_black_list', None)
@@ -245,6 +246,7 @@ class Trainer(object):
             self.ema = ModelEMA(
                 self.model,
                 decay=ema_decay,
+                gamma=ema_gamma,
                 ema_decay_type=ema_decay_type,
                 cycle_epoch=cycle_epoch,
                 ema_black_list=ema_black_list,
@@ -558,6 +560,8 @@ class Trainer(object):
             self.status['epoch_id'] = epoch_id
             self._compose_callback.on_epoch_begin(self.status)
             self.loader.dataset.set_epoch(epoch_id)
+            if hasattr(self.loader._batch_sampler, 'set_epoch'):
+                self.loader._batch_sampler.set_epoch(epoch_id)
             model.train()
             iter_tic = time.time()
             for step_id, data in enumerate(self.loader):

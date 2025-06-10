@@ -1,0 +1,26 @@
+epoch: 60
+
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !CosineDecay
+    start_epochs: 34
+    max_epochs: 60
+    min_lr_ratio: 0.5
+    last_plateau_epochs: 2
+  - !ExpWarmup
+    steps: 2000
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*norm).*$']
+        learning_rate: 0.1
+      - params: ['^(?=.*(?:norm|bn)).*$']     # except bias
+        weight_decay: 0.
+      - params: ['^neck\.input_proj\.\d+\.1.*$', '^transformer\.enc_output\.1.*$']
+        weight_decay: 0.

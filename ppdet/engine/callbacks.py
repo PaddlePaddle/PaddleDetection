@@ -481,9 +481,11 @@ class WandbCallback(Callback):
                 metrics["train/ips"] = ips
                 metrics["train/data_cost"] = data_cost
                 metrics["train/batch_cost"] = batch_cost
+                metrics["train/learning_rate"] = float(status['learning_rate'])
 
+                step = status['epoch_id'] * status['steps_per_epoch'] + status['step_id']
+                self.run.log(metrics, step=step)
                 self.fps.append(ips)
-                self.run.log(metrics)
 
     def on_epoch_end(self, status):
         mode = status['mode']
