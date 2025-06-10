@@ -576,7 +576,7 @@ class SemiCOCODataSet(COCODataSet):
         elif self.cutmix_epoch == 0 or self._epoch < self.cutmix_epoch:
             idx = np.random.randint(n)
             roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
-        elif self.mosaic_epoch == 0 or self._epoch < self.mosaic_epoch:
+        elif self.mosaic_epoch == 0 or self.mosaic_start_epoch <= self._epoch < self.mosaic_epoch:
             roidb = [roidb, ] + [
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
                 for _ in range(4)

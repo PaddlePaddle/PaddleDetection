@@ -27,6 +27,7 @@ import cv2
 import copy
 import math
 import numpy as np
+import random
 from .operators import register_op, BaseOperator, Resize
 from .op_helper import jaccard_overlap, gaussian2D, gaussian_radius, draw_umich_gaussian
 from .atss_assigner import ATSSAssigner
@@ -41,7 +42,7 @@ __all__ = [
     'PadBatch', 'BatchRandomResize', 'Gt2YoloTarget', 'Gt2FCOSTarget',
     'Gt2TTFTarget', 'Gt2Solov2Target', 'Gt2SparseTarget', 'PadMaskBatch',
     'Gt2GFLTarget', 'Gt2CenterNetTarget', 'Gt2CenterTrackTarget', 'PadGT',
-    'PadRGT', 'BatchRandomResizeForSSOD'
+    'PadRGT', 'BatchRandomResizeForSSOD', 'MixupBatch'
 ]
 
 
@@ -1562,3 +1563,70 @@ class BatchRandomResizeForSSOD(BaseOperator):
 
         resizer = Resize(target_size, keep_ratio=self.keep_ratio, interp=interp)
         return [resizer(samples, context=context), index]
+
+
+@register_op
+class MixupBatch(BaseOperator):
+    """
+    Mixup a batch of samples.
+    The layout of each image should be 'CHW'.
+    Args:
+        ratio_range (Sequence[float]): Scale ratio of mixup image.
+            Defaults to (0.45, .55).
+        prob (float): Probability of applying this transformation.
+            Defaults to 1.0.
+    """
+
+    def __init__(self, ratio_range=(0.45, 0.55), prob=1.0):
+        super(MixupBatch, self).__init__()
+        self.ratio_range = ratio_range
+        self.prob = prob
+
+    def __call__(self, samples, context=None):
+        if random.uniform(0, 1) > self.prob:
+            return samples
+
+        # Generate mixup factor
+        factor = round(random.uniform(*self.ratio_range), 6)
+
+        mixup_samples = []
+        for sample in zip(samples, samples[-1:] + samples[:-1]):
+            result = copy.deepcopy(sample[0])
+
+            # apply image
+            im1 = sample[0]['image']
+            im2 = sample[1]['image']
+            im = im1 * factor + im2 * (1. - factor)
+            result['image'] = im
+
+            # apply bbox and score
+            if 'gt_bbox' in sample[0]:
+                gt_bbox1 = sample[0]['gt_bbox']
+                gt_bbox2 = sample[1]['gt_bbox']
+                gt_bbox = np.concatenate((gt_bbox1, gt_bbox2), axis=0)
+                result['gt_bbox'] = gt_bbox
+            if 'gt_class' in sample[0]:
+                gt_class1 = sample[0]['gt_class']
+                gt_class2 = sample[1]['gt_class']
+                gt_class = np.concatenate((gt_class1, gt_class2), axis=0)
+                result['gt_class'] = gt_class
+            if 'is_crowd' in sample[0]:
+                is_crowd1 = sample[0]['is_crowd']
+                is_crowd2 = sample[1]['is_crowd']
+                is_crowd = np.concatenate((is_crowd1, is_crowd2), axis=0)
+                result['is_crowd'] = is_crowd
+            if 'difficult' in sample[0]:
+                is_difficult1 = sample[0]['difficult']
+                is_difficult2 = sample[1]['difficult']
+                is_difficult = np.concatenate(
+                    (is_difficult1, is_difficult2), axis=0)
+                result['difficult'] = is_difficult
+            if 'gt_ide' in sample[0]:
+                gt_ide1 = sample[0]['gt_ide']
+                gt_ide2 = sample[1]['gt_ide']
+                gt_ide = np.concatenate((gt_ide1, gt_ide2), axis=0)
+                result['gt_ide'] = gt_ide
+
+            mixup_samples.append(result)
+
+        return mixup_samples

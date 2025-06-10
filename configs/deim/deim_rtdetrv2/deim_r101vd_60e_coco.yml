@@ -1,0 +1,42 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer.yml',
+  '../_base_/deim_reader.yml',
+  '../_base_/rtdetrv2_r50vd.yml',
+]
+
+weights: output/deim_r101_120e_coco/model_final
+find_unused_parameters: False
+log_iter: 200
+
+pretrain_weights: https://paddledet.bj.bcebos.com/models/pretrained/ResNet101_vd_pretrained.pdparams
+
+ResNet:
+  depth: 101
+
+HybridEncoder:
+  hidden_dim: 384
+  encoder_layer:
+    d_model: 384
+    dim_feedforward: 2048
+
+RTDETRTransformerv2:
+  activation: silu
+  mlp_act: silu
+  query_pos_method: as_reg
+
+DINOHead:
+  loss:
+    use_vfl: False
+    use_mal: True
+
+OptimizerBuilder:
+  optimizer:
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*norm).*$']
+        learning_rate: 0.01
+      - params: ['^(?=.*(?:norm|bn)).*$']     # except bias
+        weight_decay: 0.
+      - params: ['^neck\.input_proj\.\d+\.1.*$', '^transformer\.enc_output\.1.*$']
+        weight_decay: 0.

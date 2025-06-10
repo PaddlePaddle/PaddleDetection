@@ -1,4 +1,4 @@
-# Copyright (c) 2024 PaddlePaddle Authors. All Rights Reserved.
+# Copyright (c) 2025 PaddlePaddle Authors. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,13 +16,17 @@
 # Copyright (c) 2020 SenseTime. All Rights Reserved.
 # Modified from detrex (https://github.com/IDEA-Research/detrex)
 # Copyright 2022 The IDEA Authors. All rights reserved.
+# Modified from D-FINE (https://github.com/Peterande/D-FINE)
+# Copyright 2024 The IDEA Authors. All rights reserved.
+# Modified from DEIM (https://github.com/ShihuaHuang95/DEIM)
+# Copyright 2025 The IDEA Authors. All rights reserved.
 
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
 import functools
-import math
+import numpy as np
 
 import paddle
 import paddle.nn as nn
@@ -31,150 +35,204 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 
 from ppdet.core.workspace import register
-from .rtdetr_transformer import TransformerDecoder
-from .utils import deformable_attention_core_func_v2, get_contrastive_denoising_training_group
 from ..heads.detr_head import MLP
 from ..initializer import (linear_init_, constant_, xavier_uniform_, bias_init_with_prob)
 from ..layers import MultiHeadAttention
+from .rtdetr_transformerv2 import MSDeformableAttention
+from .utils import _get_clones, bbox_xyxy_to_cxcywh, get_contrastive_denoising_training_group, inverse_sigmoid
 
-__all__ = ['RTDETRTransformerv2']
+__all__ = ['DFINETransformer']
 
 
-class MSDeformableAttention(nn.Layer):
-    def __init__(self,
-                 embed_dim=256,
-                 num_heads=8,
-                 num_levels=4,
-                 num_points=4,
-                 sampling_method='default',
-                 offset_scale=0.5,
-                 lr_mult=0.1):
-        """
-        Multi-Scale Deformable Attention Module
-        """
-        super(MSDeformableAttention, self).__init__()
-        self.embed_dim = embed_dim
-        self.num_heads = num_heads
-        self.num_levels = num_levels
+@functools.lru_cache
+def weighting_function(reg_max: int, up: float, reg_scale: float):
+    """Generates the non-uniform Weighting Function W(n) for bounding box
+    regression.
 
-        if isinstance(num_points, list):
-            assert len(num_points) == num_levels, ValueError
-            num_points_list = num_points
-        else:
-            num_points_list = [num_points for _ in range(num_levels)]
+    Args:
+        reg_max (int): Max number of the discrete bins.
+        up (float): Controls upper bounds of the sequence,
+            where maximum offset is ±up * H / W.
+        reg_scale (float): Controls the curvature of the Weighting Function.
+            Larger values result in flatter weights near the central axis
+            W(reg_max/2)=0 and steeper weights at both ends.
 
-        self.num_points_list = num_points_list
-        self.total_points = num_heads * sum(num_points_list)
+    Returns:
+        Tensor: Sequence of Weighting Function.
+    """
+    upper_bound1 = abs(up) * abs(reg_scale)
+    upper_bound2 = abs(up) * abs(reg_scale) * 2
+    step = (upper_bound1 + 1)**(2 / (reg_max - 2))
+    left_values = [-(step)**i + 1 for i in range(reg_max // 2 - 1, 0, -1)]
+    right_values = [(step)**i - 1 for i in range(1, reg_max // 2)]
+    project = [-upper_bound2, *left_values, 0, *right_values, upper_bound2]
+    return paddle.to_tensor(np.array(project), dtype='float32')
 
-        num_points_scale = [1 / n for n in num_points_list for _ in range(n)]
-        self.register_buffer('num_points_scale',
-                             paddle.to_tensor(num_points_scale, dtype=paddle.float32))
 
-        self.sampling_method = sampling_method
-        self.offset_scale = offset_scale
+def translate_gt(gt, reg_max, reg_scale, up):
+    """
+    Decodes bounding box ground truth (GT) values into distribution-based GT representations.
 
-        self.head_dim = embed_dim // num_heads
-        assert self.head_dim * num_heads == self.embed_dim, "embed_dim must be divisible by num_heads"
+    This function maps continuous GT values into discrete distribution bins, which can be used
+    for regression tasks in object detection models. It calculates the indices of the closest
+    bins to each GT value and assigns interpolation weights to these bins based on their proximity
+    to the GT value.
 
-        self.sampling_offsets = nn.Linear(
-            embed_dim,
-            self.total_points * 2,
-            weight_attr=ParamAttr(learning_rate=lr_mult),
-            bias_attr=ParamAttr(learning_rate=lr_mult))
+    Args:
+        gt (Tensor): Ground truth bounding box values, shape (N, ).
+        reg_max (int): Maximum number of discrete bins for the distribution.
+        reg_scale (float): Controls the curvature of the Weighting Function.
+        up (Tensor): Controls the upper bounds of the Weighting Function.
 
-        self.attention_weights = nn.Linear(embed_dim, self.total_points)
-        self.value_proj = nn.Linear(embed_dim, embed_dim)
-        self.output_proj = nn.Linear(embed_dim, embed_dim)
+    Returns:
+        Tuple[Tensor, Tensor, Tensor]:
+            - indices (Tensor): Index of the left bin closest to each GT value, shape (N, ).
+            - weight_right (Tensor): Weight assigned to the right bin, shape (N, ).
+            - weight_left (Tensor): Weight assigned to the left bin, shape (N, ).
+    """
+    gt = gt.reshape([-1])
+    function_values = weighting_function(reg_max, up, reg_scale)
 
-        self.ms_deformable_attn_core = functools.partial(
-            deformable_attention_core_func_v2,
-            num_points_list=self.num_points_list,
-            sampling_method=self.sampling_method)
+    # Find the closest left-side indices for each value
+    diffs = function_values.unsqueeze(0) - gt.unsqueeze(1)
+    mask = diffs <= 0
+    closest_left_indices = paddle.sum(mask, 1) - 1
 
-        self._reset_parameters()
+    # Calculate the weights for the interpolation
+    indices = closest_left_indices.to("float32")
 
-        if self.sampling_method == 'discrete':
-            for p in self.sampling_offsets.parameters():
-                p.stop_gradient = True
+    weight_right = paddle.zeros_like(indices)
+    weight_left = paddle.zeros_like(indices)
 
-    def _reset_parameters(self):
-        # sampling_offsets
-        constant_(self.sampling_offsets.weight)
-        thetas = paddle.arange(
-            self.num_heads,
-            dtype=paddle.float32) * (2.0 * math.pi / self.num_heads)
-        grid_init = paddle.stack([thetas.cos(), thetas.sin()], -1)
-        grid_init = grid_init / grid_init.abs().max(-1, keepdim=True)
-        grid_init = grid_init.reshape([self.num_heads, 1, 2]).tile(
-            [1, sum(self.num_points_list), 1])
-        scaling = paddle.concat(
-            [paddle.arange(1, n + 1, dtype=paddle.float32)
-             for n in self.num_points_list]).reshape([1, -1, 1])
-        grid_init *= scaling
-        self.sampling_offsets.bias.set_value(grid_init.flatten())
-        # attention_weights
-        constant_(self.attention_weights.weight)
-        constant_(self.attention_weights.bias)
-        # proj
-        xavier_uniform_(self.value_proj.weight)
-        constant_(self.value_proj.bias)
-        xavier_uniform_(self.output_proj.weight)
-        constant_(self.output_proj.bias)
+    valid_idx_mask = (indices >= 0) & (indices < reg_max)
+    valid_indices = indices[valid_idx_mask].to("int64")
 
-    def forward(self,
-                query,
-                reference_points,
-                value,
-                value_spatial_shapes,
-                value_mask=None):
-        """
-        Args:
-            query (Tensor): [batch_num, query_len, num_heads * head_dim]
-            reference_points (Tensor): [batch_num, query_length, n_levels, 2], range in [0, 1], top-left (0,0),
-                bottom-right (1, 1), including padding area
-            value (Tensor): [batch_num, value_len, num_heads * head_dim]
-            value_spatial_shapes (Tensor): [n_levels, 2], [(H_0, W_0), (H_1, W_1), ..., (H_{L-1}, W_{L-1})]
-            value_mask (Tensor): [batch_num, value_len], True for non-padding elements, False for padding elements
+    # Obtain distances
+    left_values = function_values[valid_indices]
+    right_values = function_values[valid_indices + 1]
 
-        Returns:
-            output (Tensor): [bs, Length_{query}, C]
-        """
-        batch_num, query_len = query.shape[:2]
-        value_len = value.shape[1]
+    gt_valid = gt[valid_idx_mask]
+    left_diffs = paddle.abs(gt_valid - left_values)
+    right_diffs = paddle.abs(right_values - gt_valid)
 
-        value = self.value_proj(value)
-        if value_mask is not None:
-            value_mask = value_mask.astype(value.dtype).unsqueeze(-1)
-            value *= value_mask
-        value = value.reshape([batch_num, value_len, self.num_heads, self.head_dim])
+    # Valid weights
+    valid_idx = paddle.nonzero(valid_idx_mask).flatten()
+    weight_right = paddle.scatter(weight_right, valid_idx, left_diffs / (left_diffs + right_diffs))
+    weight_left = paddle.scatter(weight_left, valid_idx, 1.0 - weight_right[valid_idx_mask])
 
-        sampling_offsets = self.sampling_offsets(query).reshape(
-            [batch_num, query_len, self.num_heads, sum(self.num_points_list), 2])
-        attention_weights = self.attention_weights(query).reshape(
-            [batch_num, query_len, self.num_heads, sum(self.num_points_list)])
-        attention_weights = F.softmax(attention_weights, axis=-1)
+    # Invalid weights (out of range)
+    invalid_idx_mask_neg = (indices < 0)
+    weight_right[invalid_idx_mask_neg] = 0.0
+    weight_left[invalid_idx_mask_neg] = 1.0
+    indices[invalid_idx_mask_neg] = 0.0
 
-        if reference_points.shape[-1] == 2:
-            offset_normalizer = value_spatial_shapes.flip([1]).reshape(
-                [1, 1, 1, self.num_levels, 1, 2])
-            sampling_locations = reference_points.reshape([
-                batch_num, query_len, 1, self.num_levels, 1, 2
-            ]) + sampling_offsets / offset_normalizer.astype(sampling_offsets.dtype)
-        elif reference_points.shape[-1] == 4:
-            offset = sampling_offsets * reference_points[:, :, None, :, 2:]
-            num_points_scale = self.num_points_scale.astype(query.dtype).unsqueeze(-1)
-            offset = offset * num_points_scale * self.offset_scale
-            sampling_locations = reference_points[:, :, None, :, :2] + offset
-        else:
-            raise ValueError(
-                "Last dim of reference_points must be 2 or 4, but get {} instead.".
-                format(reference_points.shape[-1]))
+    invalid_idx_mask_pos = (indices >= reg_max)
+    weight_right[invalid_idx_mask_pos] = 1.0
+    weight_left[invalid_idx_mask_pos] = 0.0
+    indices[invalid_idx_mask_pos] = reg_max - 0.1
 
-        output = self.ms_deformable_attn_core(value, value_spatial_shapes,
-                                              sampling_locations, attention_weights)
-        output = self.output_proj(output)
+    return indices, weight_right, weight_left
 
-        return output
+
+def bbox2distance(points, bbox, reg_max, reg_scale, up, eps=0.1):
+    """
+    Converts bounding box coordinates to distances from a reference point.
+
+    Args:
+        points (Tensor): (n, 4) [x, y, w, h], where (x, y) is the center.
+        bbox (Tensor): (n, 4) bounding boxes in "xyxy" format.
+        reg_max (float): Maximum bin value.
+        reg_scale (float): Controling curvarture of W(n).
+        up (Tensor): Controling upper bounds of W(n).
+        eps (float): Small value to ensure target < reg_max.
+
+    Returns:
+        Tensor: Decoded distances.
+    """
+    reg_scale = abs(reg_scale)
+    left   = (points[:, 0] - bbox[:, 0]) / (points[..., 2] / reg_scale + 1e-16) - 0.5 * reg_scale
+    top    = (points[:, 1] - bbox[:, 1]) / (points[..., 3] / reg_scale + 1e-16) - 0.5 * reg_scale
+    right  = (bbox[:, 2] - points[:, 0]) / (points[..., 2] / reg_scale + 1e-16) - 0.5 * reg_scale
+    bottom = (bbox[:, 3] - points[:, 1]) / (points[..., 3] / reg_scale + 1e-16) - 0.5 * reg_scale
+    four_lens = paddle.stack([left, top, right, bottom], -1)
+    four_lens, weight_right, weight_left = translate_gt(four_lens, reg_max, reg_scale, up)
+    if reg_max is not None:
+        four_lens = paddle.clip(four_lens, min=0, max=reg_max - eps)
+    return four_lens.reshape([-1]).detach(), weight_right.detach(), weight_left.detach()
+
+
+def distance2bbox(points, distance, reg_scale):
+    """
+    Decodes edge-distances into bounding box coordinates.
+
+    Args:
+        points (Tensor): (B, N, 4) or (N, 4) format, representing [x, y, w, h],
+                         where (x, y) is the center and (w, h) are width and height.
+        distance (Tensor): (B, N, 4) or (N, 4), representing distances from the
+                           point to the left, top, right, and bottom boundaries.
+
+        reg_scale (float): Controls the curvature of the Weighting Function.
+
+    Returns:
+        Tensor: Bounding boxes in (N, 4) or (B, N, 4) format [cx, cy, w, h].
+    """
+    reg_scale = abs(reg_scale)
+    x1 = points[..., 0] - (0.5 * reg_scale + distance[..., 0]) * (points[..., 2] / reg_scale)
+    y1 = points[..., 1] - (0.5 * reg_scale + distance[..., 1]) * (points[..., 3] / reg_scale)
+    x2 = points[..., 0] + (0.5 * reg_scale + distance[..., 2]) * (points[..., 2] / reg_scale)
+    y2 = points[..., 1] + (0.5 * reg_scale + distance[..., 3]) * (points[..., 3] / reg_scale)
+
+    bboxes = paddle.stack([x1, y1, x2, y2], -1)
+
+    return bbox_xyxy_to_cxcywh(bboxes)
+
+
+class Integral(nn.Layer):
+    def __init__(self, reg_max=32, reg_scale=4.0):
+        super(Integral, self).__init__()
+        self.reg_max = reg_max
+        project = weighting_function(self.reg_max, 0.5, reg_scale)
+        self.register_buffer('project',
+                             paddle.to_tensor(project, dtype=paddle.float32))
+
+    def forward(self, x):
+        shape = x.shape
+        x = F.softmax(x.reshape([-1, self.reg_max + 1]), 1)
+        x = F.linear(x, self.project).reshape([-1, 4])
+        return x.reshape(list(shape[:-1]) + [-1])
+
+
+class LQE(nn.Layer):
+    def __init__(self, k, hidden_dim, num_layers, reg_max):
+        super(LQE, self).__init__()
+        self.k = k
+        self.reg_max = reg_max
+        self.reg_conf = MLP(4 * (k + 1), hidden_dim, 1, num_layers)
+        constant_(self.reg_conf.layers[-1].weight)
+        constant_(self.reg_conf.layers[-1].bias)
+
+    def forward(self, scores, pred_corners):
+        B, L, _ = pred_corners.shape
+        prob = F.softmax(pred_corners.reshape([B, L, 4, self.reg_max + 1]), -1)
+        prob_topk, _ = prob.topk(self.k, -1)
+        stat = paddle.concat([prob_topk, prob_topk.mean(-1, keepdim=True)], -1)
+        quality_score = self.reg_conf(stat.reshape([B, L, -1]))
+        return scores + quality_score
+
+
+class Gate(nn.Layer):
+    def __init__(self, d_model):
+        super(Gate, self).__init__()
+        self.gate = nn.Linear(2 * d_model, 2 * d_model)
+        bias = bias_init_with_prob(0.5)
+        constant_(self.gate.bias, bias)
+        constant_(self.gate.weight)
+
+    def forward(self, x1, x2):
+        gate_input = paddle.concat([x1, x2], -1)
+        gates = F.sigmoid(self.gate(gate_input))
+        gate1, gate2 = gates.chunk(2, -1)
+        return gate1 * x1 + gate2 * x2
 
 
 class TransformerDecoderLayer(nn.Layer):
@@ -203,6 +261,9 @@ class TransformerDecoderLayer(nn.Layer):
         self.cross_attn = MSDeformableAttention(
             d_model, n_head, n_levels, n_points,
             sampling_method=sampling_method, lr_mult=1.0)
+        self.cross_attn.value_proj = nn.Identity()  # diff
+        self.cross_attn.output_proj = nn.Identity()  # diff
+
         self.dropout2 = nn.Dropout(dropout)
         self.norm2 = nn.LayerNorm(
             d_model,
@@ -221,6 +282,8 @@ class TransformerDecoderLayer(nn.Layer):
             d_model,
             weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
             bias_attr=ParamAttr(regularizer=L2Decay(0.0)))
+
+        self.gateway = Gate(d_model)
         self._reset_parameters()
 
     def _reset_parameters(self):
@@ -259,19 +322,98 @@ class TransformerDecoderLayer(nn.Layer):
         tgt2 = self.cross_attn(
             self.with_pos_embed(tgt, query_pos_embed), reference_points, memory,
             memory_spatial_shapes, memory_mask)
-        tgt = tgt + self.dropout2(tgt2)
+        # tgt = tgt + self.dropout2(tgt2)
+        tgt = self.gateway(tgt, self.dropout2(tgt2))
         tgt = self.norm2(tgt)
 
         # ffn
         tgt2 = self.forward_ffn(tgt)
         tgt = tgt + self.dropout4(tgt2)
-        tgt = self.norm3(tgt)
+        tgt = self.norm3(tgt.clip(min=-65504, max=65504))
 
         return tgt
 
 
+class TransformerDecoder(nn.Layer):
+    def __init__(self, hidden_dim, decoder_layer, num_layers, reg_max, eval_idx=-1):
+        super(TransformerDecoder, self).__init__()
+        self.layers = _get_clones(decoder_layer, num_layers)
+        self.hidden_dim = hidden_dim
+        self.num_layers = num_layers
+        self.eval_idx = eval_idx if eval_idx >= 0 else num_layers + eval_idx
+        self.lqe_layers = _get_clones(LQE(4, 64, 2, reg_max), num_layers)
+
+    def forward(self,
+                tgt,
+                ref_points_unact,
+                memory,
+                memory_spatial_shapes,
+                memory_level_start_index,
+                bbox_head,
+                score_head,
+                query_pos_head,
+                pre_bbox_head,
+                integral,
+                reg_scale,
+                attn_mask=None,
+                memory_mask=None,
+                query_pos_head_inv_sig=False):
+        output = tgt
+        output_detach = pred_corners_undetach = 0
+        dec_out_bboxes = []
+        dec_out_logits = []
+        dec_out_pred_corners = []
+        dec_out_refs = []
+        ref_points_detach = F.sigmoid(ref_points_unact)
+        for i, layer in enumerate(self.layers):
+            ref_points_input = ref_points_detach.unsqueeze(2)
+            if not query_pos_head_inv_sig:
+                query_pos_embed = query_pos_head(ref_points_detach)
+            else:
+                query_pos_embed = query_pos_head(
+                    inverse_sigmoid(ref_points_detach))
+
+            query_pos_embed = paddle.clip(query_pos_embed, min=-10, max=10)
+
+            output = layer(output, ref_points_input, memory,
+                           memory_spatial_shapes, memory_level_start_index,
+                           attn_mask, memory_mask, query_pos_embed)
+
+            if i == 0 :
+                # Initial bounding box predictions with inverse sigmoid refinement
+                pre_bboxes = F.sigmoid(pre_bbox_head(output) + inverse_sigmoid(
+                    ref_points_detach))
+                pre_scores = score_head[0](output)
+                ref_points_initial = pre_bboxes.detach()
+
+            # Refine bounding box corners using FDR, integrating previous layer's corrections
+            pred_corners = bbox_head[i](output + output_detach) + pred_corners_undetach
+            inter_ref_bbox = distance2bbox(ref_points_initial, integral(pred_corners), reg_scale)
+
+            if self.training or i == self.eval_idx:
+                scores = score_head[i](output)
+                # Lqe does not affect the performance here.
+                scores = self.lqe_layers[i](scores, pred_corners)
+                dec_out_logits.append(scores)
+                dec_out_bboxes.append(paddle.concat([
+                    inter_ref_bbox[..., :2], inter_ref_bbox[..., 2:].clip(min=0)], -1))
+                dec_out_pred_corners.append(pred_corners)
+                dec_out_refs.append(ref_points_initial)
+
+                if not self.training or i == len(self.layers) - 1:
+                    break
+
+            output_detach = output.detach()
+            pred_corners_undetach = pred_corners
+            ref_points_detach = inter_ref_bbox.detach(
+            ) if self.training else inter_ref_bbox
+
+        return paddle.stack(dec_out_bboxes), paddle.stack(dec_out_logits), \
+               paddle.stack(dec_out_pred_corners), paddle.stack(dec_out_refs), pre_bboxes, pre_scores
+
+
 @register
-class RTDETRTransformerv2(nn.Layer):
+class DFINETransformer(nn.Layer):
     __shared__ = ['num_classes', 'hidden_dim', 'eval_size']
 
     def __init__(self,
@@ -297,9 +439,10 @@ class RTDETRTransformerv2(nn.Layer):
                  eval_idx=-1,
                  eps=1e-2,
                  mlp_act='relu',
-                 query_pos_method='default',
-                 cross_attn_sampling_method='default'):
-        super(RTDETRTransformerv2, self).__init__()
+                 cross_attn_sampling_method='default',
+                 reg_max=32,
+                 reg_scale=4.0):
+        super(DFINETransformer, self).__init__()
         assert position_embed_type in ['sine', 'learned'], \
             f'ValueError: position_embed_type not supported {position_embed_type}!'
         assert len(backbone_feat_channels) <= num_levels
@@ -316,6 +459,7 @@ class RTDETRTransformerv2(nn.Layer):
         self.eps = eps
         self.num_decoder_layers = num_decoder_layers
         self.eval_size = eval_size
+        self.reg_scale = reg_scale
 
         assert cross_attn_sampling_method in ['default', 'discrete'], NotImplementedError
         self.cross_attn_sampling_method = cross_attn_sampling_method
@@ -328,7 +472,7 @@ class RTDETRTransformerv2(nn.Layer):
             hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
             num_decoder_points, sampling_method=cross_attn_sampling_method)
         self.decoder = TransformerDecoder(hidden_dim, decoder_layer,
-                                          num_decoder_layers, eval_idx)
+                                          num_decoder_layers, reg_max, eval_idx)
 
         # denoising part
         self.denoising_class_embed = nn.Embedding(
@@ -344,10 +488,7 @@ class RTDETRTransformerv2(nn.Layer):
         if learnt_init_query:
             self.tgt_embed = nn.Embedding(num_queries, hidden_dim)
 
-        if query_pos_method == 'as_reg':
-            self.query_pos_head = MLP(4, hidden_dim, hidden_dim, 3, act=mlp_act)
-        else:
-            self.query_pos_head = MLP(4, 2 * hidden_dim, hidden_dim, num_layers=2, act=mlp_act)
+        self.query_pos_head = MLP(4, 2 * hidden_dim, hidden_dim, num_layers=2, act=mlp_act)
         self.query_pos_head_inv_sig = query_pos_head_inv_sig
 
         # encoder head
@@ -366,9 +507,12 @@ class RTDETRTransformerv2(nn.Layer):
             for _ in range(num_decoder_layers)
         ])
         self.dec_bbox_head = nn.LayerList([
-            MLP(hidden_dim, hidden_dim, 4, num_layers=3, act=mlp_act)
+            MLP(hidden_dim, hidden_dim, 4 * (reg_max + 1), num_layers=3, act=mlp_act)
             for _ in range(num_decoder_layers)
         ])
+
+        self.pre_bbox_head = MLP(hidden_dim, hidden_dim, 4, 3, act=mlp_act)
+        self.integral = Integral(reg_max, reg_scale)
 
         self._reset_parameters()
 
@@ -379,6 +523,10 @@ class RTDETRTransformerv2(nn.Layer):
         constant_(self.enc_score_head.bias, bias_cls)
         constant_(self.enc_bbox_head.layers[-1].weight)
         constant_(self.enc_bbox_head.layers[-1].bias)
+
+        constant_(self.pre_bbox_head.layers[-1].weight)
+        constant_(self.pre_bbox_head.layers[-1].bias)
+
         for cls_, reg_ in zip(self.dec_score_head, self.dec_bbox_head):
             linear_init_(cls_)
             constant_(cls_.bias, bias_cls)
@@ -392,7 +540,8 @@ class RTDETRTransformerv2(nn.Layer):
         xavier_uniform_(self.query_pos_head.layers[0].weight)
         xavier_uniform_(self.query_pos_head.layers[1].weight)
         for l in self.input_proj:
-            xavier_uniform_(l[0].weight)
+            if not isinstance(l, nn.Identity):
+                xavier_uniform_(l[0].weight)
 
         # init encoder output anchors and valid_mask
         if self.eval_size:
@@ -405,31 +554,37 @@ class RTDETRTransformerv2(nn.Layer):
     def _build_input_proj_layer(self, backbone_feat_channels):
         self.input_proj = nn.LayerList()
         for in_channels in backbone_feat_channels:
-            self.input_proj.append(
-                nn.Sequential(
-                    ('conv', nn.Conv2D(
-                        in_channels,
-                        self.hidden_dim,
-                        kernel_size=1,
-                        bias_attr=False)), ('norm', nn.BatchNorm2D(
+            if in_channels == self.hidden_dim:
+                self.input_proj.append(nn.Identity())
+            else:
+                self.input_proj.append(
+                    nn.Sequential(
+                        ('conv', nn.Conv2D(
+                            in_channels,
                             self.hidden_dim,
-                            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-                            bias_attr=ParamAttr(regularizer=L2Decay(0.0))))))
+                            kernel_size=1,
+                            bias_attr=False)), ('norm', nn.BatchNorm2D(
+                                self.hidden_dim,
+                                weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
+                                bias_attr=ParamAttr(regularizer=L2Decay(0.0))))))
         in_channels = backbone_feat_channels[-1]
         for _ in range(self.num_levels - len(backbone_feat_channels)):
-            self.input_proj.append(
-                nn.Sequential(
-                    ('conv', nn.Conv2D(
-                        in_channels,
-                        self.hidden_dim,
-                        kernel_size=3,
-                        stride=2,
-                        padding=1,
-                        bias_attr=False)), ('norm', nn.BatchNorm2D(
+            if in_channels == self.hidden_dim:
+                self.input_proj.append(nn.Identity())
+            else:
+                self.input_proj.append(
+                    nn.Sequential(
+                        ('conv', nn.Conv2D(
+                            in_channels,
                             self.hidden_dim,
-                            weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
-                            bias_attr=ParamAttr(regularizer=L2Decay(0.0))))))
-            in_channels = self.hidden_dim
+                            kernel_size=3,
+                            stride=2,
+                            padding=1,
+                            bias_attr=False)), ('norm', nn.BatchNorm2D(
+                                self.hidden_dim,
+                                weight_attr=ParamAttr(regularizer=L2Decay(0.0)),
+                                bias_attr=ParamAttr(regularizer=L2Decay(0.0))))))
+                in_channels = self.hidden_dim
 
     def _get_encoder_input(self, feats):
         # get projection features
@@ -483,7 +638,7 @@ class RTDETRTransformerv2(nn.Layer):
             memory, spatial_shapes, denoising_class, denoising_bbox_unact,is_teacher)
 
         # decoder
-        out_bboxes, out_logits = self.decoder(
+        out_bboxes, out_logits, out_corners, out_refs, pre_bboxes, pre_logits = self.decoder(
             target,
             init_ref_points_unact,
             memory,
@@ -492,11 +647,14 @@ class RTDETRTransformerv2(nn.Layer):
             self.dec_bbox_head,
             self.dec_score_head,
             self.query_pos_head,
+            self.pre_bbox_head,
+            self.integral,
+            self.reg_scale,
             attn_mask=attn_mask,
             memory_mask=None,
             query_pos_head_inv_sig=self.query_pos_head_inv_sig)
-        return (out_bboxes, out_logits, enc_topk_bboxes, enc_topk_logits,
-                dn_meta)
+        return (out_bboxes, out_logits, out_corners, out_refs, pre_bboxes, pre_logits,
+                enc_topk_bboxes, enc_topk_logits, dn_meta)
 
     def _generate_anchors(self,
                           spatial_shapes=None,

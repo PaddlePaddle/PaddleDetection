@@ -1,0 +1,74 @@
+architecture: DETR
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPHGNetV2_B2_ssld_stage1_pretrained.pdparams
+norm_type: sync_bn
+use_ema: True
+ema_decay: 0.9999
+ema_decay_type: "exponential"
+ema_filter_no_grad: True
+ema_gamma: 1000
+hidden_dim: 256
+use_focal_loss: True
+eval_size: [640, 640]
+reset_norm_param_attr: True
+
+
+DETR:
+  backbone: PPHGNetV2
+  neck: DFINEHybridEncoder
+  transformer: DFINETransformer
+  detr_head: DFINEHead
+  post_process: DETRPostProcess
+
+PPHGNetV2:
+  arch: 'M'
+  return_idx: [1, 2, 3]
+  freeze_at: -1
+  freeze_norm: False
+  use_lab: True
+
+DFINEHybridEncoder:
+  hidden_dim: 256
+  use_encoder_idx: [2]
+  num_encoder_layers: 1
+  encoder_layer:
+    name: TransformerLayer
+    d_model: 256
+    nhead: 8
+    dim_feedforward: 1024
+    dropout: 0.
+    activation: 'gelu'
+  expansion: 1.0
+  depth_mult: 0.67
+
+DFINETransformer:
+  num_queries: 300
+  position_embed_type: sine
+  feat_strides: [8, 16, 32]
+  num_levels: 3
+  num_decoder_points: [3, 6, 3]
+  nhead: 8
+  num_decoder_layers: 4
+  dim_feedforward: 1024
+  dropout: 0.0
+  activation: relu
+  num_denoising: 100
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  learnt_init_query: False
+  eval_idx: -1
+  cross_attn_sampling_method: default
+  reg_max: 32
+  reg_scale: 4.0
+
+DFINEHead:
+  loss:
+    name: DFINELoss
+    loss_coeff: {class: 1, bbox: 5, giou: 2, fgl: 0.15, ddf: 1.5}
+    aux_loss: True
+    use_mal: True
+    matcher:
+      name: HungarianMatcher
+      matcher_coeff: {class: 2, bbox: 5, giou: 2}
+
+DETRPostProcess:
+  num_top_queries: 300

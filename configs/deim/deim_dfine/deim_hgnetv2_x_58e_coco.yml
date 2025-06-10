@@ -1,0 +1,77 @@
+_BASE_: [
+  '../../datasets/coco_detection.yml',
+  '../../runtime.yml',
+  '../_base_/optimizer.yml',
+  '../_base_/deim_reader.yml',
+  '../_base_/deim_hgnetv2_m.yml',
+]
+
+weights: output/deim_hgnetv2_l_coco/model_final
+find_unused_parameters: False
+log_iter: 200
+
+pretrain_weights: https://paddle-imagenet-models-name.bj.bcebos.com/dygraph/legendary_models/PPHGNetV2_B5_ssld_stage1_pretrained.pdparams
+
+PPHGNetV2:
+  arch: 'X'
+  freeze_at: 0
+  freeze_norm: True
+  use_lab: False
+
+DFINEHybridEncoder:
+  hidden_dim: 384
+  depth_mult: 1.0
+  encoder_layer:
+    d_model: 384
+    dim_feedforward: 2048
+
+DFINETransformer:
+  activation: silu
+  mlp_act: silu
+  num_decoder_layers: 6
+  reg_scale: 8.0
+
+epoch: 58
+
+LearningRate:
+  base_lr: 0.0005
+  schedulers:
+  - !CosineDecay
+    start_epochs: 29
+    max_epochs: 58
+    min_lr_ratio: 0.5
+    last_plateau_epochs: 8
+  - !ExpWarmup
+    steps: 2000
+
+OptimizerBuilder:
+  optimizer:
+    weight_decay: 0.000125
+    param_groups:
+      - params: ['^(?=.*backbone)(?!.*bn).*$']
+        learning_rate: 0.01
+      - params: ['^(?=.*(?:norm|bn)).*$']     # except bias
+        weight_decay: 0.
+      - params: ['^neck\.input_proj\.\d+\.1.*$', '^transformer\.enc_output\.1.*$']
+        weight_decay: 0.
+
+TrainReader:
+  batch_size: 8
+  mosaic_epoch: 29
+  batch_transforms:
+    - BatchRandomResize: {target_size: [
+        480, 512, 544, 576, 608,
+        640, 640, 640,  # 3x
+        672, 704, 736, 768, 800], random_size: True, random_interp: True, keep_ratio: False}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+    - MixupBatch: {ratio_range: [0.45, 0.55], prob: 0.5}
+  transform_schedulers:
+    # [start_epoch, stop_epoch) | [0, stop_epoch) | [start_epoch, inf)
+    - RandomSelect: {start_epoch: 4, stop_epoch: 29}
+    - RandomSelects: {start_epoch: 29, stop_epoch: 50}
+    - Resize: {start_epoch: 50}
+    - BatchRandomResize: {stop_epoch: 50}
+    - MixupBatch: {start_epoch: 4, stop_epoch: 29}

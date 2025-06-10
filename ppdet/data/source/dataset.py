@@ -82,7 +82,7 @@ class DetDataset(Dataset):
         elif self.cutmix_epoch == 0 or self._epoch < self.cutmix_epoch:
             idx = np.random.randint(n)
             roidb = [roidb, copy.deepcopy(self.roidbs[idx])]
-        elif self.mosaic_epoch == 0 or self._epoch < self.mosaic_epoch:
+        elif self.mosaic_epoch == 0 or self.mosaic_start_epoch <= self._epoch < self.mosaic_epoch:
             roidb = [roidb, ] + [
                 copy.deepcopy(self.roidbs[np.random.randint(n)])
                 for _ in range(4)
@@ -120,6 +120,7 @@ class DetDataset(Dataset):
         self.mixup_epoch = kwargs.get('mixup_epoch', -1)
         self.cutmix_epoch = kwargs.get('cutmix_epoch', -1)
         self.mosaic_epoch = kwargs.get('mosaic_epoch', -1)
+        self.mosaic_start_epoch = kwargs.get('mosaic_start_epoch', -1)
         self.pre_img_epoch = kwargs.get('pre_img_epoch', -1)
         self.transform_schedulers = kwargs.get('transform_schedulers', None)
 

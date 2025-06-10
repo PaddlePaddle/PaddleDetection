@@ -21,7 +21,7 @@ import paddle.nn as nn
 import paddle.nn.functional as F
 from ppdet.core.workspace import register
 from .iou_loss import GIoULoss
-from ..transformers import bbox_cxcywh_to_xyxy, sigmoid_focal_loss, varifocal_loss_with_logits
+from ..transformers import bbox_cxcywh_to_xyxy, sigmoid_focal_loss, varifocal_loss_with_logits, mal_loss_with_logits
 from ..bbox_utils import bbox_iou
 
 __all__ = ['DETRLoss', 'DINOLoss', 'RTDETRv3Loss']
@@ -45,6 +45,7 @@ class DETRLoss(nn.Layer):
                  },
                  aux_loss=True,
                  use_focal_loss=False,
+                 use_mal=False,
                  use_vfl=False,
                  vfl_iou_type='bbox',
                  use_uni_match=False,
@@ -65,6 +66,7 @@ class DETRLoss(nn.Layer):
         self.loss_coeff = loss_coeff
         self.aux_loss = aux_loss
         self.use_focal_loss = use_focal_loss
+        self.use_mal = use_mal
         self.use_vfl = use_vfl
         self.vfl_iou_type = vfl_iou_type
         self.use_uni_match = use_uni_match
@@ -100,7 +102,7 @@ class DETRLoss(nn.Layer):
         if self.use_focal_loss:
             target_label = F.one_hot(target_label,
                                      self.num_classes + 1)[..., :-1]
-            if iou_score is not None and self.use_vfl:
+            if iou_score is not None and (self.use_vfl or self.use_mal):
                 if gt_score is not None:
                     target_score = paddle.zeros([bs, num_query_objects])
                     target_score = paddle.scatter(
@@ -115,10 +117,16 @@ class DETRLoss(nn.Layer):
                         [bs, num_query_objects, 1]) * target_label
                     target_score = paddle.multiply(target_score,
                                                    target_score_iou)
-                    loss_ = self.loss_coeff[
-                        'class'] * varifocal_loss_with_logits(
-                            logits, target_score, target_label,
-                            num_gts / num_query_objects)
+                    if self.use_mal:                    
+                        loss_ = self.loss_coeff[
+                            'class'] * mal_loss_with_logits(
+                                logits, target_score, target_label,
+                                num_gts / num_query_objects)
+                    else:
+                        loss_ = self.loss_coeff[
+                            'class'] * varifocal_loss_with_logits(
+                                logits, target_score, target_label,
+                                num_gts / num_query_objects)
                 else:
                     target_score = paddle.zeros([bs, num_query_objects])
                     if num_gt > 0:
@@ -126,10 +134,16 @@ class DETRLoss(nn.Layer):
                             target_score.reshape([-1, 1]), index, iou_score)
                     target_score = target_score.reshape(
                         [bs, num_query_objects, 1]) * target_label
-                    loss_ = self.loss_coeff[
-                        'class'] * varifocal_loss_with_logits(
-                            logits, target_score, target_label,
-                            num_gts / num_query_objects)
+                    if self.use_mal:
+                        loss_ = self.loss_coeff[
+                            'class'] * mal_loss_with_logits(
+                                logits, target_score, target_label,
+                                num_gts / num_query_objects)
+                    else:
+                        loss_ = self.loss_coeff[
+                            'class'] * varifocal_loss_with_logits(
+                                logits, target_score, target_label,
+                                num_gts / num_query_objects)
             else:
                 loss_ = self.loss_coeff['class'] * sigmoid_focal_loss(
                     logits, target_label, num_gts / num_query_objects)
@@ -231,7 +245,7 @@ class DETRLoss(nn.Layer):
                     gt_class,
                     masks=aux_masks,
                     gt_mask=gt_mask)
-            if self.use_vfl:
+            if self.use_vfl or self.use_mal:
                 if sum(len(a) for a in gt_bbox) > 0:
                     src_bbox, target_bbox = self._get_src_target_assign(
                         aux_boxes.detach(), gt_bbox, match_indices)
@@ -332,7 +346,7 @@ class DETRLoss(nn.Layer):
         else:
             match_indices = dn_match_indices
 
-        if self.use_vfl:
+        if self.use_vfl or self.use_mal:
             if gt_score is not None:  #ssod
                 _, target_score = self._get_src_target_assign(
                     logits[-1].detach(), gt_score, match_indices)

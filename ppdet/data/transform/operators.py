@@ -2837,7 +2837,11 @@ class RandomSelect(BaseOperator):
         self.transforms2 = Compose(transforms2)
         self.p = p
 
-    def apply(self, sample, context=None):
+    def __call__(self, sample, context=None):
+        """
+        The case where the sample is a Sequence should not be handled here
+        Instead, transforms1 and transforms2 should handle it internally.
+        """
         if random.random() < self.p:
             return self.transforms1(sample)
         return self.transforms2(sample)
@@ -2863,7 +2867,11 @@ class RandomSelects(BaseOperator):
         self.transforms = [Compose(t) for t in transforms_list]
         self.p = p
 
-    def apply(self, sample, context=None):
+    def __call__(self, sample, context=None):
+        """
+        The case where the sample is a Sequence should not be handled here
+        Instead, transforms should handle it internally.
+        """
         if self.p is None:
             return random.choice(self.transforms)(sample)
         else:
@@ -3596,27 +3604,41 @@ class Mosaic(BaseOperator):
     def __init__(self,
                  prob=1.0,
                  input_dim=[640, 640],
+                 output_dim=None,
+                 center_ratio_range=(0.5, 1.5),
+                 pad_val=114,
                  degrees=[-10, 10],
                  translate=[-0.1, 0.1],
                  scale=[0.1, 2],
                  shear=[-2, 2],
+                 border_value=(114, 114, 114),
                  enable_mixup=True,
                  mixup_prob=1.0,
                  mixup_scale=[0.5, 1.5],
-                 remove_outside_box=False):
+                 remove_outside_box=False,
+                 centered_affine=False):
         super(Mosaic, self).__init__()
         self.prob = prob
         if isinstance(input_dim, Integral):
             input_dim = [input_dim, input_dim]
         self.input_dim = input_dim
+        if output_dim is None:
+            output_dim = input_dim
+        if isinstance(output_dim, Integral):
+            output_dim = [output_dim, output_dim]
+        self.output_dim = output_dim
+        self.center_ratio_range = center_ratio_range
+        self.pad_val = pad_val
         self.degrees = degrees
         self.translate = translate
         self.scale = scale
         self.shear = shear
+        self.border_value = border_value
         self.enable_mixup = enable_mixup
         self.mixup_prob = mixup_prob
         self.mixup_scale = mixup_scale
         self.remove_outside_box = remove_outside_box
+        self.centered_affine = centered_affine
 
     def get_mosaic_coords(self, mosaic_idx, xc, yc, w, h, input_h, input_w):
         # (x1, y1, x2, y2) means coords in large image,
@@ -3644,35 +3666,72 @@ class Mosaic(BaseOperator):
     def random_affine_augment(self,
                               img,
                               labels=[],
-                              input_dim=[640, 640],
+                              output_dim=[640, 640],
                               degrees=[-10, 10],
                               scales=[0.1, 2],
                               shears=[-2, 2],
-                              translates=[-0.1, 0.1]):
-        # random rotation and scale
-        degree = random.uniform(degrees[0], degrees[1])
+                              translates=[-0.1, 0.1],
+                              centered_affine=False):
+        # random rotate
+        rad = math.radians(random.uniform(degrees[0], degrees[1]))
+        sin, cos = math.sin(rad), math.cos(rad)
+        R = np.array([
+            [cos, -sin, 0],
+            [sin, cos, 0],
+            [0, 0, 1],
+        ], dtype=np.float32)
+
+        # random scale
         scale = random.uniform(scales[0], scales[1])
         assert scale > 0, "Argument scale should be positive."
-        R = cv2.getRotationMatrix2D(angle=degree, center=(0, 0), scale=scale)
-        M = np.ones([2, 3])
+        S = np.array([
+            [scale, 0, 0],
+            [0, scale, 0],
+            [0, 0, 1],
+        ], dtype=np.float32)
 
         # random shear
-        shear = random.uniform(shears[0], shears[1])
-        shear_x = math.tan(shear * math.pi / 180)
-        shear_y = math.tan(shear * math.pi / 180)
-        M[0] = R[0] + shear_y * R[1]
-        M[1] = R[1] + shear_x * R[0]
+        shear_x = shear_y = math.tan(math.radians(random.uniform(shears[0], shears[1])))
+        if len(shears) == 4:
+            shear_y = math.tan(math.radians(random.uniform(shears[2], shears[3])))
+        Shear = np.array([
+            [1, shear_x, 0],
+            [shear_y, 1, 0],
+            [0, 0, 1],
+        ], dtype=np.float32)
 
         # random translation
         translate = random.uniform(translates[0], translates[1])
-        translation_x = translate * input_dim[0]
-        translation_y = translate * input_dim[1]
-        M[0, 2] = translation_x
-        M[1, 2] = translation_y
+        translation_x = translate * output_dim[0]
+        translate = random.uniform(translates[0], translates[1]) if centered_affine else translate
+        translation_y = translate * output_dim[1]
+        T = np.array([
+            [1, 0, translation_x],
+            [0, 1, translation_y],
+            [0, 0, 1],
+        ], dtype=np.float32)
+
+        # center
+        cx, cy = img.shape[1] / 2, img.shape[0] / 2 if centered_affine else (0, 0)
+        C = np.array([
+            [1, 0, cx],
+            [0, 1, cy],
+            [0, 0, 1],
+        ], dtype=np.float32)
+        C_inv = np.array([
+            [1, 0, -cx],
+            [0, 1, -cy],
+            [0, 0, 1],
+        ], dtype=np.float32)
+
+        # compose all transforms: T * C * Shear * R * S * C_inv
+        #                         <---------------------------- apply
+        M = T @ C @ Shear @ R @ S @ C_inv
+        M = M[:2]  # back to 2x3 for cv2.warpAffine
 
         # warpAffine
         img = cv2.warpAffine(
-            img, M, dsize=tuple(input_dim), borderValue=(114, 114, 114))
+            img, M, dsize=tuple(output_dim), borderValue=self.border_value)
 
         num_gts = len(labels)
         if num_gts > 0:
@@ -3692,9 +3751,13 @@ class Mosaic(BaseOperator):
             new_bboxes = new_bboxes.reshape(4, num_gts).T
 
             # clip boxes
-            new_bboxes[:, 0::2] = np.clip(new_bboxes[:, 0::2], 0, input_dim[0])
-            new_bboxes[:, 1::2] = np.clip(new_bboxes[:, 1::2], 0, input_dim[1])
+            new_bboxes[:, 0::2] = np.clip(new_bboxes[:, 0::2], 0, output_dim[0])
+            new_bboxes[:, 1::2] = np.clip(new_bboxes[:, 1::2], 0, output_dim[1])
             labels[:, :4] = new_bboxes
+
+            if self.remove_outside_box:
+                keep = (new_bboxes[:, 2:] - new_bboxes[:, :2] >= 1).all(-1)
+                labels = labels[keep]
 
         return img, labels
 
@@ -3709,9 +3772,9 @@ class Mosaic(BaseOperator):
 
         mosaic_gt_bbox, mosaic_gt_class, mosaic_is_crowd, mosaic_difficult = [], [], [], []
         input_h, input_w = self.input_dim
-        yc = int(random.uniform(0.5 * input_h, 1.5 * input_h))
-        xc = int(random.uniform(0.5 * input_w, 1.5 * input_w))
-        mosaic_img = np.full((input_h * 2, input_w * 2, 3), 114, dtype=np.uint8)
+        yc = int(random.uniform(*self.center_ratio_range) * input_h)
+        xc = int(random.uniform(*self.center_ratio_range) * input_w)
+        mosaic_img = np.full((input_h * 2, input_w * 2, 3), self.pad_val, dtype=np.uint8)
 
         # 1. get mosaic coords
         for mosaic_idx, sp in enumerate(sample[:4]):
@@ -3793,11 +3856,12 @@ class Mosaic(BaseOperator):
         mosaic_img, mosaic_labels = self.random_affine_augment(
             mosaic_img,
             mosaic_labels,
-            input_dim=self.input_dim,
+            output_dim=self.output_dim,
             degrees=self.degrees,
             translates=self.translate,
             scales=self.scale,
-            shears=self.shear)
+            shears=self.shear,
+            centered_affine=self.centered_affine)
 
         # 4. Mixup augment as copypaste, https://arxiv.org/abs/2012.07177
         # optinal, not used(enable_mixup=False) in tiny/nano
@@ -3832,11 +3896,11 @@ class Mosaic(BaseOperator):
         sample0['im_shape'][0] = sample0['h']
         sample0['im_shape'][1] = sample0['w']
         sample0['gt_bbox'] = mosaic_labels[:, :4].astype(np.float32)
-        sample0['gt_class'] = mosaic_labels[:, 4:5].astype(np.float32)
+        sample0['gt_class'] = mosaic_labels[:, 4:5].astype(sample0['gt_class'].dtype)
         if 'is_crowd' in sample[0]:
-            sample0['is_crowd'] = mosaic_labels[:, 5:6].astype(np.float32)
+            sample0['is_crowd'] = mosaic_labels[:, 5:6].astype(sample0['is_crowd'].dtype)
         if 'difficult' in sample[0]:
-            sample0['difficult'] = mosaic_labels[:, 5:6].astype(np.float32)
+            sample0['difficult'] = mosaic_labels[:, 5:6].astype(sample0['difficult'].dtype)
         return sample0
 
     def mixup_augment(self, origin_img, origin_labels, input_dim, cp_labels,
@@ -3845,9 +3909,9 @@ class Mosaic(BaseOperator):
         FLIP = random.uniform(0, 1) > 0.5
         if len(img.shape) == 3:
             cp_img = np.ones(
-                (input_dim[0], input_dim[1], 3), dtype=np.uint8) * 114
+                (input_dim[0], input_dim[1], 3), dtype=np.uint8) * self.pad_val
         else:
-            cp_img = np.ones(input_dim, dtype=np.uint8) * 114
+            cp_img = np.ones(input_dim, dtype=np.uint8) * self.pad_val
 
         cp_scale_ratio = min(input_dim[0] / img.shape[0],
                              input_dim[1] / img.shape[1])
