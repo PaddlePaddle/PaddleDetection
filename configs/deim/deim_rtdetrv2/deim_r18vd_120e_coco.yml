@@ -52,6 +52,7 @@ OptimizerBuilder:
         weight_decay: 0.
 
 TrainReader:
+  use_shared_memory: false
   mosaic_epoch: 64
   batch_transforms:
     - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
@@ -64,3 +65,6 @@ TrainReader:
     - RandomSelect: {start_epoch: 4, stop_epoch: 64}
     - RandomSelects: {start_epoch: 64, stop_epoch: 117}
     - MixupBatch: {start_epoch: 4, stop_epoch: 64}
+
+TrainDataset:
+  allow_empty: True
