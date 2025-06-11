@@ -19,3 +19,9 @@ DINOHead:
   loss:
     use_vfl: False
     use_mal: True
+
+TrainReader:
+  use_shared_memory: false
+
+TrainDataset:
+  allow_empty: True

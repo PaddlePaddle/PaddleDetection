@@ -54,6 +54,7 @@ OptimizerBuilder:
         weight_decay: 0.
 
 TrainReader:
+  use_shared_memory: false
   mosaic_epoch: 64
   transform_schedulers:
     # [start_epoch, stop_epoch) | [0, stop_epoch) | [start_epoch, inf)
@@ -62,3 +63,6 @@ TrainReader:
     - Resize: {start_epoch: 117}
     - BatchRandomResize: {stop_epoch: 117}
     - MixupBatch: {start_epoch: 4, stop_epoch: 64}
+
+TrainDataset:
+  allow_empty: True

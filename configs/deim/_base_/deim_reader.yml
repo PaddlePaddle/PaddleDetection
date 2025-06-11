@@ -78,7 +78,3 @@ TestReader:
   batch_size: 1
   shuffle: false
   drop_last: false
-
-
-TrainDataset:
-  allow_empty: True
