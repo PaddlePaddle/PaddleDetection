@@ -397,9 +397,14 @@ class PPYOLOEHead(nn.Layer):
             pred_scores_aux = aux_pred[0]
             pred_bboxes_aux = self._bbox_decode(anchor_points_s, aux_pred[1])
 
-        gt_labels = gt_meta['gt_class']
-        gt_bboxes = gt_meta['gt_bbox']
-        pad_gt_mask = gt_meta['pad_gt_mask']
+        if 'origin_gt_class' in gt_meta:  # for RTDETRv3
+            gt_labels = gt_meta['origin_gt_class']
+            gt_bboxes = gt_meta['origin_gt_bbox']
+            pad_gt_mask = gt_meta['pad_origin_gt_mask']
+        else:
+            gt_labels = gt_meta['gt_class']
+            gt_bboxes = gt_meta['gt_bbox']
+            pad_gt_mask = gt_meta['pad_gt_mask']
         # label assignment
         if gt_meta['epoch_id'] < self.static_assigner_epoch:
             assigned_labels, assigned_bboxes, assigned_scores = \

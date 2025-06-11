@@ -138,6 +138,8 @@ class BatchCompose(Compose):
                     tmp_data.append(data[i][k])
                 if k != '__empty_fields' and not 'gt_' in k and not 'is_crowd' in k and not 'difficult' in k:
                     tmp_data = np.stack(tmp_data, axis=0)
+                if 'origin_' in k:
+                    tmp_data = np.stack(tmp_data, axis=0)
                 batch_data[k] = tmp_data
         return batch_data
 
