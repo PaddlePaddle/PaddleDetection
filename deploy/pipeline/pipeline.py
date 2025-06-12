@@ -637,10 +637,12 @@ class PipePredictor(object):
             if self.cfg['visual']:
                 self.visualize_image(batch_file, batch_input, self.pipeline_res)
 
-    def capturevideo(self, capture, queue):
+    def capturevideo(self, capture, queue, capture_end):
         frame_id = 0
         while (1):
-            if queue.full():
+            if capture_end.is_set():
+                return
+            elif queue.full():
                 time.sleep(0.1)
             else:
                 ret, frame = capture.read()
@@ -728,9 +730,10 @@ class PipePredictor(object):
         cars_count = 0
         retrograde_traj_len = 0
         framequeue = queue.Queue(10)
+        capture_end = threading.Event()
 
         thread = threading.Thread(
-            target=self.capturevideo, args=(capture, framequeue))
+            target=self.capturevideo, args=(capture, framequeue, capture_end))
         thread.start()
         time.sleep(1)
 
@@ -1089,6 +1092,7 @@ class PipePredictor(object):
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
 
+        capture_end.set()
         if self.cfg['visual'] and len(self.pushurl) == 0:
             writer.release()
             print('save result to {}'.format(out_path))
