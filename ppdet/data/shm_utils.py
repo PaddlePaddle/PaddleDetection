@@ -40,7 +40,8 @@ def _parse_size_in_M(size_str):
         num, unit = size_str[:-1], size_str[-1]
     assert unit in SIZE_UNIT, \
             "unknown shm size unit {}".format(unit)
-    return float(num) * \
+    num_dot = num.replace(',', '.') # To handle cases where the integer part is separated from the floating point part by a comma
+    return float(num_dot) * \
             (1024 ** (SIZE_UNIT.index(unit) - 1))
 
 
