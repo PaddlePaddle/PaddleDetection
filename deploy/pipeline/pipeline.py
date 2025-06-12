@@ -815,7 +815,7 @@ class PipePredictor(object):
                             pushstream.pipe.stdin.write(im.tobytes())
                         else:
                             writer.write(im)
-                            if self.file_name is None:  # use camera_id
+                            if type(self.file_name) == int:  # use camera_id
                                 cv2.imshow('Paddle-Pipeline', im)
                                 if cv2.waitKey(1) & 0xFF == ord('q'):
                                     break
@@ -1087,7 +1087,7 @@ class PipePredictor(object):
                     pushstream.pipe.stdin.write(im.tobytes())
                 else:
                     writer.write(im)
-                    if self.file_name is None:  # use camera_id
+                    if type(self.file_name) == int:  # use camera_id
                         cv2.imshow('Paddle-Pipeline', im)
                         if cv2.waitKey(1) & 0xFF == ord('q'):
                             break
