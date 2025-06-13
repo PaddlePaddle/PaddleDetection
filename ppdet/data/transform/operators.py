@@ -3712,7 +3712,7 @@ class Mosaic(BaseOperator):
         ], dtype=np.float32)
 
         # center
-        cx, cy = img.shape[1] / 2, img.shape[0] / 2 if centered_affine else (0, 0)
+        cx, cy = (img.shape[1] / 2, img.shape[0] / 2) if centered_affine else (0, 0)
         C = np.array([
             [1, 0, cx],
             [0, 1, cy],
