@@ -1,4 +1,4 @@
-epoch: 30 # employ iter to control shedule
+epoch: 30 # employ iter to control schedule
 LearningRate:
   base_lr: 0.02 # 0.02 for 8*(4+4) batch
   schedulers:

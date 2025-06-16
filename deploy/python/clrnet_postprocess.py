@@ -173,7 +173,7 @@ class CLRNetPostProcess(object):
     def lane_nms(self, predictions, scores, nms_overlap_thresh, top_k):
         """
         NMS for lane detection.
-        predictions: paddle.Tensor [num_lanes,conf,y,x,lenght,72offsets] [12,77]
+        predictions: paddle.Tensor [num_lanes,conf,y,x,length,72offsets] [12,77]
         scores: paddle.Tensor [num_lanes]
         nms_overlap_thresh: float
         top_k: int

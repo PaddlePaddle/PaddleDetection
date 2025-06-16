@@ -32,7 +32,7 @@ class HrHRNetPostProcess(object):
         5) salvage missing joints by check positivity of heatmap - tagdiff_norm
     Args:
         max_num_people (int): max number of people support in postprocess
-        heat_thresh (float): value of topk below this threshhold will be ignored
+        heat_thresh (float): value of topk below this threshold will be ignored
         tag_thresh (float): coord's value sampled in tagmap below this threshold belong to same people for init
 
         inputs(list[heatmap]): the output list of model, [heatmap, heatmap_maxpool, tagmap], heatmap_maxpool used to get topk

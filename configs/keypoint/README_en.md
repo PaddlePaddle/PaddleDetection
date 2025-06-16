@@ -218,7 +218,7 @@ upper_body_ids: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]    #The joint ids of half(upp
 For more configs, please refer to [KeyPointConfigGuide](../../docs/tutorials/KeyPointConfigGuide_en.md)。
 
 #### 2、Others(used for test and visualization)
-- In keypoint_utils.py, please set: "sigmas = np.array([.26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07,.87, .87, .89, .89]) / 10.0", the value indicate the variance of a joint locations，normally 0.25-0.5 means the location is highly accuracy，for example: eyes。0.5-1.0 means the location is not sure so much，for example: shoulder。0.75 is recommand if you not sure。
+- In keypoint_utils.py, please set: "sigmas = np.array([.26, .25, .25, .35, .35, .79, .79, .72, .72, .62, .62, 1.07, 1.07,.87, .87, .89, .89]) / 10.0", the value indicate the variance of a joint locations，normally 0.25-0.5 means the location is highly accuracy，for example: eyes。0.5-1.0 means the location is not sure so much，for example: shoulder。0.75 is recommend if you not sure。
 - In visualizer.py, please set "EDGES" in draw_pose function，this indicate the line to show between joints for visualization。
 - In pycocotools you installed, please set "sigmas"，it is the same as that in keypoint_utils.py, but used for coco evaluation。
 

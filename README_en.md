@@ -72,7 +72,7 @@
 
 - **Rich model library**: PaddleDetection provides over 250 pre-trained models including **object detection, instance segmentation, face recognition, multi-object tracking**. It covers a variety of **global competition champion** schemes.
 - **Simple to use**: Modular design, decoupling each network component, easy for developers to build and try various detection models and optimization strategies, quick access to high-performance, customized algorithm.
-- **Getting Through End to End**: PaddlePaddle gets through end to end from data augmentation, constructing models, training, compression, depolyment. It also supports multi-architecture, multi-device deployment for **cloud and edge** device.
+- **Getting Through End to End**: PaddlePaddle gets through end to end from data augmentation, constructing models, training, compression, deployment. It also supports multi-architecture, multi-device deployment for **cloud and edge** device.
 - **High Performance**: Due to the high performance core, PaddlePaddle has clear advantages in training speed and memory occupation. It also supports FP16 training and multi-machine training.
 
 <div  align="center">
@@ -427,7 +427,7 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
 - [Installation](docs/tutorials/INSTALL_cn.md)
 - [Quick start](docs/tutorials/QUICK_STARTED_cn.md)
 - [Data preparation](docs/tutorials/data/README.md)
-- [Geting Started on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
+- [Getting Started on PaddleDetection](docs/tutorials/GETTING_STARTED_cn.md)
 - [FAQ](docs/tutorials/FAQ)
 
 ### Advanced tutorials
@@ -462,7 +462,7 @@ Please refer to [docs](deploy/pipeline/README_en.md) for details.
 
   - [Data processing module](docs/advanced_tutorials/READER.md)
   - [New object detection models](docs/advanced_tutorials/MODEL_TECHNICAL.md)
-  - Custumization
+  - Customization
     - [Object detection](docs/advanced_tutorials/customization/detection.md)
     - [Keypoint detection](docs/advanced_tutorials/customization/keypoint_detection.md)
     - [Multiple object tracking](docs/advanced_tutorials/customization/pphuman_mot.md)

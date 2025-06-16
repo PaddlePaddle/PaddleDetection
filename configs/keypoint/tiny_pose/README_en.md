@@ -158,7 +158,7 @@ python3 deploy/python/det_keypoint_unite_infer.py --det_model_dir=output_inferen
 
 3. C++ joint inference by detection and keypoint
 - First, please refer to [C++ Deploy Inference](https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.3/deploy/cpp), prepare the corresponding `paddle_inference` library and related dependencies according to your environment.
-- We provide [Compile Script](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/deploy/cpp/scripts/build.sh). You can fill the location of the relevant environment variables in this script and excute it to compile the above codes. you can get an executable file. Please ensure `WITH_KEYPOINT=ON` during this process.
+- We provide [Compile Script](https://github.com/PaddlePaddle/PaddleDetection/blob/release/2.3/deploy/cpp/scripts/build.sh). You can fill the location of the relevant environment variables in this script and execute it to compile the above codes. you can get an executable file. Please ensure `WITH_KEYPOINT=ON` during this process.
 - After compilation, you can do inference like:
 ```bash
 # inference for one image

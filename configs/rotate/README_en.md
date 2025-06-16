@@ -97,7 +97,7 @@ python configs/rotate/tools/prepare_data.py \
 ```
 
 ### Custom Dataset
-Rotated object detction uses the standard COCO data format, and you can convert your dataset to COCO format to train the model. The annotations of standard COCO format contains the following information
+Rotated object detection uses the standard COCO data format, and you can convert your dataset to COCO format to train the model. The annotations of standard COCO format contains the following information
 ``` python
 'annotations': [
     {
@@ -126,4 +126,4 @@ In Windows environment, perform the following steps to install it：
 
 （4）Enter `ppdet/ext_op` directory，use `python setup.py install` to install。
 
-After the installation, you can execute the unittest of `ppdet/ext_op/unittest` to verify whether the external oprators is installed correctly.
+After the installation, you can execute the unittest of `ppdet/ext_op/unittest` to verify whether the external operators is installed correctly.

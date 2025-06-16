@@ -215,7 +215,7 @@ class SDE_Detector(Detector):
         pred_embs = det_results.get('embeddings', None)
 
         if self.use_deepsort_tracker:
-            # use DeepSORTTracker, only support singe class
+            # use DeepSORTTracker, only support single class
             self.tracker.predict()
             online_targets = self.tracker.update(pred_dets, pred_embs)
             online_tlwhs, online_scores, online_ids = [], [], []
@@ -423,7 +423,7 @@ class SDE_Detector(Detector):
 
             fps = 1. / timer.duration
             if self.use_deepsort_tracker:
-                # use DeepSORTTracker, only support singe class
+                # use DeepSORTTracker, only support single class
                 results[0].append(
                     (frame_id + 1, online_tlwhs, online_scores, online_ids))
                 im = plot_tracking(
