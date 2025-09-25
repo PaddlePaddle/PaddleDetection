@@ -22,7 +22,7 @@ def get_extensions():
 
     if paddle.device.is_compiled_with_cuda():
         extension = CUDAExtension(
-            sources, extra_compile_args={'cxx': ['-DPADDLE_WITH_CUDA']})
+            sources, include_dirs=['/usr/local/cuda/include/cccl'], extra_compile_args={'cxx': ['-DPADDLE_WITH_CUDA']})
     else:
         extension = CppExtension(sources)
 
