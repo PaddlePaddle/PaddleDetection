@@ -206,7 +206,7 @@ PaddleDetection整理工业、农业、林业、交通、医疗、金融、能�
           <li><a href="ppdet/modeling/backbones/darknet.py">DarkNet</a></li>
           <li><a href="ppdet/modeling/backbones/csp_darknet.py">CSPDarkNet</a></li>
           <li><a href="ppdet/modeling/backbones/mobilenet_v1.py">MobileNetV1</a></li>
-          <li><a href="ppdet/modeling/backbones/mobilenet_v3.py">MobileNetV1</a></li>  
+          <li><a href="ppdet/modeling/backbones/mobilenet_v3.py">MobileNetV3</a></li>  
           <li><a href="ppdet/modeling/backbones/shufflenet_v2.py">ShuffleNetV2</a></li>
           <li><a href="ppdet/modeling/backbones/ghostnet.py">GhostNet</a></li>
           <li><a href="ppdet/modeling/backbones/blazenet.py">BlazeNet</a></li>
