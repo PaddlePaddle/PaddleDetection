@@ -217,16 +217,17 @@ class ImageFolder(DetDataset):
         images = self._parse()
         ct = 0
         records = []
-        anno_file = self.get_anno()
-        coco = COCO(anno_file)
         for image in images:
             assert image != '' and os.path.isfile(image), \
                     "Image {} not found".format(image)
             if self.sample_num > 0 and ct >= self.sample_num:
                 break
             if do_eval:
+                anno_file = self.get_anno()
+                coco = COCO(anno_file)
                 image_id = self.get_image_id(image, coco)
                 ct = image_id
+            
             rec = {'im_id': np.array([ct]), 'im_file': image}
             self._imid2path[ct] = image
             ct += 1
