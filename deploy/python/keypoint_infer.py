@@ -197,7 +197,7 @@ class KeyPointDetector(Detector):
                 self.det_times.inference_time_s.start()
                 result = self.predict(repeats=repeats)
                 self.det_times.inference_time_s.end(repeats=repeats)
-
+                
                 # postprocess
                 result_warmup = self.postprocess(inputs, result)  # warmup
                 self.det_times.postprocess_time_s.start()
@@ -220,7 +220,29 @@ class KeyPointDetector(Detector):
                 self.det_times.inference_time_s.start()
                 result = self.predict()
                 self.det_times.inference_time_s.end()
-
+                # exit()
+                
+                
+                num_runs = 5          # 推理次数（含 warm-up）
+                warmup_runs = 1
+                for i in range(warmup_runs):
+                    start_ = time.perf_counter()
+                    result = self.predict()
+                    end_ = time.perf_counter()
+                print(end_- start_)
+                print('+++++++++++++++++++++++++++++++')
+                
+                times = []
+                for _ in range(num_runs):
+                    start = time.perf_counter()
+                    self.predict()
+                    end = time.perf_counter()
+                    times.append(end - start)
+                print(times)
+                avg_time = sum(times) / len(times)
+                print(f"Avg inference time over {len(times)} runs: {avg_time:.4f} s")
+                print('-----------222222------')
+                exit()
                 # postprocess
                 self.det_times.postprocess_time_s.start()
                 result = self.postprocess(inputs, result)
