@@ -197,7 +197,6 @@ class KeyPointDetector(Detector):
                 self.det_times.inference_time_s.start()
                 result = self.predict(repeats=repeats)
                 self.det_times.inference_time_s.end(repeats=repeats)
-                
                 # postprocess
                 result_warmup = self.postprocess(inputs, result)  # warmup
                 self.det_times.postprocess_time_s.start()
