@@ -1033,6 +1033,8 @@ def load_predictor(model_dir,
         config.enable_custom_device('npu')
     elif device == 'MLU':
         config.enable_custom_device('mlu')
+    elif device == 'METAX_GPU':
+        config.enable_custom_device('metax_gpu')
     elif device == 'GCU':
         assert paddle.device.is_compiled_with_custom_device("gcu"), (
             "Device cannot be set as GCU while your paddle "
@@ -1267,7 +1269,7 @@ if __name__ == '__main__':
     FLAGS = parser.parse_args()
     print_arguments(FLAGS)
     FLAGS.device = FLAGS.device.upper()
-    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU', 'MLU', 'GCU'
+    assert FLAGS.device in ['CPU', 'GPU', 'XPU', 'NPU', 'MLU', 'GCU','METAX_GPU'
                             ], "device should be CPU, GPU, XPU, MLU, NPU or GCU"
     assert not FLAGS.use_gpu, "use_gpu has been deprecated, please use --device"
 
