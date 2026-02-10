@@ -182,6 +182,9 @@ def main():
     if 'use_mlu' not in cfg:
         cfg.use_mlu = False
 
+    if 'use_iluvatar_gpu' not in cfg:
+        cfg.use_iluvatar_gpu = False
+
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
     elif cfg.use_npu:
@@ -190,6 +193,8 @@ def main():
         place = paddle.set_device('xpu')
     elif cfg.use_mlu:
         place = paddle.set_device('mlu')
+    elif cfg.use_iluvatar_gpu:
+        place = paddle.set_device('iluvatar_gpu')
     else:
         place = paddle.set_device('cpu')
 
@@ -203,6 +208,7 @@ def main():
     check.check_npu(cfg.use_npu)
     check.check_xpu(cfg.use_xpu)
     check.check_mlu(cfg.use_mlu)
+    check.check_iluvatar_gpu(cfg.use_iluvatar_gpu)
     check.check_version()
 
     run(FLAGS, cfg)
