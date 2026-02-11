@@ -182,6 +182,7 @@ def main():
     if 'use_mlu' not in cfg:
         cfg.use_mlu = False
 
+    # disable iluvatar_gpu in config by default
     if 'use_iluvatar_gpu' not in cfg:
         cfg.use_iluvatar_gpu = False
 
