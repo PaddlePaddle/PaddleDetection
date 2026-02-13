@@ -32,7 +32,7 @@ import ast
 import paddle
 from ppdet.core.workspace import create, load_config, merge_config
 from ppdet.engine import Trainer, Trainer_ARSL
-from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_gcu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_gcu, check_iluvatar_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.slim import build_slim_model
 
@@ -250,6 +250,10 @@ def main():
     if 'use_gcu' not in cfg:
         cfg.use_gcu = False
 
+    # disable iluvatar gpu in config by default
+    if 'use_iluvatar_gpu' not in cfg:
+        cfg.use_iluvatar_gpu = False
+
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
     elif cfg.use_npu:
@@ -260,6 +264,8 @@ def main():
         place = paddle.set_device('mlu')
     elif cfg.use_gcu:
         place = paddle.set_device('gcu')
+    elif cfg.use_iluvatar_gpu:
+        place = paddle.set_device('iluvatar_gpu')
     else:
         place = paddle.set_device('cpu')
 
@@ -272,6 +278,7 @@ def main():
     check_xpu(cfg.use_xpu)
     check_mlu(cfg.use_mlu)
     check_gcu(cfg.use_gcu)
+    check_iluvatar_gpu(cfg.use_iluvatar_gpu)
     check_version()
     run(FLAGS, cfg)
 
