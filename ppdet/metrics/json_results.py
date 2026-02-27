@@ -15,6 +15,64 @@ import six
 import numpy as np
 
 
+def get_det_res_with_order(bboxes,
+                bbox_nums,
+                image_id,
+                label_to_cat_id_map,
+                bias=0,
+                im_file=None,
+                save_threshold=0):
+    """
+    Convert detection results with reading order to COCO JSON format.
+
+    This function is used for PP-DocLayoutV3 model which predicts reading order
+    in addition to bounding boxes. Each bbox is represented by a 7-element tuple:
+    (class_id, score, x1, y1, x2, y2, order).
+
+    Args:
+        bboxes (np.ndarray): Detection results with shape (num_total_boxes, 7).
+            Each row: [class_id, score, x1, y1, x2, y2, order]
+        bbox_nums (list[int]): Number of detections for each image in the batch.
+        image_id (list): Image IDs for each image in the batch.
+        label_to_cat_id_map (dict): Mapping from class label to category ID.
+        bias (int): Bias to add to bbox width and height. Default: 0.
+        im_file (str|None): Image file path to include in results. Default: None.
+        save_threshold (float): Score threshold to filter detections. Default: 0.
+
+    Returns:
+        list[dict]: Detection results in COCO JSON format with reading order.
+            Each dict contains: image_id, category_id, bbox, score, read_order.
+            The bbox format is [x, y, w, h].
+    """
+    det_res = []
+    k = 0
+    for i in range(len(bbox_nums)):
+        cur_image_id = int(image_id[i][0])
+        det_nums = bbox_nums[i]
+        for j in range(det_nums):
+            dt = bboxes[k]
+            k = k + 1
+            # Parse 7-element bbox: [class_id, score, x1, y1, x2, y2, order]
+            num_id, score, xmin, ymin, xmax, ymax, order = dt.tolist()
+            if int(num_id) < 0 or score < save_threshold:
+                continue
+            category_id = label_to_cat_id_map[int(num_id)]
+            w = xmax - xmin + bias
+            h = ymax - ymin + bias
+            bbox = [xmin, ymin, w, h]
+            dt_res = {
+                'image_id': cur_image_id,
+                'category_id': category_id,
+                'bbox': bbox,
+                'score': score,
+                'read_order': int(order),
+            }
+            if im_file:
+                dt_res['im_file'] = im_file
+            det_res.append(dt_res)
+    return det_res
+
+
 def get_det_res(bboxes,
                 bbox_nums,
                 image_id,
@@ -41,7 +99,7 @@ def get_det_res(bboxes,
                 'image_id': cur_image_id,
                 'category_id': category_id,
                 'bbox': bbox,
-                'score': score
+                'score': score,
             }
             if im_file:
                 dt_res['im_file'] = im_file

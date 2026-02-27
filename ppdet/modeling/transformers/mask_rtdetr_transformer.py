@@ -29,7 +29,7 @@ from .utils import (_get_clones, inverse_sigmoid, get_denoising_training_group,
 from ..heads.detr_head import MLP
 from ..initializer import (linear_init_, constant_, xavier_uniform_, bias_init_with_prob)
 
-__all__ = ['MaskRTDETR']
+__all__ = ['MaskRTDETR', 'DocLayoutV3Transformer']
 
 
 def _get_pred_class_and_mask(query_embed,
@@ -49,6 +49,13 @@ def _get_pred_class_and_mask(query_embed,
 
 
 class MaskTransformerDecoder(nn.Layer):
+    """
+    Mask RT-DETR Transformer Decoder.
+
+    This decoder processes queries through multiple transformer layers and
+    produces bounding box, classification, and mask predictions.
+    """
+
     def __init__(self,
                  hidden_dim,
                  decoder_layer,
@@ -132,6 +139,37 @@ class MaskTransformerDecoder(nn.Layer):
 
 @register
 class MaskRTDETR(nn.Layer):
+    """
+    Mask RT-DETR model for instance segmentation.
+
+    This model uses RT-DETR architecture with mask prediction capability
+    for instance segmentation tasks.
+
+    Args:
+        num_classes (int): Number of object classes.
+        hidden_dim (int): Hidden dimension of transformer.
+        num_queries (int): Number of object queries.
+        position_embed_type (str): Type of position embedding ('sine' or 'learned').
+        backbone_feat_channels (list): Channels of backbone features.
+        feat_strides (list): Strides of backbone features.
+        num_prototypes (int): Number of mask prototypes.
+        num_levels (int): Number of feature levels.
+        num_decoder_points (int): Number of decoder points.
+        nhead (int): Number of attention heads.
+        num_decoder_layers (int): Number of decoder layers.
+        dim_feedforward (int): Dimension of feedforward network.
+        dropout (float): Dropout rate.
+        activation (str): Activation function.
+        num_denoising (int): Number of denoising queries.
+        label_noise_ratio (float): Label noise ratio.
+        box_noise_scale (float): Box noise scale.
+        learnt_init_query (bool): Whether to use learnt query initialization.
+        query_pos_head_inv_sig (bool): Whether to use inverse sigmoid for query position.
+        mask_enhanced (bool): Whether to use mask-enhanced anchor initialization.
+        eval_size (list|None): Evaluation size for anchor generation.
+        eval_idx (int): Index of decoder layer for evaluation.
+        eps (float): Small value for numerical stability.
+    """
     __shared__ = ['num_classes', 'hidden_dim', 'eval_size', 'num_prototypes']
 
     def __init__(self,
@@ -229,6 +267,7 @@ class MaskRTDETR(nn.Layer):
         self._reset_parameters()
 
     def _reset_parameters(self):
+        """Initialize model parameters."""
         # class and bbox head init
         bias_cls = bias_init_with_prob(0.01)
         linear_init_(self.score_head)
@@ -255,6 +294,7 @@ class MaskRTDETR(nn.Layer):
                 'feat_strides': [i.stride for i in input_shape]}
 
     def _build_input_proj_layer(self, backbone_feat_channels):
+        """Build input projection layers for backbone features."""
         self.input_proj = nn.LayerList()
         for in_channels in backbone_feat_channels:
             self.input_proj.append(
@@ -286,6 +326,7 @@ class MaskRTDETR(nn.Layer):
             in_channels = self.hidden_dim
 
     def _get_encoder_input(self, feats):
+        """Get encoder input from backbone features."""
         # get projection features
         proj_feats = [self.input_proj[i](feat) for i, feat in enumerate(feats)]
         if self.num_levels > len(proj_feats):
@@ -315,6 +356,18 @@ class MaskRTDETR(nn.Layer):
         return feat_flatten, spatial_shapes, level_start_index
 
     def forward(self, feats, pad_mask=None, gt_meta=None, is_teacher=False):
+        """
+        Forward pass of MaskRTDETR.
+
+        Args:
+            feats (tuple): (encoder features, mask features)
+            pad_mask (Tensor|None): Padding mask.
+            gt_meta (dict|None): Ground truth metadata for denoising training.
+            is_teacher (bool): Whether this is a teacher model.
+
+        Returns:
+            tuple: (out_logits, out_bboxes, out_masks, enc_out, init_out, dn_meta)
+        """
         enc_feats, mask_feat = feats
         # input projection and embedding
         (memory, spatial_shapes,
@@ -362,6 +415,7 @@ class MaskRTDETR(nn.Layer):
                           spatial_shapes=None,
                           grid_size=0.05,
                           dtype=paddle.float32):
+        """Generate anchor boxes for encoder output."""
         if spatial_shapes is None:
             spatial_shapes = [
                 [int(self.eval_size[0] / s), int(self.eval_size[1] / s)]
@@ -397,6 +451,20 @@ class MaskRTDETR(nn.Layer):
                            denoising_class=None,
                            denoising_bbox_unact=None,
                            is_teacher=False):
+        """
+        Get decoder input from encoder output.
+
+        Args:
+            memory (Tensor): Encoder output memory.
+            mask_feat (Tensor): Mask features.
+            spatial_shapes (list): Spatial shapes of each level.
+            denoising_class (Tensor|None): Denoising class embeddings.
+            denoising_bbox_unact (Tensor|None): Denoising bounding boxes.
+            is_teacher (bool): Whether this is a teacher model.
+
+        Returns:
+            tuple: (target, reference_points_unact, enc_out, init_out)
+        """
         bs, _, _ = memory.shape
         # prepare input for decoder
         if self.training or self.eval_size is None or is_teacher:
@@ -454,3 +522,530 @@ class MaskRTDETR(nn.Layer):
             init_out = None
 
         return target, reference_points_unact.detach(), enc_out, init_out
+
+
+class DocLayoutV3TransformerDecoder(MaskTransformerDecoder):
+    """
+    PP-DocLayoutV3 Transformer Decoder with reading order prediction support.
+
+    This decoder extends MaskTransformerDecoder by adding reading order prediction
+    capability for document layout analysis. It predicts pairwise reading order
+    relationships between detected elements using a global pointer network.
+
+    The key enhancement over the base class is the addition of order_logits output,
+    which represents the relative reading order between all pairs of queries.
+    Each decoder layer produces its own order predictions for auxiliary supervision.
+
+    Args:
+        hidden_dim (int): Hidden dimension of transformer. Default: 256.
+        decoder_layer (nn.Layer): Transformer decoder layer module.
+        num_layers (int): Number of stacked decoder layers. Default: 6.
+        num_queries (int|None): Number of object queries (excluding denoising queries).
+            If not None, only the last num_queries are used for order prediction to
+            exclude denoising queries. Default: None.
+        eval_idx (int): Index of decoder layer to use for evaluation output.
+            Negative values count from the end. Default: -1 (last layer).
+        eval_topk (int): Number of top-scoring predictions to keep during evaluation.
+            Default: 100.
+
+    Note:
+        The order prediction is only applied to matching queries (the last num_queries),
+        not to denoising queries, as denoising queries do not have ground truth order labels.
+    """
+
+    def __init__(self,
+                 hidden_dim,
+                 decoder_layer,
+                 num_layers,
+                 num_queries=None,
+                 eval_idx=-1,
+                 eval_topk=100):
+        super(DocLayoutV3TransformerDecoder, self).__init__(
+            hidden_dim, decoder_layer, num_layers, eval_idx, eval_topk)
+        self.num_queries = num_queries
+
+    def forward(self,
+                tgt,
+                ref_points_unact,
+                memory,
+                memory_spatial_shapes,
+                memory_level_start_index,
+                mask_feat,
+                bbox_head,
+                score_head,
+                order_head,
+                global_pointer,
+                query_pos_head,
+                mask_query_head,
+                dec_norm,
+                attn_mask=None,
+                memory_mask=None,
+                query_pos_head_inv_sig=False):
+        """
+        Forward pass with reading order prediction.
+
+        This method extends the base decoder forward pass by computing reading order
+        predictions at each decoder layer using the global pointer mechanism.
+
+        Args:
+            tgt (Tensor): Target query embeddings.
+                Shape: [batch_size, num_queries, hidden_dim]
+            ref_points_unact (Tensor): Reference points before sigmoid activation.
+                Shape: [batch_size, num_queries, 4]
+            memory (Tensor): Encoder output memory.
+                Shape: [batch_size, num_memory, hidden_dim]
+            memory_spatial_shapes (list): Spatial shapes [H, W] for each feature level.
+            memory_level_start_index (list): Start indices for each feature level in memory.
+            mask_feat (Tensor): Mask features from encoder.
+                Shape: [batch_size, num_prototypes, H, W]
+            bbox_head (nn.Layer): Bounding box prediction head (shared across layers).
+            score_head (nn.Layer): Classification score head (shared across layers).
+            order_head (nn.LayerList): Order prediction heads (one per decoder layer).
+            global_pointer (nn.Layer): Global pointer module for pairwise order prediction.
+            query_pos_head (nn.Layer): Query position embedding head.
+            mask_query_head (nn.Layer): Mask query embedding head.
+            dec_norm (nn.Layer): Decoder output normalization layer.
+            attn_mask (Tensor|None): Attention mask for denoising queries. Default: None.
+            memory_mask (Tensor|None): Memory mask for padding. Default: None.
+            query_pos_head_inv_sig (bool): Whether to apply inverse sigmoid to reference
+                points before feeding to query_pos_head. Default: False.
+
+        Returns:
+            tuple: (dec_out_bboxes, dec_out_logits, dec_out_masks, dec_out_order_logits)
+                - dec_out_bboxes (Tensor): Predicted bounding boxes from all layers.
+                    Shape: [num_layers, batch_size, num_queries, 4]
+                - dec_out_logits (Tensor): Classification logits from all layers.
+                    Shape: [num_layers, batch_size, num_queries, num_classes]
+                - dec_out_masks (Tensor): Predicted masks from all layers.
+                    Shape: [num_layers, batch_size, num_queries, mask_h, mask_w]
+                - dec_out_order_logits (Tensor): Pairwise order logits from all layers.
+                    Shape: [num_layers, batch_size, num_queries, num_queries]
+        """
+        output = tgt
+        dec_out_bboxes = []
+        dec_out_logits = []
+        dec_out_masks = []
+        dec_out_order_logits = []
+        ref_points_detach = F.sigmoid(ref_points_unact)
+        for i, layer in enumerate(self.layers):
+            ref_points_input = ref_points_detach.unsqueeze(2)
+            if not query_pos_head_inv_sig:
+                query_pos_embed = query_pos_head(ref_points_detach)
+            else:
+                query_pos_embed = query_pos_head(
+                    inverse_sigmoid(ref_points_detach))
+
+            output = layer(output, ref_points_input, memory,
+                           memory_spatial_shapes, memory_level_start_index,
+                           attn_mask, memory_mask, query_pos_embed)
+
+            inter_ref_bbox = F.sigmoid(bbox_head(output) +
+                                       inverse_sigmoid(ref_points_detach))
+
+            if self.training:
+                logits_, masks_ = _get_pred_class_and_mask(
+                    output, mask_feat, dec_norm,
+                    score_head, mask_query_head)
+
+                dec_out_logits.append(logits_)
+                dec_out_masks.append(masks_)
+
+                # Extract valid matching queries for order prediction (exclude denoising queries)
+                # Denoising queries are prepended to the query sequence during training,
+                # so we only use the last num_queries for order prediction
+                valid_output = output[:, -self.num_queries:] if self.num_queries is not None else output
+                dec_out_order_logits.append(global_pointer(order_head[i](valid_output)))
+
+                if i == 0:
+                    dec_out_bboxes.append(inter_ref_bbox)
+                else:
+                    dec_out_bboxes.append(
+                        F.sigmoid(bbox_head(output) +
+                                  inverse_sigmoid(ref_points)))
+            elif i == self.eval_idx:
+                logits_, masks_ = _get_pred_class_and_mask(
+                    output, mask_feat, dec_norm,
+                    score_head, mask_query_head)
+
+                dec_out_logits.append(logits_)
+                dec_out_masks.append(masks_)
+                dec_out_bboxes.append(inter_ref_bbox)
+
+                # Extract valid matching queries for order prediction
+                valid_output = output[:, -self.num_queries:] if self.num_queries is not None else output
+                dec_out_order_logits.append(global_pointer(order_head[i](valid_output)))
+
+                return (paddle.stack(dec_out_bboxes),
+                        paddle.stack(dec_out_logits),
+                        paddle.stack(dec_out_masks),
+                        paddle.stack(dec_out_order_logits))
+
+            ref_points = inter_ref_bbox
+            ref_points_detach = inter_ref_bbox.detach(
+            ) if self.training else inter_ref_bbox
+
+        return (paddle.stack(dec_out_bboxes),
+                paddle.stack(dec_out_logits),
+                paddle.stack(dec_out_masks),
+                paddle.stack(dec_out_order_logits))
+
+
+@register
+class DocLayoutV3Transformer(MaskRTDETR):
+    """
+    PP-DocLayoutV3 Transformer for document layout analysis with reading order prediction.
+
+    This model extends MaskRTDETR to predict reading order of detected elements in
+    document images. It uses a global pointer mechanism to model pairwise reading
+    order relationships between elements, which are then decoded into a sequential order.
+
+    Key enhancements over MaskRTDETR:
+        1. Independent order prediction head for each decoder layer, enabling deep
+           supervision for better training convergence.
+        2. Global pointer module that predicts pairwise order relationships using
+           query-key interactions with antisymmetric constraints.
+        3. Extended output to include order_logits for both training and inference.
+
+    Architecture:
+        Input Image -> Backbone -> Neck -> Encoder -> Decoder -> Predictions
+                                                          |
+                                                          v
+                                    Order Heads -> Global Pointer -> Order Logits
+
+    The reading order prediction branch operates on decoder query features and
+    produces an NxN matrix of pairwise order relationships, where order_logits[i,j]
+    indicates whether element i comes before element j in reading order.
+
+    Args:
+        num_classes (int): Number of object classes (e.g., 25 for DocLayout). Default: 80.
+        hidden_dim (int): Hidden dimension of transformer features. Default: 256.
+        num_queries (int): Number of object queries for detection. Default: 300.
+        position_embed_type (str): Type of position embedding ('sine' or 'learned').
+            Default: 'sine'.
+        backbone_feat_channels (list[int]): Output channels of backbone feature pyramid.
+            Default: [512, 1024, 2048].
+        feat_strides (list[int]): Feature strides corresponding to backbone features.
+            Default: [8, 16, 32].
+        num_prototypes (int): Number of mask prototype channels. Default: 32.
+        num_levels (int): Number of feature pyramid levels. Default: 3.
+        num_decoder_points (int): Number of sampling points in deformable attention.
+            Default: 4.
+        nhead (int): Number of attention heads in transformer. Default: 8.
+        num_decoder_layers (int): Number of decoder layers. Default: 6.
+        dim_feedforward (int): Dimension of feedforward network. Default: 1024.
+        dropout (float): Dropout rate. Default: 0.0.
+        activation (str): Activation function type ('relu', 'gelu', etc.). Default: 'relu'.
+        num_denoising (int): Number of denoising queries for training stability. Default: 100.
+        label_noise_ratio (float): Noise ratio for label denoising. Default: 0.4.
+        box_noise_scale (float): Noise scale for box denoising. Default: 0.4.
+        learnt_init_query (bool): Whether to use learnable query initialization. Default: False.
+        query_pos_head_inv_sig (bool): Whether to apply inverse sigmoid to query positions.
+            Default: False.
+        mask_enhanced (bool): Whether to use mask-enhanced anchor box initialization.
+            This refines anchor boxes using predicted mask shapes. Default: True.
+        eval_size (tuple[int]|None): Fixed evaluation size (H, W) for anchor generation.
+            If None, anchors are generated dynamically. Default: None.
+        eval_idx (int): Decoder layer index for evaluation output. Negative values count
+            from the end (-1 = last layer). Default: -1.
+        eps (float): Small epsilon for numerical stability in anchor generation. Default: 1e-2.
+
+    Note:
+        The order prediction branch only operates on matching queries (excluding denoising
+        queries) since denoising queries do not have ground truth reading order labels.
+
+    Examples:
+        .. code-block:: python
+
+            model = DocLayoutV3Transformer(
+                num_classes=25,
+                hidden_dim=256,
+                num_queries=300,
+                num_decoder_layers=6
+            )
+            # Input: encoder features and mask features from neck
+            feats = (enc_feats, mask_feat)
+            # Output: logits, bboxes, masks, order_logits, and auxiliary outputs
+            out = model(feats)
+    """
+    __shared__ = ['num_classes', 'hidden_dim', 'eval_size', 'num_prototypes']
+
+    def __init__(self,
+                 num_classes=80,
+                 hidden_dim=256,
+                 num_queries=300,
+                 position_embed_type='sine',
+                 backbone_feat_channels=[512, 1024, 2048],
+                 feat_strides=[8, 16, 32],
+                 num_prototypes=32,
+                 num_levels=3,
+                 num_decoder_points=4,
+                 nhead=8,
+                 num_decoder_layers=6,
+                 dim_feedforward=1024,
+                 dropout=0.,
+                 activation="relu",
+                 num_denoising=100,
+                 label_noise_ratio=0.4,
+                 box_noise_scale=0.4,
+                 learnt_init_query=False,
+                 query_pos_head_inv_sig=False,
+                 mask_enhanced=True,
+                 eval_size=None,
+                 eval_idx=-1,
+                 eps=1e-2):
+        # Initialize parent class
+        super(DocLayoutV3Transformer, self).__init__(
+            num_classes=num_classes,
+            hidden_dim=hidden_dim,
+            num_queries=num_queries,
+            position_embed_type=position_embed_type,
+            backbone_feat_channels=backbone_feat_channels,
+            feat_strides=feat_strides,
+            num_prototypes=num_prototypes,
+            num_levels=num_levels,
+            num_decoder_points=num_decoder_points,
+            nhead=nhead,
+            num_decoder_layers=num_decoder_layers,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
+            activation=activation,
+            num_denoising=num_denoising,
+            label_noise_ratio=label_noise_ratio,
+            box_noise_scale=box_noise_scale,
+            learnt_init_query=learnt_init_query,
+            query_pos_head_inv_sig=query_pos_head_inv_sig,
+            mask_enhanced=mask_enhanced,
+            eval_size=eval_size,
+            eval_idx=eval_idx,
+            eps=eps)
+
+        # Override decoder with order-enabled version
+        decoder_layer = TransformerDecoderLayer(
+            hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
+            num_decoder_points)
+        self.decoder = DocLayoutV3TransformerDecoder(
+            hidden_dim, decoder_layer,
+            num_decoder_layers, num_queries, eval_idx)
+
+        # Import GlobalPointerPD for pairwise order prediction
+        from .utils import GlobalPointerPD
+
+        # Create independent order prediction heads for each decoder layer
+        # Each layer has its own Linear projection to allow different order
+        # representations at different decoding stages (deep supervision)
+        self.dec_order_head = nn.LayerList([
+            nn.Linear(hidden_dim, hidden_dim)
+            for _ in range(num_decoder_layers)
+        ])
+        # Global pointer converts query features into pairwise order logits
+        # with antisymmetric constraint: logits[i,j] = -logits[j,i]
+        self.dec_global_pointer = GlobalPointerPD(
+            hidden_size=hidden_dim, head_size=64)
+
+        # Initialize order head parameters with proper bias
+        bias_cls = bias_init_with_prob(0.01)
+        for order_head in self.dec_order_head:
+            linear_init_(order_head)
+            constant_(order_head.bias, bias_cls)
+
+    def forward(self, feats, pad_mask=None, gt_meta=None, is_teacher=False):
+        """
+        Forward pass with reading order prediction.
+
+        This method extends MaskRTDETR's forward pass to include reading order logits
+        in the output. The order prediction branch operates in parallel with bbox,
+        classification, and mask predictions.
+
+        Args:
+            feats (tuple): A 2-tuple of (encoder_features, mask_features).
+                - encoder_features (list[Tensor]): Multi-scale features from backbone.
+                    Each tensor has shape [batch_size, channels, H, W].
+                - mask_features (Tensor): High-resolution features for mask prediction.
+                    Shape: [batch_size, num_prototypes, H, W].
+            pad_mask (Tensor|None): Padding mask for variable-size images. Default: None.
+                Shape: [batch_size, H, W] with 1 for valid pixels, 0 for padding.
+            gt_meta (dict|None): Ground truth metadata for denoising training, containing:
+                - gt_class: Ground truth class labels
+                - gt_bbox: Ground truth bounding boxes
+                - gt_read_order: Ground truth reading order (for DocLayoutV3)
+                Default: None (not used during inference).
+            is_teacher (bool): Whether this forward pass is for a teacher model in
+                knowledge distillation. Affects anchor generation. Default: False.
+
+        Returns:
+            tuple: An 8-tuple containing:
+                - out_logits (Tensor): Classification logits from all decoder layers.
+                    Shape: [num_layers, batch_size, num_queries, num_classes]
+                - out_bboxes (Tensor): Predicted bounding boxes (sigmoid-activated).
+                    Shape: [num_layers, batch_size, num_queries, 4] in (cx, cy, w, h) format.
+                - out_masks (Tensor): Predicted instance masks.
+                    Shape: [num_layers, batch_size, num_queries, mask_h, mask_w]
+                - out_order_logits (Tensor): Pairwise reading order logits from all layers.
+                    Shape: [num_layers, batch_size, num_queries, num_queries]
+                    where order_logits[l, b, i, j] > 0 indicates element i comes before j.
+                - enc_out (tuple): Encoder-level predictions for auxiliary loss.
+                    (enc_logits, enc_bboxes, enc_masks) each with shape:
+                    [batch_size, num_queries, ...].
+                - init_out (tuple|None): Initial predictions before decoder refinement.
+                    Same format as enc_out, only present during training with denoising.
+                - enc_topk_order (None): Reserved for encoder-level order prediction
+                    (currently not implemented, always returns None).
+                - dn_meta (dict|None): Metadata for denoising training, including
+                    attention masks and query counts. None during inference.
+
+        Note:
+            The out_order_logits tensor uses antisymmetric property: logits[i,j] = -logits[j,i].
+            This ensures consistency in pairwise order relationships.
+        """
+        enc_feats, mask_feat = feats
+        # input projection and embedding
+        (memory, spatial_shapes,
+         level_start_index) = self._get_encoder_input(enc_feats)
+
+        # prepare denoising training
+        if self.training:
+            denoising_class, denoising_bbox_unact, attn_mask, dn_meta = \
+                get_denoising_training_group(gt_meta,
+                                             self.num_classes,
+                                             self.num_queries,
+                                             self.denoising_class_embed.weight,
+                                             self.num_denoising,
+                                             self.label_noise_ratio,
+                                             self.box_noise_scale)
+        else:
+            denoising_class, denoising_bbox_unact,\
+                attn_mask, dn_meta = None, None, None, None
+
+        target, init_ref_points_unact, enc_out, init_out, enc_topk_order = \
+            self._get_decoder_input(
+                memory, mask_feat, spatial_shapes,
+                denoising_class, denoising_bbox_unact, is_teacher)
+
+        # Decoder forward pass with order prediction
+        # Order heads and global pointer are passed to decoder for layer-wise prediction
+        out_bboxes, out_logits, out_masks, out_order_logits = self.decoder(
+            target,
+            init_ref_points_unact,
+            memory,
+            spatial_shapes,
+            level_start_index,
+            mask_feat,
+            self.bbox_head,
+            self.score_head,
+            self.dec_order_head,
+            self.dec_global_pointer,
+            self.query_pos_head,
+            self.mask_query_head,
+            self.dec_norm,
+            attn_mask=attn_mask,
+            memory_mask=None,
+            query_pos_head_inv_sig=self.query_pos_head_inv_sig)
+
+        return (out_logits, out_bboxes, out_masks, out_order_logits,
+                enc_out, init_out, enc_topk_order, dn_meta)
+
+    def _get_decoder_input(self,
+                           memory,
+                           mask_feat,
+                           spatial_shapes,
+                           denoising_class=None,
+                           denoising_bbox_unact=None,
+                           is_teacher=False):
+        """
+        Get decoder input from encoder output with order prediction support.
+
+        This method overrides MaskRTDETR's _get_decoder_input to add enc_topk_order
+        in the return tuple for consistency with DocLayoutV3Head's expected input format.
+
+        Args:
+            memory (Tensor): Encoder output memory features.
+                Shape: [batch_size, num_memory, hidden_dim]
+            mask_feat (Tensor): Mask features for mask prediction.
+                Shape: [batch_size, num_prototypes, H, W]
+            spatial_shapes (list[list[int]]): Spatial dimensions [H, W] for each feature level.
+            denoising_class (Tensor|None): Denoising class embeddings for training.
+                Shape: [batch_size, num_denoising, hidden_dim]. Default: None.
+            denoising_bbox_unact (Tensor|None): Denoising bounding boxes (unsigmoided).
+                Shape: [batch_size, num_denoising, 4]. Default: None.
+            is_teacher (bool): Whether this is a teacher model in distillation. Default: False.
+
+        Returns:
+            tuple: (target, reference_points_unact, enc_out, init_out, enc_topk_order)
+                - target (Tensor): Initial decoder query embeddings.
+                    Shape: [batch_size, num_queries + num_denoising, hidden_dim]
+                - reference_points_unact (Tensor): Initial reference points (unsigmoided).
+                    Shape: [batch_size, num_queries + num_denoising, 4]
+                - enc_out (tuple): Encoder-level predictions for auxiliary loss.
+                    (enc_logits, enc_bboxes, enc_masks)
+                - init_out (tuple|None): Initial predictions before decoder refinement.
+                    Same format as enc_out, only present during training with denoising.
+                - enc_topk_order (None): Placeholder for encoder-level order prediction.
+                    Currently not implemented, always returns None. Order prediction is
+                    performed at the decoder level only.
+
+        Note:
+            The enc_topk_order is reserved for potential future enhancement where order
+            could be predicted at the encoder stage. Currently, all reading order prediction
+            happens in the decoder using the global pointer mechanism.
+        """
+        bs, _, _ = memory.shape
+        # prepare input for decoder
+        if self.training or self.eval_size is None or is_teacher:
+            anchors, valid_mask = self._generate_anchors(spatial_shapes)
+        else:
+            anchors, valid_mask = self.anchors, self.valid_mask
+        memory = paddle.where(valid_mask, memory, paddle.to_tensor(0.))
+        output_memory = self.enc_output(memory)
+
+        enc_logits_unact = self.score_head(output_memory)
+        enc_bboxes_unact = self.bbox_head(output_memory) + anchors
+
+        # get topk index
+        _, topk_ind = paddle.topk(
+            enc_logits_unact.max(-1), self.num_queries, axis=1)
+        batch_ind = paddle.arange(end=bs).astype(topk_ind.dtype)
+        batch_ind = batch_ind.unsqueeze(-1).tile([1, self.num_queries])
+        topk_ind = paddle.stack([batch_ind, topk_ind], axis=-1)
+
+        # extract content and position query embedding
+        target = paddle.gather_nd(output_memory, topk_ind)
+        reference_points_unact = paddle.gather_nd(enc_bboxes_unact,
+                                                  topk_ind)  # unsigmoided.
+        # get encoder output: {logits, bboxes, masks}
+        enc_out_logits, enc_out_masks = _get_pred_class_and_mask(
+            target, mask_feat, self.dec_norm,
+            self.score_head, self.mask_query_head)
+        enc_out_bboxes = F.sigmoid(reference_points_unact)
+        enc_out = (enc_out_logits, enc_out_bboxes, enc_out_masks)
+
+        # concat denoising query
+        if self.learnt_init_query:
+            target = self.tgt_embed.weight.unsqueeze(0).tile([bs, 1, 1])
+        else:
+            target = target.detach()
+        if denoising_class is not None:
+            target = paddle.concat([denoising_class, target], 1)
+        if self.mask_enhanced:
+            # use mask-enhanced anchor box initialization
+            reference_points = mask_to_box_coordinate(
+                enc_out_masks > 0, normalize=True, format="xywh")
+            reference_points_unact = inverse_sigmoid(reference_points)
+        if denoising_bbox_unact is not None:
+            reference_points_unact = paddle.concat(
+                [denoising_bbox_unact, reference_points_unact], 1)
+
+        # direct prediction from the matching and denoising part in the beginning
+        if self.training and denoising_class is not None:
+            init_out_logits, init_out_masks = _get_pred_class_and_mask(
+                target, mask_feat, self.dec_norm,
+                self.score_head, self.mask_query_head)
+            init_out_bboxes = F.sigmoid(reference_points_unact)
+            init_out = (init_out_logits, init_out_bboxes, init_out_masks)
+        else:
+            init_out = None
+
+        # enc_topk_order is always None - reading order prediction is performed
+        # at the decoder level using global pointer, not at the encoder level
+        enc_topk_order = None
+
+        return target, reference_points_unact.detach(), enc_out, init_out, enc_topk_order

@@ -1,8 +1,3 @@
-# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -1019,7 +1014,7 @@ class Resize(BaseOperator):
                     interpolation=cv2.INTER_NEAREST)
                 for gt_segm in sample['gt_segm']
             ]
-            sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+            sample['gt_segm'] = np.asarray(masks, dtype=sample['gt_segm'].dtype)
 
         if 'gt_joints' in sample:
             sample['gt_joints'] = self.apply_joints(sample['gt_joints'],
@@ -1458,6 +1453,13 @@ class CropWithDataAchorSampling(BaseOperator):
 @register_op
 class RandomCrop(BaseOperator):
     """Random crop image and bboxes.
+
+    Supports both regular masks and packed masks from Poly2MaskPack.
+    For packed masks, the operator will:
+    - Crop all packed masks spatially
+    - Filter metadata (pack_indices, instance_ids) to keep only valid instances
+    - Zero out invalid instance pixels
+
     Args:
         aspect_ratio (list): aspect ratio of cropped region.
             in [min, max] format.
@@ -1468,6 +1470,13 @@ class RandomCrop(BaseOperator):
         allow_no_crop (bool): allow return without actually cropping them.
         cover_all_box (bool): ensure all bboxes are covered in the final crop.
         is_mask_crop(bool): whether crop the segmentation.
+        ioumode (str): iou mode, 'iou' or 'iof'.
+        prob (float): probability to apply random crop.
+        use_box_candidates (bool): whether to use box_candidates method for more
+            flexible bbox filtering instead of center constraint. Default False.
+        wh_thr (int): width and height threshold for box_candidates. Default 2.
+        ar_thr (int): aspect ratio threshold for box_candidates. Default 100.
+        area_thr (float): area ratio threshold for box_candidates. Default 0.1.
     """
 
     def __init__(self,
@@ -1479,7 +1488,11 @@ class RandomCrop(BaseOperator):
                  cover_all_box=False,
                  is_mask_crop=False,
                  ioumode="iou",
-                 prob=1.0):
+                 prob=1.0,
+                 use_box_candidates=False,
+                 wh_thr=4,
+                 ar_thr=40,
+                 area_thr=0.15):
         super(RandomCrop, self).__init__()
         self.aspect_ratio = aspect_ratio
         self.thresholds = thresholds
@@ -1490,6 +1503,10 @@ class RandomCrop(BaseOperator):
         self.is_mask_crop = is_mask_crop
         self.ioumode = ioumode
         self.prob = prob
+        self.use_box_candidates = use_box_candidates
+        self.wh_thr = wh_thr
+        self.ar_thr = ar_thr
+        self.area_thr = area_thr
 
     def crop_segms(self, segms, valid_ids, crop, height, width):
         def _crop_poly(segm, crop):
@@ -1684,9 +1701,15 @@ class RandomCrop(BaseOperator):
                 if self.cover_all_box and iou.min() < thresh:
                     continue
 
-                cropped_box, valid_ids = self._crop_box_with_center_constraint(
-                    gt_bbox, np.array(
-                        crop_box, dtype=np.float32))
+                # Choose filtering method based on configuration
+                if self.use_box_candidates:
+                    cropped_box, valid_ids = self._crop_box_with_candidates(
+                        gt_bbox, np.array(
+                            crop_box, dtype=np.float32))
+                else:
+                    cropped_box, valid_ids = self._crop_box_with_center_constraint(
+                        gt_bbox, np.array(
+                            crop_box, dtype=np.float32))
                 if valid_ids.size > 0:
                     found = True
                     break
@@ -1716,11 +1739,23 @@ class RandomCrop(BaseOperator):
                     else:
                         sample['gt_poly'] = crop_polys
 
-                if 'gt_segm' in sample:
-                    sample['gt_segm'] = self._crop_segm(sample['gt_segm'],
-                                                        crop_box)
-                    sample['gt_segm'] = np.take(
-                        sample['gt_segm'], valid_ids, axis=0)
+                # Check if gt_segm is in packed format (from Poly2MaskPack)
+                is_packed = ('pack_indices' in sample and 'instance_ids' in sample)
+
+                if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+                    if is_packed:
+                        # Handle packed masks from Poly2MaskPack
+                        sample['gt_segm'], sample['pack_indices'], sample['instance_ids'] = \
+                            self._crop_packed_masks(
+                                sample['gt_segm'],
+                                sample['pack_indices'],
+                                sample['instance_ids'],
+                                crop_box,
+                                valid_ids)
+                    else:
+                        # Handle regular unpacked masks
+                        sample['gt_segm'] = self._crop_segm(sample['gt_segm'], crop_box)
+                        sample['gt_segm'] = np.take(sample['gt_segm'], valid_ids, axis=0)
 
                 sample['image'] = self._crop_image(sample['image'], crop_box)
                 if fake_bboxes == True:
@@ -1769,6 +1804,47 @@ class RandomCrop(BaseOperator):
         area_o = (area_a[:, np.newaxis] + area_b - area_i)
         return area_i / (area_a + 1e-10)
 
+    def box_candidates(self, box1, box2, wh_thr=2, ar_thr=100, area_thr=0.1, eps=1e-16):
+        """
+        Compute candidate boxes for further processing based on size and aspect ratio criteria.
+
+        This method compares boxes before and after augmentation to determine if they meet specified
+        thresholds for width, height, aspect ratio, and area.
+
+        Note: Aspect ratio filtering is only applied to boxes that have been cropped.
+              If a box is not cropped (i.e., its dimensions remain unchanged), the aspect ratio
+              check is skipped to preserve boxes with extreme aspect ratios (e.g., very thin objects).
+
+        Args:
+            box1 (np.ndarray): Original boxes before augmentation, shape (N, 4). Format is [x1, y1, x2, y2].
+            box2 (np.ndarray): Augmented boxes after transformation, shape (N, 4). Format is [x1, y1, x2, y2].
+            wh_thr (int): Width and height threshold in pixels. Boxes smaller than this are rejected.
+            ar_thr (int): Aspect ratio threshold. Boxes with aspect ratio greater than this are rejected.
+            area_thr (float): Area ratio threshold. Boxes with area ratio (new/old) less than this are rejected.
+            eps (float): Small epsilon value to prevent division by zero.
+
+        Returns:
+            np.ndarray: Boolean array of shape (N,) indicating which boxes are candidates.
+        """
+        w1, h1 = box1[:, 2] - box1[:, 0], box1[:, 3] - box1[:, 1]
+        w2, h2 = box2[:, 2] - box2[:, 0], box2[:, 3] - box2[:, 1]
+
+        # Detect if boxes are cropped by comparing dimensions
+        # If dimensions are very close (within 1 pixel tolerance), consider as not cropped
+        not_cropped = (np.abs(w2 - w1) < 1.0) & (np.abs(h2 - h1) < 1.0)
+
+        # Compute aspect ratio
+        ar = np.maximum(w2 / (h2 + eps), h2 / (w2 + eps))
+
+        # Base checks: width, height, and area ratio
+        base_valid = (w2 > wh_thr) & (h2 > wh_thr) & (w2 * h2 / (w1 * h1 + eps) > area_thr)
+
+        # Apply aspect ratio check only to cropped boxes
+        # For non-cropped boxes, skip aspect ratio filtering to preserve original extreme aspect ratios
+        ar_valid = not_cropped | (ar < ar_thr)
+
+        return base_valid & ar_valid
+
     def _crop_box_with_center_constraint(self, box, crop):
         cropped_box = box.copy()
 
@@ -1785,6 +1861,43 @@ class RandomCrop(BaseOperator):
 
         return cropped_box, np.where(valid)[0]
 
+    def _crop_box_with_candidates(self, box, crop):
+        """
+        Crop boxes and filter using box_candidates method for more flexible filtering.
+
+        Args:
+            box (np.ndarray): Original boxes, shape (N, 4). Format is [x1, y1, x2, y2].
+            crop (np.ndarray): Crop region [x1, y1, x2, y2].
+
+        Returns:
+            tuple: (cropped_box, valid_ids)
+                - cropped_box: Cropped boxes in crop coordinate system
+                - valid_ids: Indices of valid boxes
+        """
+        # Clip boxes to crop region
+        cropped_box_abs = box.copy()
+        cropped_box_abs[:, :2] = np.maximum(box[:, :2], crop[:2])
+        cropped_box_abs[:, 2:] = np.minimum(box[:, 2:], crop[2:])
+
+        # Convert to crop coordinate system
+        cropped_box = cropped_box_abs.copy()
+        cropped_box[:, :2] -= crop[:2]
+        cropped_box[:, 2:] -= crop[:2]
+
+        # Use box_candidates to filter boxes
+        valid = self.box_candidates(
+            box, cropped_box_abs,
+            wh_thr=self.wh_thr,
+            ar_thr=self.ar_thr,
+            area_thr=self.area_thr
+        )
+
+        # Additional check: ensure cropped box has valid dimensions
+        valid = valid & ((cropped_box[:, 2] > cropped_box[:, 0]) &
+                        (cropped_box[:, 3] > cropped_box[:, 1]))
+
+        return cropped_box, np.where(valid)[0]
+
     def _crop_image(self, img, crop):
         x1, y1, x2, y2 = crop
         return img[y1:y2, x1:x2, :]
@@ -1792,6 +1905,54 @@ class RandomCrop(BaseOperator):
     def _crop_segm(self, segm, crop):
         x1, y1, x2, y2 = crop
         return segm[:, y1:y2, x1:x2]
+
+    def _crop_packed_masks(self, gt_segm, pack_indices, instance_ids, crop, valid_ids):
+        """
+        Crop packed masks from Poly2MaskPack and filter invalid instances.
+
+        This is a lightweight operation that:
+        1. Crops all packed masks spatially
+        2. Filters metadata to only keep valid instances
+        3. Sets invalid instance pixels to 0 (background)
+
+        Args:
+            gt_segm (np.ndarray): Packed masks array of shape (M, H, W) with int16 dtype.
+            pack_indices (np.ndarray): Array of shape (N,) indicating which packed mask
+                each instance belongs to.
+            instance_ids (np.ndarray): Array of shape (N,) indicating the ID value of
+                each instance in its packed mask.
+            crop (list): Crop box [x1, y1, x2, y2].
+            valid_ids (np.ndarray): Valid instance indices after cropping.
+
+        Returns:
+            tuple: (cropped_gt_segm, new_pack_indices, new_instance_ids)
+        """
+        x1, y1, x2, y2 = crop
+
+        # 1. Crop all packed masks spatially
+        cropped_gt_segm = gt_segm[:, y1:y2, x1:x2].copy()
+
+        # 2. Filter metadata to only valid instances
+        new_pack_indices = pack_indices[valid_ids].copy()
+        new_instance_ids = instance_ids[valid_ids].copy()
+
+        # 3. Find invalid instances and zero out their pixels
+        # Build set of (pack_idx, inst_id) for valid instances
+        valid_set = set(zip(new_pack_indices, new_instance_ids))
+
+        # Zero out invalid instance pixels in each packed mask
+        for pack_idx in range(len(cropped_gt_segm)):
+            packed_mask = cropped_gt_segm[pack_idx]
+            unique_ids = np.unique(packed_mask)
+
+            for inst_id in unique_ids:
+                if inst_id == 0:  # Skip background
+                    continue
+                if (pack_idx, inst_id) not in valid_set:
+                    # This instance is invalid, zero it out
+                    packed_mask[packed_mask == inst_id] = 0
+
+        return cropped_gt_segm, new_pack_indices, new_instance_ids
 
     def _crop_joints(self, joints, crop):
         x1, y1, x2, y2 = crop
@@ -2391,6 +2552,8 @@ class Pad(BaseOperator):
                                                         offsets)
 
         if 'gt_segm' in sample and len(sample['gt_segm']) > 0:
+            # Preserve original dtype (important for packed masks with uint16)
+            original_dtype = sample['gt_segm'].dtype
             masks = [
                 cv2.copyMakeBorder(
                     gt_segm,
@@ -2400,7 +2563,7 @@ class Pad(BaseOperator):
                     value=0)
                 for gt_segm in sample['gt_segm']
             ]
-            sample['gt_segm'] = np.asarray(masks, dtype=np.uint8)
+            sample['gt_segm'] = np.asarray(masks, dtype=original_dtype)
 
         return sample
 
@@ -2811,7 +2974,7 @@ class RandomResizeCrop(BaseOperator):
                     interpolation=cv2.INTER_NEAREST)
                 for gt_segm in sample['gt_segm']
             ]
-            sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+            sample['gt_segm'] = np.asarray(masks, dtype=sample['gt_segm'].dtype)
 
         if 'gt_joints' in sample:
             sample['gt_joints'] = self.apply_joints(sample['gt_joints'],
@@ -2837,11 +3000,7 @@ class RandomSelect(BaseOperator):
         self.transforms2 = Compose(transforms2)
         self.p = p
 
-    def __call__(self, sample, context=None):
-        """
-        The case where the sample is a Sequence should not be handled here
-        Instead, transforms1 and transforms2 should handle it internally.
-        """
+    def apply(self, sample, context=None):
         if random.random() < self.p:
             return self.transforms1(sample)
         return self.transforms2(sample)
@@ -2867,11 +3026,7 @@ class RandomSelects(BaseOperator):
         self.transforms = [Compose(t) for t in transforms_list]
         self.p = p
 
-    def __call__(self, sample, context=None):
-        """
-        The case where the sample is a Sequence should not be handled here
-        Instead, transforms should handle it internally.
-        """
+    def apply(self, sample, context=None):
         if self.p is None:
             return random.choice(self.transforms)(sample)
         else:
@@ -2988,7 +3143,7 @@ class RandomShortSideResize(BaseOperator):
                     gt_segm, target_size, interpolation=cv2.INTER_NEAREST)
                 for gt_segm in sample['gt_segm']
             ]
-            sample['gt_segm'] = np.asarray(masks).astype(np.uint8)
+            sample['gt_segm'] = np.asarray(masks, dtype=sample['gt_segm'].dtype)
 
         if 'gt_joints' in sample:
             sample['gt_joints'] = self.apply_joints(
@@ -3740,7 +3895,7 @@ class Mosaic(BaseOperator):
             corner_points[:, :2] = labels[:, [0, 1, 2, 3, 0, 3, 2, 1]].reshape(
                 4 * num_gts, 2)  # x1y1, x2y2, x1y2, x2y1
             # apply affine transform
-            corner_points = corner_points @M.T
+            corner_points = corner_points @ M.T
             corner_points = corner_points.reshape(num_gts, 8)
 
             # create new boxes
@@ -4259,4 +4414,695 @@ class RandomErasingCrop(BaseOperator):
         sample = self.transform1(sample)
         sample = self.transform2(sample)
         sample = self.transform3(sample)
+        return sample
+
+
+class Poly2MaskPack(BaseOperator):
+    """
+    Convert polygon to packed mask annotations for better performance.
+    Non-overlapping masks are packed into the same mask image with different IDs.
+
+    This operator significantly improves performance when:
+    - There are many instances in the image
+    - Image size is large
+    - Subsequent transforms like cv2.warpPerspective need to process masks
+
+    Args:
+        del_poly (bool): Whether to delete poly after generating mask. Default: False.
+        max_instances_per_pack (int): Maximum number of instances in one packed mask.
+                                      Default: None (no limit).
+
+    Example:
+        Original: 100 separate masks of shape (H, W) -> 100 images to transform
+        Packed: 10 packed masks of shape (H, W) -> only 10 images to transform
+        Each pixel value represents instance ID (0=background, 1=instance1, 2=instance2, ...)
+    """
+
+    def __init__(self, del_poly=False, max_instances_per_pack=None):
+        super(Poly2MaskPack, self).__init__()
+        import pycocotools.mask as maskUtils
+        self.maskutils = maskUtils
+        self.del_poly = del_poly
+        self.max_instances_per_pack = max_instances_per_pack
+
+    def _poly2mask(self, mask_ann, img_h, img_w):
+        """Convert polygon annotation to binary mask"""
+        if isinstance(mask_ann, list):
+            # polygon -- a single object might consist of multiple parts
+            # we merge all parts into one mask rle code
+            rles = self.maskutils.frPyObjects(mask_ann, img_h, img_w)
+            rle = self.maskutils.merge(rles)
+        elif isinstance(mask_ann['counts'], list):
+            # uncompressed RLE
+            rle = self.maskutils.frPyObjects(mask_ann, img_h, img_w)
+        else:
+            # rle
+            rle = mask_ann
+        mask = self.maskutils.decode(rle)
+        return mask
+
+    def _check_overlap_with_bbox(self, bbox1, mask1, bbox2, mask2):
+        """
+        Fast overlap check using bboxes first, then checking masks in intersection region.
+        Uses pre-computed bboxes from COCO annotations.
+
+        Args:
+            bbox1: (x1, y1, x2, y2) from gt_bbox
+            mask1: binary mask array (H, W)
+            bbox2: (x1, y1, x2, y2) from gt_bbox
+            mask2: binary mask array (H, W)
+
+        Returns:
+            bool: True if masks overlap, False otherwise
+        """
+        x1_1, y1_1, x2_1, y2_1 = bbox1
+        x1_2, y1_2, x2_2, y2_2 = bbox2
+
+        # Quick bbox overlap check
+        if x2_1 <= x1_2 or x2_2 <= x1_1 or y2_1 <= y1_2 or y2_2 <= y1_1:
+            return False  # Bboxes don't overlap
+
+        # Bboxes overlap, check pixel overlap in the intersection region
+        x1 = int(max(x1_1, x1_2))
+        y1 = int(max(y1_1, y1_2))
+        x2 = int(min(x2_1, x2_2))
+        y2 = int(min(y2_1, y2_2))
+
+        # Extract regions
+        region1 = mask1[y1:y2, x1:x2]
+        region2 = mask2[y1:y2, x1:x2]
+
+        # Use np.logical_and (1.74x faster than cv2.bitwise_and for overlap detection)
+        return np.any(np.logical_and(region1 > 0, region2 > 0))
+
+    def _pack_masks(self, gt_polys, bboxes, im_h, im_w):
+        """
+        Pack masks into packed masks on-the-fly to save memory.
+
+        Key optimization over the original approach:
+        - Original: decode ALL masks first -> then pack (high memory usage)
+        - Optimized: decode ONE mask at a time -> immediately try to pack -> discard
+
+        This significantly reduces peak memory usage when there are many instances.
+        For overlap checking, we extract masks from packed masks on-the-fly using
+        (packed_mask == inst_id), avoiding the need to store all binary masks.
+
+        Args:
+            gt_polys: list of polygon annotations (N,)
+            bboxes: array of bboxes (N, 4) in format [x1, y1, x2, y2] from gt_bbox
+            im_h: image height
+            im_w: image width
+
+        Returns:
+            packed_masks: list of packed mask images (H, W) with int16 dtype
+            pack_indices: array indicating which packed mask each instance belongs to
+            instance_ids: array indicating the ID value of each instance in its packed mask
+        """
+        if len(gt_polys) == 0:
+            return [], np.array([], dtype=np.int32), np.array([], dtype=np.int32)
+
+        # Ensure im_h and im_w are integers
+        im_h = int(im_h)
+        im_w = int(im_w)
+
+        n_masks = len(gt_polys)
+
+        # Initialize packing structure
+        packed_masks = []  # List of int16 packed mask images
+        packed_bboxes = []  # List of bbox lists for each pack (for overlap check)
+        packed_inst_ids = []  # List of instance ID lists for each pack
+        pack_indices = np.zeros(n_masks, dtype=np.int32)
+        instance_ids = np.zeros(n_masks, dtype=np.int32)
+
+        # Greedy packing algorithm with streaming decode
+        for idx, (gt_poly, bbox) in enumerate(zip(gt_polys, bboxes)):
+            # Decode current mask (one at a time to save memory)
+            curr_mask = self._poly2mask(gt_poly, im_h, im_w)
+
+            x1, y1, x2, y2 = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+
+            # Clip to valid range
+            x1 = max(0, x1)
+            y1 = max(0, y1)
+            x2 = min(im_w, x2)
+            y2 = min(im_h, y2)
+
+            if x2 <= x1 or y2 <= y1: #skip invalid bbox
+                continue
+
+            if curr_mask.sum() == 0:  # Skip empty masks
+                continue
+
+            placed = False
+            # Try to place in existing packed masks
+            for pack_idx, (packed_mask, pack_bboxes, pack_ids) in enumerate(
+                    zip(packed_masks, packed_bboxes, packed_inst_ids)):
+                # Check capacity limit
+                if self.max_instances_per_pack is not None:
+                    if len(pack_ids) >= self.max_instances_per_pack:
+                        continue
+
+                # Only check in the bbox region of current mask to save computation
+                # Extract regions in current mask's bbox
+                curr_region = curr_mask[y1:y2, x1:x2]
+                packed_region = packed_mask[y1:y2, x1:x2]
+
+                # Check if there's any overlap: both regions have non-zero values
+                # This is much faster than looping through each instance in the pack
+                has_overlap = np.any((curr_region > 0) & (packed_region > 0))
+
+                if not has_overlap:
+                    # No overlap, can add to this packed mask
+                    next_id = len(pack_ids) + 1
+
+                    # Add mask to packed mask
+                    #packed_mask[curr_mask > 0] =next_id
+                    packed_region[curr_region > 0] = next_id
+                    pack_bboxes.append(bbox)
+                    pack_ids.append(next_id)
+
+                    pack_indices[idx] = pack_idx
+                    instance_ids[idx] = next_id
+                    placed = True
+                    break
+
+            # If not placed, create new packed mask
+            if not placed:
+                new_packed_mask = np.zeros((im_h, im_w), dtype=np.int16)
+                new_packed_mask[curr_mask > 0] = 1
+                packed_masks.append(new_packed_mask)
+                packed_bboxes.append([bbox])
+                packed_inst_ids.append([1])
+
+                pack_indices[idx] = len(packed_masks) - 1
+                instance_ids[idx] = 1
+
+            # curr_mask goes out of scope here and can be garbage collected
+            # before the next iteration, saving memory
+
+        return packed_masks, pack_indices, instance_ids
+
+    def apply(self, sample, context=None):
+        """
+        Apply Poly2MaskPack transform with streaming optimization.
+
+        Key optimization: Instead of decoding all masks first then packing,
+        we decode and pack on-the-fly to save memory.
+
+        Input sample should contain:
+            - gt_poly: list of polygon annotations
+            - gt_bbox: (N, 4) array of bounding boxes [x1, y1, x2, y2]
+            - im_shape: (H, W) image shape
+
+        Output sample will contain:
+            - gt_segm: (N_packed, H, W) packed masks with int16 dtype
+            - pack_indices: (N_instances,) which packed mask each instance belongs to
+            - instance_ids: (N_instances,) ID value of each instance in its packed mask
+        """
+        assert 'gt_poly' in sample, "gt_poly must be in sample"
+        assert 'gt_bbox' in sample, "gt_bbox must be in sample"
+        im_h, im_w = sample['im_shape']
+
+        # Pack masks in streaming fashion (decode + pack on-the-fly)
+        # This avoids keeping all decoded masks in memory simultaneously
+        gt_polys = sample['gt_poly']
+        bboxes = sample['gt_bbox']
+        packed_masks, pack_indices, instance_ids = self._pack_masks(
+            gt_polys, bboxes, im_h, im_w)
+
+        # Store results
+        if len(packed_masks) > 0:
+            sample['gt_segm'] = np.stack(packed_masks, axis=0).astype(np.int16)
+        else:
+            sample['gt_segm'] = np.zeros((0, im_h, im_w), dtype=np.int16)
+
+        # Store packing metadata for potential unpacking later
+        sample['pack_indices'] = pack_indices
+        sample['instance_ids'] = instance_ids
+
+        if self.del_poly:
+            del sample['gt_poly']
+
+        return sample
+
+
+@register_op
+class UnpackMask(BaseOperator):
+    """
+    Unpack packed masks back to individual instance masks and compute bboxes.
+    This is useful when you need to restore the original mask format after transforms.
+
+    Args:
+        remove_pack_info (bool): Whether to remove packing metadata after unpacking. Default: True.
+        compute_bbox (bool): Whether to compute bounding boxes from unpacked masks. Default: True.
+    """
+
+    def __init__(self, remove_pack_info=True, compute_bbox=True, bbox_method='boundingrect'):
+        """
+        Args:
+            remove_pack_info (bool): Whether to remove packing metadata after unpacking. Default: True.
+            compute_bbox (bool): Whether to compute bounding boxes from unpacked masks. Default: True.
+            bbox_method (str): Method to compute bbox. Options:
+                - 'boundingrect': cv2.boundingRect (fastest, recommended)
+                - 'contours': cv2.findContours + boundingRect (more accurate for complex shapes with holes)
+        """
+        super(UnpackMask, self).__init__()
+        self.remove_pack_info = remove_pack_info
+        self.compute_bbox = compute_bbox
+        self.bbox_method = bbox_method
+
+        assert bbox_method in ['boundingrect', 'contours'], \
+            f"bbox_method must be one of ['boundingrect', 'contours'], got {bbox_method}"
+
+    def _compute_bbox_boundingrect(self, mask):
+        """
+        Fast bbox computation using cv2.boundingRect directly.
+        This is the fastest method and recommended for most use cases.
+        """
+        x, y, w, h = cv2.boundingRect(mask)
+        if w == 0 or h == 0:
+            return None
+        return np.array([x, y, x + w, y + h], dtype=np.float32)
+
+    def _compute_bbox_contours(self, mask):
+        """
+        More accurate bbox computation using cv2.findContours.
+        Handles complex shapes with holes correctly.
+        Slightly slower than boundingrect but still fast enough.
+        """
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            return None
+
+        cnt = max(contours, key=cv2.contourArea)
+        if cv2.contourArea(cnt) < 1.0:
+            return None
+
+        x, y, w, h = cv2.boundingRect(cnt)
+        return np.array([x, y, x + w, y + h], dtype=np.float32)
+
+    def _compute_bboxes_vectorized(self, packed_masks, pack_indices, instance_ids):
+        """
+        Vectorized bbox computation for all instances at once.
+        Much faster than computing bboxes one by one.
+
+        Returns:
+            bboxes: (N, 4) array of bboxes
+            valid_indices: list of valid instance indices
+        """
+        n_instances = len(pack_indices)
+        bboxes = []
+        valid_indices = []
+
+        # Select the bbox computation method
+        if self.bbox_method == 'boundingrect':
+            compute_fn = self._compute_bbox_boundingrect
+        else:  # 'contours'
+            compute_fn = self._compute_bbox_contours
+
+        for inst_idx in range(n_instances):
+            pack_idx = pack_indices[inst_idx]
+            inst_id = instance_ids[inst_idx]
+
+            # Extract mask for this instance
+            packed_mask = packed_masks[pack_idx]
+            instance_mask = (packed_mask == inst_id).astype(np.uint8)
+
+            # Compute bbox using selected method
+            bbox = compute_fn(instance_mask)
+
+            if bbox is not None:
+                bboxes.append(bbox)
+                valid_indices.append(inst_idx)
+
+        return np.array(bboxes, dtype=np.float32) if bboxes else np.zeros((0, 4), dtype=np.float32), valid_indices
+
+    def apply(self, sample, context=None):
+        """
+        Unpack masks from packed format to individual masks and compute bboxes.
+        Optimized version with vectorized operations.
+        """
+        if 'gt_segm' not in sample or len(sample['gt_segm']) == 0:
+            h, w = int(sample.get('im_shape', [0, 0])[0]), int(sample.get('im_shape', [0, 0])[1])
+            sample['gt_segm'] = np.zeros((0, max(h, 1), max(w, 1)), dtype=np.uint8)
+            if self.compute_bbox:
+                sample['gt_bbox'] = np.zeros((0, 4), dtype=np.float32)
+            return sample
+
+        assert 'pack_indices' in sample and 'instance_ids' in sample, \
+            "pack_indices and instance_ids must be in sample for unpacking"
+
+        packed_masks = sample['gt_segm']
+        pack_indices = sample['pack_indices']
+        instance_ids = sample['instance_ids']
+        n_instances = len(pack_indices)
+
+        if n_instances == 0:
+            sample['gt_segm'] = np.zeros((0, packed_masks.shape[1], packed_masks.shape[2]), dtype=np.uint8)
+            if self.compute_bbox:
+                sample['gt_bbox'] = np.zeros((0, 4), dtype=np.float32)
+            return sample
+
+        h, w = packed_masks.shape[1], packed_masks.shape[2]
+
+        # Compute bboxes in vectorized manner first
+        if self.compute_bbox:
+            new_bboxes, valid_indices = self._compute_bboxes_vectorized(
+                packed_masks, pack_indices, instance_ids)
+
+            if len(valid_indices) == 0:
+                sample['gt_segm'] = np.zeros((0, h, w), dtype=np.uint8)
+                sample['gt_bbox'] = np.zeros((0, 4), dtype=np.float32)
+                return sample
+
+            # Only unpack valid instances
+            unpacked_masks = []
+            for inst_idx in valid_indices:
+                pack_idx = pack_indices[inst_idx]
+                inst_id = instance_ids[inst_idx]
+                packed_mask = packed_masks[pack_idx]
+                instance_mask = (packed_mask == inst_id).astype(np.uint8)
+                unpacked_masks.append(instance_mask)
+
+            sample['gt_segm'] = np.stack(unpacked_masks, axis=0)
+            sample['gt_bbox'] = new_bboxes
+
+            # Filter other fields
+            valid_indices = np.array(valid_indices)
+            for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas']:
+                if key in sample:
+                    sample[key] = sample[key][valid_indices]
+            if 'gt_poly' in sample:
+                sample['gt_poly'] = [sample['gt_poly'][i] for i in valid_indices]
+        else:
+            # Unpack all masks without computing bboxes
+            unpacked_masks = []
+            for inst_idx in range(n_instances):
+                pack_idx = pack_indices[inst_idx]
+                inst_id = instance_ids[inst_idx]
+                packed_mask = packed_masks[pack_idx]
+                instance_mask = (packed_mask == inst_id).astype(np.uint8)
+                unpacked_masks.append(instance_mask)
+
+            sample['gt_segm'] = np.stack(unpacked_masks, axis=0) if unpacked_masks else \
+                               np.zeros((0, h, w), dtype=np.uint8)
+
+        # Remove packing metadata if requested
+        if self.remove_pack_info:
+            if 'pack_indices' in sample:
+                del sample['pack_indices']
+            if 'instance_ids' in sample:
+                del sample['instance_ids']
+
+        return sample
+
+@register_op
+class UpdateBBoxFromMask(BaseOperator):
+    """
+    Update bounding boxes from masks after geometric transforms.
+    Supports both normal masks (from Poly2Mask) and packed masks (from Poly2MaskPack).
+
+    When geometric transforms like RandomCrop, RandomExpand modify masks,
+    the bboxes become outdated. This operator recomputes accurate bboxes from the current
+    mask content.
+
+    Supports two mask formats:
+    1. Normal masks: (N, H, W) binary masks from Poly2Mask
+    2. Packed masks: (M, H, W) int16 packed masks from Poly2MaskPack (M << N)
+
+    Pipeline examples:
+        # With normal masks
+        Decode -> Poly2Mask -> RandomCrop -> UpdateBBoxFromMask
+
+        # With packed masks
+        Decode -> Poly2MaskPack -> RandomCrop -> UpdateBBoxFromMask -> UnpackMask
+
+    Args:
+        bbox_method (str): Method to compute bbox. Options:
+            - 'boundingrect': cv2.boundingRect (fastest, recommended)
+            - 'contours': cv2.findContours + boundingRect (more accurate for complex shapes)
+        filter_empty (bool): Whether to filter out instances with empty masks after transforms.
+                            Default: True (recommended for RandomCrop).
+
+    Example with normal masks:
+        transforms = [
+            {'Decode': {}},
+            {'Poly2Mask': {}},
+            {'RandomCrop': {}},  # Crop modifies mask content
+            {'UpdateBBoxFromMask': {}},  # Recompute bbox from new masks
+        ]
+
+    Example with packed masks:
+        transforms = [
+            {'Decode': {}},
+            {'Poly2MaskPack': {'del_poly': False}},
+            {'RandomCrop': {}},  # Crop modifies mask content
+            {'UpdateBBoxFromMask': {}},  # Recompute bbox from new masks
+            {'UnpackMask': {'compute_bbox': False}},  # bbox already updated, no need to recompute
+        ]
+    """
+
+    def __init__(self, bbox_method='boundingrect', filter_empty=True):
+        """
+        Args:
+            bbox_method (str): Method to compute bbox. Options:
+                - 'boundingrect': cv2.boundingRect (fastest, recommended)
+                - 'contours': cv2.findContours + boundingRect (more accurate)
+            filter_empty (bool): Whether to filter out instances with empty masks.
+                                Default: True (removes instances cropped out completely).
+        """
+        super(UpdateBBoxFromMask, self).__init__()
+        self.bbox_method = bbox_method
+        self.filter_empty = filter_empty
+
+        assert bbox_method in ['boundingrect', 'contours'], \
+            f"bbox_method must be one of ['boundingrect', 'contours'], got {bbox_method}"
+
+    def _compute_bbox_boundingrect(self, mask):
+        """
+        Fast bbox computation using cv2.boundingRect directly.
+        This is the fastest method and recommended for most use cases.
+
+        Args:
+            mask: binary mask (H, W) uint8
+
+        Returns:
+            bbox: (4,) array [x1, y1, x2, y2] or None if empty
+        """
+        x, y, w, h = cv2.boundingRect(mask)
+        if w ==0 or h ==0:
+            return None
+        return np.array([x, y, x + w, y + h], dtype=np.float32)
+
+    def _compute_bbox_contours(self, mask):
+        """
+        More accurate bbox computation using cv2.findContours.
+        Handles complex shapes with holes correctly.
+        Slightly slower than boundingrect but still fast enough.
+
+        Args:
+            mask: binary mask (H, W) uint8
+
+        Returns:
+            bbox: (4,) array [x1, y1, x2, y2] or None if empty
+        """
+        if mask.sum() == 0:
+            return None
+
+        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            return None
+
+        cnt = max(contours, key=cv2.contourArea)
+        if cv2.contourArea(cnt) < 1.0:
+            return None
+
+        x, y, w, h = cv2.boundingRect(cnt)
+        return np.array([x, y, x + w, y + h], dtype=np.float32)
+
+    def _is_packed_mask(self, sample):
+        """
+        Detect if the masks are in packed format (from Poly2MaskPack).
+
+        Returns:
+            bool: True if packed format, False if normal format
+        """
+        return 'pack_indices' in sample and 'instance_ids' in sample
+
+    def _update_bbox_from_packed_masks(self, sample):
+        """
+        Update bboxes from packed masks (Poly2MaskPack format).
+
+        Packed format:
+            - gt_segm: (M, H, W) int16, where M is number of packed masks
+            - pack_indices: (N,) which packed mask each instance belongs to
+            - instance_ids: (N,) ID value of each instance in its packed mask
+        """
+        packed_masks = sample['gt_segm']
+        pack_indices = sample['pack_indices']
+        instance_ids = sample['instance_ids']
+        n_instances = len(pack_indices)
+
+        if n_instances == 0:
+            return [], []
+
+        # Select bbox computation method
+        if self.bbox_method == 'boundingrect':
+            compute_fn = self._compute_bbox_boundingrect
+        else:  # 'contours'
+            compute_fn = self._compute_bbox_contours
+
+        # Compute bboxes for all instances from packed masks
+        new_bboxes = []
+        valid_indices = []
+
+        for inst_idx in range(n_instances):
+            pack_idx = pack_indices[inst_idx]
+            inst_id = instance_ids[inst_idx]
+
+            # Extract instance mask from packed mask
+            # The packed mask has been transformed by previous ops (e.g., RandomCrop)
+            packed_mask = packed_masks[pack_idx]
+            instance_mask = (packed_mask == inst_id).astype(np.uint8)
+
+            # Compute bbox from the current mask
+            bbox = compute_fn(instance_mask)
+
+            if bbox is not None:
+                new_bboxes.append(bbox)
+                valid_indices.append(inst_idx)
+            elif not self.filter_empty:
+                # Keep empty instance with zero bbox
+                new_bboxes.append(np.array([0, 0, 0, 0], dtype=np.float32))
+                valid_indices.append(inst_idx)
+
+        return new_bboxes, valid_indices
+
+    def _update_bbox_from_normal_masks(self, sample):
+        """
+        Update bboxes from normal masks (Poly2Mask format).
+
+        Normal format:
+            - gt_segm: (N, H, W) uint8, where N is number of instances
+        """
+        masks = sample['gt_segm']
+        n_instances = len(masks)
+
+        if n_instances == 0:
+            return [], []
+
+        # Select bbox computation method
+        if self.bbox_method == 'boundingrect':
+            compute_fn = self._compute_bbox_boundingrect
+        else:  # 'contours'
+            compute_fn = self._compute_bbox_contours
+
+        # Compute bboxes for all instances from normal masks
+        new_bboxes = []
+        valid_indices = []
+
+        for inst_idx in range(n_instances):
+            # Get instance mask (already in uint8 format or convert if needed)
+            instance_mask = masks[inst_idx]
+            if instance_mask.dtype != np.uint8:
+                instance_mask = instance_mask.astype(np.uint8)
+
+            # Compute bbox from the current mask
+            bbox = compute_fn(instance_mask)
+
+            if bbox is not None:
+                new_bboxes.append(bbox)
+                valid_indices.append(inst_idx)
+            elif not self.filter_empty:
+                # Keep empty instance with zero bbox
+                new_bboxes.append(np.array([0, 0, 0, 0], dtype=np.float32))
+                valid_indices.append(inst_idx)
+
+        return new_bboxes, valid_indices
+
+    def apply(self, sample, context=None):
+        """
+        Update bboxes from transformed masks.
+
+        This operator automatically detects the mask format and processes accordingly:
+        1. Reads the current masks (already transformed by previous ops)
+        2. Detects if masks are packed (from Poly2MaskPack) or normal (from Poly2Mask)
+        3. Computes new bbox from the current mask content
+        4. Updates gt_bbox with the new bboxes
+        5. Optionally filters out empty instances (e.g., completely cropped out)
+
+        Input sample should contain:
+            - gt_segm: masks in either format:
+                * Normal: (N, H, W) uint8 binary masks
+                * Packed: (M, H, W) int16 packed masks (with pack_indices, instance_ids)
+            - gt_bbox: (N, 4) old bboxes (will be updated)
+
+        Output sample will have updated:
+            - gt_bbox: (N_valid, 4) array of bboxes computed from current masks
+            - All other fields filtered to match valid instances (if filter_empty=True)
+            - For packed masks: pack_indices and instance_ids also filtered
+        """
+        # Handle empty case
+        if 'gt_segm' not in sample or len(sample['gt_segm']) == 0:
+            sample['gt_bbox'] = np.zeros((0, 4), dtype=np.float32)
+            return sample
+
+        # Detect mask format and compute bboxes
+        is_packed = self._is_packed_mask(sample)
+
+        if is_packed:
+            # Packed mask format (from Poly2MaskPack)
+            new_bboxes, valid_indices = self._update_bbox_from_packed_masks(sample)
+        else:
+            # Normal mask format (from Poly2Mask)
+            new_bboxes, valid_indices = self._update_bbox_from_normal_masks(sample)
+
+        # Update sample with new bboxes
+        if len(valid_indices) > 0:
+            n_instances = len(sample['pack_indices']) if is_packed else len(sample['gt_segm'])
+            sample['gt_bbox'] = np.array(new_bboxes, dtype=np.float32)
+
+            # If filtering and some instances became empty (e.g., cropped out)
+            if self.filter_empty and len(valid_indices) < n_instances:
+                valid_indices = np.array(valid_indices)
+
+                # Filter gt_segm
+                if is_packed:
+                    # For packed masks, keep all packed masks but update metadata
+                    sample['pack_indices'] = sample['pack_indices'][valid_indices]
+                    sample['instance_ids'] = sample['instance_ids'][valid_indices]
+                else:
+                    # For normal masks, filter the mask array
+                    sample['gt_segm'] = sample['gt_segm'][valid_indices]
+
+                # Filter all annotation fields to match valid instances
+                for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas']:
+                    if key in sample and len(sample[key]) > 0:
+                        sample[key] = sample[key][valid_indices]
+
+                # Filter polygon annotations if present
+                if 'gt_poly' in sample and len(sample['gt_poly']) > 0:
+                    sample['gt_poly'] = [sample['gt_poly'][i] for i in valid_indices]
+        else:
+            # All instances are empty (e.g., all cropped out)
+            if is_packed:
+                h, w = sample['gt_segm'].shape[1], sample['gt_segm'].shape[2]
+                sample['gt_segm'] = np.zeros((0, h, w), dtype=np.int16)
+                sample['pack_indices'] = np.array([], dtype=np.int32)
+                sample['instance_ids'] = np.array([], dtype=np.int32)
+            else:
+                h, w = sample['gt_segm'].shape[1], sample['gt_segm'].shape[2]
+                sample['gt_segm'] = np.zeros((0, h, w), dtype=np.uint8)
+
+            sample['gt_bbox'] = np.zeros((0, 4), dtype=np.float32)
+
+            # Empty other fields while preserving dtypes
+            for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas']:
+                if key in sample and len(sample[key]) > 0:
+                    dtype = sample[key].dtype
+                    sample[key] = np.array([], dtype=dtype)
+
+            if 'gt_poly' in sample:
+                sample['gt_poly'] = []
+
         return sample

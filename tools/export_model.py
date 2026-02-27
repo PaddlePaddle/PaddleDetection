@@ -38,7 +38,6 @@ from ppdet.slim import build_slim_model
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('export_model')
 
-
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(
@@ -99,7 +98,7 @@ def main():
         paddle.set_device("npu")
     else:
         paddle.set_device("cpu")
-        
+
     FLAGS = parse_args()
     cfg = load_config(FLAGS.config)
     merge_config(FLAGS.opt)
@@ -116,7 +115,6 @@ def main():
     check_version()
 
     run(FLAGS, cfg)
-
 
 if __name__ == '__main__':
     main()

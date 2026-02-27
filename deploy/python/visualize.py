@@ -141,8 +141,17 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
     expect_boxes = (np_boxes[:, 1] > threshold) & (np_boxes[:, 0] > -1)
     np_boxes = np_boxes[expect_boxes, :]
 
+    vis_order = False
+    if len(np_boxes) > 0 and len(np_boxes[0]) == 7:
+        np_boxes = sorted(np_boxes, key=lambda x: x[6])
+        vis_order = True
+
+    centers = []
     for dt in np_boxes:
-        clsid, bbox, score = int(dt[0]), dt[2:], dt[1]
+        if len(dt) == 7:
+            clsid, bbox, score, read_order = int(dt[0]), dt[2:6], dt[1], int(dt[6])
+        else:
+            clsid, bbox, score = int(dt[0]), dt[2:], dt[1]
         if clsid not in clsid2color:
             clsid2color[clsid] = color_list[clsid]
         color = tuple(clsid2color[clsid])
@@ -158,6 +167,8 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
                  (xmin, ymin)],
                 width=draw_thickness,
                 fill=color)
+            cx, cy = int((xmin + xmax)/2), int((ymin + ymax)/2)
+            centers.append((cx, cy))
         elif len(bbox) == 8:
             x1, y1, x2, y2, x3, y3, x4, y4 = bbox
             draw.line(
@@ -173,6 +184,11 @@ def draw_box(im, np_boxes, labels, threshold=0.5):
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255))
+
+    if vis_order:
+        for i in range(len(centers)-1):
+            draw.line([centers[i], centers[i+1]], fill=(255, 0, 0), width=2)
+
     return im
 
 

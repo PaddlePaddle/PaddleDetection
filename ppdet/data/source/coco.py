@@ -180,6 +180,14 @@ class COCODataSet(DetDataset):
                 gt_bbox = np.zeros((num_bbox, 4), dtype=np.float32)
                 gt_class = np.zeros((num_bbox, 1), dtype=np.int32)
                 is_crowd = np.zeros((num_bbox, 1), dtype=np.int32)
+
+                # Initialize gt_read_order only if it's required by data_fields
+                # This ensures backward compatibility with models that don't use reading order
+                if 'gt_read_order' in self.data_fields:
+                    gt_read_order = np.zeros((num_bbox), dtype=np.int32)
+                else:
+                    gt_read_order = None
+
                 gt_poly = [None] * num_bbox
                 gt_track_id = -np.ones((num_bbox, 1), dtype=np.int32)
 
@@ -190,6 +198,19 @@ class COCODataSet(DetDataset):
                     gt_class[i][0] = self.catid2clsid[catid]
                     gt_bbox[i, :] = box['clean_bbox']
                     is_crowd[i][0] = box['iscrowd']
+
+                    # Load reading order annotation only if it's required by data_fields
+                    # Raises error if read_order is missing when required
+                    if gt_read_order is not None:
+                        if 'read_order' not in box:
+                            raise ValueError(
+                                f"'read_order' field is required in annotation but not found. "
+                                f"Image ID: {img_id}, Box index: {i}. "
+                                f"If you don't need reading order prediction, "
+                                f"remove 'gt_read_order' from data_fields in your config."
+                            )
+                        gt_read_order[i] = box['read_order']
+
                     # check RLE format 
                     if 'segmentation' in box and box['iscrowd'] == 1:
                         gt_poly[i] = [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]
@@ -220,6 +241,12 @@ class COCODataSet(DetDataset):
                     'gt_bbox': gt_bbox,
                     'gt_poly': gt_poly,
                 }
+
+                # Add gt_read_order to ground truth record only if it was loaded
+                # This maintains backward compatibility with datasets without reading order
+                if gt_read_order is not None:
+                    gt_rec['gt_read_order'] = gt_read_order
+
                 if has_track_id:
                     gt_rec.update({'gt_track_id': gt_track_id})
 
