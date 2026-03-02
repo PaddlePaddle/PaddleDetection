@@ -827,8 +827,7 @@ class DocLayoutV3Transformer(MaskRTDETR):
             hidden_dim, decoder_layer,
             num_decoder_layers, num_queries, eval_idx)
 
-        # Import GlobalPointerPD for pairwise order prediction
-        from .utils import GlobalPointerPD
+        from .utils import AntisymmetricPairwiseScorer
 
         # Create independent order prediction heads for each decoder layer
         # Each layer has its own Linear projection to allow different order
@@ -839,7 +838,7 @@ class DocLayoutV3Transformer(MaskRTDETR):
         ])
         # Global pointer converts query features into pairwise order logits
         # with antisymmetric constraint: logits[i,j] = -logits[j,i]
-        self.dec_global_pointer = GlobalPointerPD(
+        self.dec_global_pointer = AntisymmetricPairwiseScorer(
             hidden_size=hidden_dim, head_size=64)
 
         # Initialize order head parameters with proper bias

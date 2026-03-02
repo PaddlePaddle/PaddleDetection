@@ -33,7 +33,7 @@ __all__ = [
     '_get_clones', 'bbox_overlaps', 'bbox_cxcywh_to_xyxy',
     'bbox_xyxy_to_cxcywh', 'sigmoid_focal_loss', 'inverse_sigmoid',
     'deformable_attention_core_func', 'varifocal_loss_with_logits',
-    'mal_loss_with_logits', 'GlobalPointerPD'
+    'mal_loss_with_logits', 'AntisymmetricPairwiseScorer'
 ]
 
 
@@ -525,9 +525,9 @@ def mal_loss_with_logits(pred_logits,
     return loss.mean(1).sum() / normalizer
 
 
-class GlobalPointerPD(nn.Layer):
+class AntisymmetricPairwiseScorer(nn.Layer):
     """
-    Global Pointer module for modeling pairwise relationships with antisymmetric constraint.
+    Antisymmetric pairwise scoring module for modeling ordered relationships.
 
     This module is used in PP-DocLayoutV3 to predict reading order relationships between
     document elements. It models pairwise relationships through query-key interactions
@@ -560,7 +560,7 @@ class GlobalPointerPD(nn.Layer):
     Examples:
         .. code-block:: python
 
-            global_pointer = GlobalPointerPD(hidden_size=256, head_size=64)
+            global_pointer = AntisymmetricPairwiseScorer(hidden_size=256, head_size=64)
             features = paddle.randn([2, 100, 256])  # 2 images, 100 elements each
             logits = global_pointer(features)  # [2, 100, 100]
             # logits[0, i, j] > 0 means element i likely comes before j
