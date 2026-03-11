@@ -603,6 +603,7 @@ class DocLayoutV3Metric(COCOMetric):
     """
 
     def __init__(self, anno_file, **kwargs):
+        self.eval_mask = kwargs.pop('eval_mask', False)
         super(DocLayoutV3Metric, self).__init__(anno_file, **kwargs)
 
     def update(self, inputs, outputs):
@@ -640,7 +641,8 @@ class DocLayoutV3Metric(COCOMetric):
 
         # Accumulate results
         self.results['bbox'] += infer_results.get('bbox', [])
-        self.results['mask'] += infer_results.get('mask', [])
+        if self.eval_mask:
+            self.results['mask'] += infer_results.get('mask', [])
 
     def _get_doclayoutv3_infer_results(self, outs, catid, bias=0,
                                        save_threshold=0):

@@ -20,6 +20,8 @@ export_with_pir: True
 
 # Dataset
 metric: DocLayoutV3Metric
+DocLayoutV3Metric:
+  eval_mask: False  # True: compute mask AP during training eval (requires resize_mask: True in DocLayoutV3PostProcess)
 num_classes: 25
 
 worker_num: 24
@@ -153,6 +155,7 @@ DocLayoutV3Head:
 DocLayoutV3PostProcess:
   num_top_queries: 300
   mask_stride: 4
+  resize_mask: False  # True: resize mask to original resolution (needed for correct mask AP)
 
 # Optimizer
 LearningRate:

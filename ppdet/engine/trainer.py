@@ -338,6 +338,15 @@ class Trainer(object):
                 ]
             elif self.cfg.metric == "DocLayoutV3Metric":
                 from ppdet.metrics import DocLayoutV3Metric
+                eval_mask = self.cfg.get('DocLayoutV3Metric',
+                                         {}).get('eval_mask', False)
+                resize_mask = self.cfg.get('DocLayoutV3PostProcess',
+                                           {}).get('resize_mask', False)
+                if eval_mask and not resize_mask:
+                    logger.warning(
+                        "eval_mask=True requires resize_mask=True in "
+                        "DocLayoutV3PostProcess. Forcing eval_mask=False.")
+                    eval_mask = False
                 self._metrics = [
                     DocLayoutV3Metric(
                         anno_file=anno_file,
@@ -347,7 +356,8 @@ class Trainer(object):
                         bias=bias,
                         IouType=IouType,
                         save_prediction_only=save_prediction_only,
-                        save_threshold=save_threshold)
+                        save_threshold=save_threshold,
+                        eval_mask=eval_mask)
                 ]
             elif self.cfg.metric == "SNIPERCOCO":  # sniper
                 self._metrics = [

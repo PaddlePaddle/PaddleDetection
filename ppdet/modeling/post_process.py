@@ -694,6 +694,10 @@ class DocLayoutV3PostProcess(DETRPostProcess):
     __shared__ = ['num_classes', 'use_focal_loss', 'with_mask']
     __inject__ = []
 
+    def __init__(self, resize_mask=False, **kwargs):
+        super(DocLayoutV3PostProcess, self).__init__(**kwargs)
+        self.resize_mask = resize_mask
+
     def __call__(self, head_out, im_shape, scale_factor, pad_shape):
         """
         Decode bounding boxes, masks, and reading order from model predictions.
@@ -821,14 +825,15 @@ class DocLayoutV3PostProcess(DETRPostProcess):
                 # Remove padding from masks
                 h, w = im_shape.astype('int32')[0]
                 masks = masks[..., :h, :w]
-            # Resize masks to original resolution
+            # Resize masks to original resolution (controlled by resize_mask)
             img_h = img_h[0].astype('int32')
             img_w = img_w[0].astype('int32')
-            masks = F.interpolate(
-                masks,
-                size=[img_h, img_w],
-                mode="bilinear",
-                align_corners=False)
+            if self.resize_mask:
+                masks = F.interpolate(
+                    masks,
+                    size=[img_h, img_w],
+                    mode="bilinear",
+                    align_corners=False)
             mask_pred, scores = self._mask_postprocess(masks, scores)
 
         # Concatenate all outputs into 7-field bbox predictions
