@@ -26,21 +26,21 @@ worker_num: 24
 
 TrainDataset:
   name: COCOInstSegDataset
-  image_dir: images_mask
-  anno_path: annotations/annotations_mask_resized2k.json
-  dataset_dir: dataset/omnidocbench/
+  image_dir: images
+  anno_path: annotations/instance_train.json
+  dataset_dir: dataset/doclayoutv3/
   data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_poly', 'is_crowd', 'gt_read_order']
 
 EvalDataset:
   name: COCOInstSegDataset
-  image_dir: images_mask
-  anno_path: annotations/annotations_mask_resized2k.json
-  dataset_dir: dataset/omnidocbench/
+  image_dir: images
+  anno_path: annotations/instance_val.json
+  dataset_dir: dataset/doclayoutv3
 
 TestDataset:
   name: ImageFolder
-  anno_path: annotations/annotations_mask_resized2k.json
-  dataset_dir: dataset/omnidocbench/
+  anno_path: annotations/instance_val.json
+  dataset_dir: dataset/doclayoutv3
 
 TrainReader:
   sample_transforms:
@@ -141,7 +141,6 @@ DocLayoutV3Transformer:
 DocLayoutV3Head:
   loss:
     name: DocLayoutV3Loss
-    num_classes: 25
     use_focal_loss: True
     loss_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5, order: 50}
     aux_loss: True
