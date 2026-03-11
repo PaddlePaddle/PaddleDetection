@@ -694,8 +694,29 @@ class DocLayoutV3PostProcess(DETRPostProcess):
     __shared__ = ['num_classes', 'use_focal_loss', 'with_mask']
     __inject__ = []
 
-    def __init__(self, resize_mask=False, **kwargs):
-        super(DocLayoutV3PostProcess, self).__init__(**kwargs)
+    def __init__(self,
+                 num_classes=80,
+                 num_top_queries=100,
+                 dual_queries=False,
+                 dual_groups=0,
+                 use_focal_loss=False,
+                 with_mask=False,
+                 mask_stride=4,
+                 mask_threshold=0.5,
+                 use_avg_mask_score=False,
+                 bbox_decode_type='origin',
+                 resize_mask=False):
+        super(DocLayoutV3PostProcess, self).__init__(
+            num_classes=num_classes,
+            num_top_queries=num_top_queries,
+            dual_queries=dual_queries,
+            dual_groups=dual_groups,
+            use_focal_loss=use_focal_loss,
+            with_mask=with_mask,
+            mask_stride=mask_stride,
+            mask_threshold=mask_threshold,
+            use_avg_mask_score=use_avg_mask_score,
+            bbox_decode_type=bbox_decode_type)
         self.resize_mask = resize_mask
 
     def __call__(self, head_out, im_shape, scale_factor, pad_shape):
