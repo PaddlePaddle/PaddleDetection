@@ -659,10 +659,6 @@ class RTDETRv3Head(nn.Layer):
                     dec_out_logits[self.eval_idx], None)
 
 
-# ============================================
-# PP-DocLayoutV3专用Head类（支持阅读顺序预测）
-# ============================================
-
 @register
 class DocLayoutV3Head(MaskDINOHead):
     """

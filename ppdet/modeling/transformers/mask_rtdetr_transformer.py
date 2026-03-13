@@ -819,7 +819,10 @@ class DocLayoutV3Transformer(MaskRTDETR):
             eval_idx=eval_idx,
             eps=eps)
 
-        # Override decoder with order-enabled version
+        # Override decoder with order-enabled version.
+        # Note: parent's MaskTransformerDecoder (created by super().__init__) is
+        # intentionally replaced here. This causes minor initialization overhead
+        # but avoids modifying the parent class to add a factory method.
         decoder_layer = TransformerDecoderLayer(
             hidden_dim, nhead, dim_feedforward, dropout, activation, num_levels,
             num_decoder_points)
@@ -950,101 +953,12 @@ class DocLayoutV3Transformer(MaskRTDETR):
                            denoising_class=None,
                            denoising_bbox_unact=None,
                            is_teacher=False):
-        """
-        Get decoder input from encoder output with order prediction support.
-
-        This method overrides MaskRTDETR's _get_decoder_input to add enc_topk_order
-        in the return tuple for consistency with DocLayoutV3Head's expected input format.
-
-        Args:
-            memory (Tensor): Encoder output memory features.
-                Shape: [batch_size, num_memory, hidden_dim]
-            mask_feat (Tensor): Mask features for mask prediction.
-                Shape: [batch_size, num_prototypes, H, W]
-            spatial_shapes (list[list[int]]): Spatial dimensions [H, W] for each feature level.
-            denoising_class (Tensor|None): Denoising class embeddings for training.
-                Shape: [batch_size, num_denoising, hidden_dim]. Default: None.
-            denoising_bbox_unact (Tensor|None): Denoising bounding boxes (unsigmoided).
-                Shape: [batch_size, num_denoising, 4]. Default: None.
-            is_teacher (bool): Whether this is a teacher model in distillation. Default: False.
-
-        Returns:
-            tuple: (target, reference_points_unact, enc_out, init_out, enc_topk_order)
-                - target (Tensor): Initial decoder query embeddings.
-                    Shape: [batch_size, num_queries + num_denoising, hidden_dim]
-                - reference_points_unact (Tensor): Initial reference points (unsigmoided).
-                    Shape: [batch_size, num_queries + num_denoising, 4]
-                - enc_out (tuple): Encoder-level predictions for auxiliary loss.
-                    (enc_logits, enc_bboxes, enc_masks)
-                - init_out (tuple|None): Initial predictions before decoder refinement.
-                    Same format as enc_out, only present during training with denoising.
-                - enc_topk_order (None): Placeholder for encoder-level order prediction.
-                    Currently not implemented, always returns None. Order prediction is
-                    performed at the decoder level only.
-
-        Note:
-            The enc_topk_order is reserved for potential future enhancement where order
-            could be predicted at the encoder stage. Currently, all reading order prediction
-            happens in the decoder using the global pointer mechanism.
-        """
-        bs, _, _ = memory.shape
-        # prepare input for decoder
-        if self.training or self.eval_size is None or is_teacher:
-            anchors, valid_mask = self._generate_anchors(spatial_shapes)
-        else:
-            anchors, valid_mask = self.anchors, self.valid_mask
-        memory = paddle.where(valid_mask, memory, paddle.to_tensor(0.))
-        output_memory = self.enc_output(memory)
-
-        enc_logits_unact = self.score_head(output_memory)
-        enc_bboxes_unact = self.bbox_head(output_memory) + anchors
-
-        # get topk index
-        _, topk_ind = paddle.topk(
-            enc_logits_unact.max(-1), self.num_queries, axis=1)
-        batch_ind = paddle.arange(end=bs).astype(topk_ind.dtype)
-        batch_ind = batch_ind.unsqueeze(-1).tile([1, self.num_queries])
-        topk_ind = paddle.stack([batch_ind, topk_ind], axis=-1)
-
-        # extract content and position query embedding
-        target = paddle.gather_nd(output_memory, topk_ind)
-        reference_points_unact = paddle.gather_nd(enc_bboxes_unact,
-                                                  topk_ind)  # unsigmoided.
-        # get encoder output: {logits, bboxes, masks}
-        enc_out_logits, enc_out_masks = _get_pred_class_and_mask(
-            target, mask_feat, self.dec_norm,
-            self.score_head, self.mask_query_head)
-        enc_out_bboxes = F.sigmoid(reference_points_unact)
-        enc_out = (enc_out_logits, enc_out_bboxes, enc_out_masks)
-
-        # concat denoising query
-        if self.learnt_init_query:
-            target = self.tgt_embed.weight.unsqueeze(0).tile([bs, 1, 1])
-        else:
-            target = target.detach()
-        if denoising_class is not None:
-            target = paddle.concat([denoising_class, target], 1)
-        if self.mask_enhanced:
-            # use mask-enhanced anchor box initialization
-            reference_points = mask_to_box_coordinate(
-                enc_out_masks > 0, normalize=True, format="xywh")
-            reference_points_unact = inverse_sigmoid(reference_points)
-        if denoising_bbox_unact is not None:
-            reference_points_unact = paddle.concat(
-                [denoising_bbox_unact, reference_points_unact], 1)
-
-        # direct prediction from the matching and denoising part in the beginning
-        if self.training and denoising_class is not None:
-            init_out_logits, init_out_masks = _get_pred_class_and_mask(
-                target, mask_feat, self.dec_norm,
-                self.score_head, self.mask_query_head)
-            init_out_bboxes = F.sigmoid(reference_points_unact)
-            init_out = (init_out_logits, init_out_bboxes, init_out_masks)
-        else:
-            init_out = None
-
-        # enc_topk_order is always None - reading order prediction is performed
-        # at the decoder level using global pointer, not at the encoder level
+        """Get decoder input, extending parent with enc_topk_order placeholder."""
+        target, reference_points_unact, enc_out, init_out = \
+            super()._get_decoder_input(
+                memory, mask_feat, spatial_shapes,
+                denoising_class, denoising_bbox_unact, is_teacher)
+        # Order prediction happens at decoder level only; no encoder-level order.
         enc_topk_order = None
+        return target, reference_points_unact, enc_out, init_out, enc_topk_order
 
-        return target, reference_points_unact.detach(), enc_out, init_out, enc_topk_order

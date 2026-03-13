@@ -694,159 +694,60 @@ class DocLayoutV3PostProcess(DETRPostProcess):
     __shared__ = ['num_classes', 'use_focal_loss', 'with_mask']
     __inject__ = []
 
-    def __init__(self,
-                 num_classes=80,
-                 num_top_queries=100,
-                 dual_queries=False,
-                 dual_groups=0,
-                 use_focal_loss=False,
-                 with_mask=False,
-                 mask_stride=4,
-                 mask_threshold=0.5,
-                 use_avg_mask_score=False,
-                 bbox_decode_type='origin',
-                 resize_mask=False):
+    def __init__(self, num_classes=80, use_focal_loss=False, with_mask=False,
+                 resize_mask=False, **kwargs):
         super(DocLayoutV3PostProcess, self).__init__(
-            num_classes=num_classes,
-            num_top_queries=num_top_queries,
-            dual_queries=dual_queries,
-            dual_groups=dual_groups,
-            use_focal_loss=use_focal_loss,
-            with_mask=with_mask,
-            mask_stride=mask_stride,
-            mask_threshold=mask_threshold,
-            use_avg_mask_score=use_avg_mask_score,
-            bbox_decode_type=bbox_decode_type)
+            num_classes=num_classes, use_focal_loss=use_focal_loss,
+            with_mask=with_mask, **kwargs)
         self.resize_mask = resize_mask
 
     def __call__(self, head_out, im_shape, scale_factor, pad_shape):
         """
         Decode bounding boxes, masks, and reading order from model predictions.
 
-        This method extends DETRPostProcess.__call__ to handle reading order predictions.
-        The workflow is:
-        1. Unpack 4-element head_out (bbox, logits, order_logits, masks)
-        2. Decode bboxes from (cx, cy, w, h) to (x1, y1, x2, y2) format
-        3. Compute confidence scores using sigmoid/softmax
-        4. Decode reading order using get_order() function
-        5. Apply top-k filtering, synchronizing all outputs (bbox, score, label, order)
-        6. Post-process masks if needed
-        7. Concatenate outputs into 7-field bbox predictions
-
         Args:
-            head_out (tuple): Model head outputs, containing 4 elements:
-                - bboxes (Tensor): Predicted bounding boxes in (cx, cy, w, h) format.
-                    Shape: [batch_size, num_queries, 4]
-                - logits (Tensor): Classification logits.
-                    Shape: [batch_size, num_queries, num_classes + 1] (or num_classes for focal loss)
-                - order_logits (Tensor): Pairwise reading order logits.
-                    Shape: [batch_size, num_queries, num_queries]
-                - masks (Tensor|None): Predicted instance masks.
-                    Shape: [batch_size, num_queries, mask_h, mask_w] or None.
-            im_shape (Tensor): Image shape without padding.
-                Shape: [batch_size, 2] containing [height, width].
-            scale_factor (Tensor): Scale factor applied during preprocessing.
-                Shape: [batch_size, 2] containing [scale_y, scale_x].
-            pad_shape (Tensor): Image shape with padding.
-                Shape: [batch_size, 2] containing [padded_height, padded_width].
+            head_out (tuple): (bboxes, logits, order_logits, masks)
+            im_shape (Tensor): Image shape [batch_size, 2] (height, width).
+            scale_factor (Tensor): Scale factor [batch_size, 2].
+            pad_shape (Tensor): Padded image shape [batch_size, 2].
 
         Returns:
-            tuple: (bbox_pred, bbox_num, mask_pred)
-                - bbox_pred (Tensor): Decoded predictions with 7 fields per detection.
-                    Shape: [N, 7] where N = batch_size * num_top_queries
-                    Fields: [label, score, x1, y1, x2, y2, order_seq]
-                    Coordinates are in original image resolution.
-                - bbox_num (Tensor): Number of predictions per batch (constant).
-                    Shape: [batch_size], each value = num_top_queries
-                - mask_pred (Tensor|None): Post-processed binary masks.
-                    Shape: [N, orig_height, orig_width] or None if with_mask=False.
-
-        Note:
-            The reading order (order_seq) is 0-indexed, where 0 indicates the first
-            element in reading order, 1 the second, etc. Elements are sorted by
-            the voting-based decoding algorithm.
+            tuple: (bbox_pred [N, 7], bbox_num [batch_size], mask_pred or None)
         """
-        # Unpack 4 elements (parent class expects 3: bbox, logits, masks)
         bboxes, logits, order_logits, masks = head_out
-
-        if self.dual_queries:
-            num_queries = logits.shape[1]
-            logits, bboxes = logits[:, :int(num_queries // (self.dual_groups + 1)), :], \
-                             bboxes[:, :int(num_queries // (self.dual_groups + 1)), :]
 
         # Decode bbox from (cx, cy, w, h) to (x1, y1, x2, y2)
         bbox_pred = bbox_cxcywh_to_xyxy(bboxes)
 
-        # Calculate original image shape (before padding and resizing)
+        # Scale to original image shape
         origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
         img_h, img_w = paddle.split(origin_shape, 2, axis=-1)
-
-        # Determine output shape based on bbox_decode_type
-        if self.bbox_decode_type == 'pad':
-            # Scale to padded shape
-            out_shape = pad_shape / im_shape * origin_shape
-            out_shape = out_shape.flip(1).tile([1, 2]).unsqueeze(1)
-        elif self.bbox_decode_type == 'origin':
-            # Scale to original shape
-            out_shape = origin_shape.flip(1).tile([1, 2]).unsqueeze(1)
-        else:
-            raise Exception(
-                f'Wrong `bbox_decode_type`: {self.bbox_decode_type}.')
-        # Scale bboxes to output shape
+        out_shape = origin_shape.flip(1).tile([1, 2]).unsqueeze(1)
         bbox_pred *= out_shape
 
-        # Compute confidence scores
-        scores = F.sigmoid(logits) if self.use_focal_loss else F.softmax(
-            logits)[:, :, :-1]
+        # Compute scores (focal loss path)
+        scores = F.sigmoid(logits)
 
-        # Decode reading order from pairwise order logits
+        # Decode reading order
         order_seq, order_votes = get_order(order_logits)
 
-        # Apply top-k filtering and get final labels
-        if not self.use_focal_loss:
-            # Softmax case: take max over classes
-            scores, labels = scores.max(-1), scores.argmax(-1)
-            if scores.shape[1] > self.num_top_queries:
-                scores, index = paddle.topk(
-                    scores, self.num_top_queries, axis=-1)
-                batch_ind = paddle.arange(
-                    end=scores.shape[0]).unsqueeze(-1).tile(
-                        [1, self.num_top_queries])
-                index = paddle.stack([batch_ind, index], axis=-1)
-                labels = paddle.gather_nd(labels, index)
-                bbox_pred = paddle.gather_nd(bbox_pred, index)
-                # Synchronize order_seq with top-k selection
-                order_seq = paddle.gather_nd(order_seq, index)
-        else:
-            # Focal loss case: flatten and take top-k
-            scores, index = paddle.topk(
-                scores.flatten(1), self.num_top_queries, axis=-1)
-            labels = index % self.num_classes
-            index = index // self.num_classes
-            batch_ind = paddle.arange(end=scores.shape[0]).unsqueeze(-1).tile(
-                [1, self.num_top_queries])
-            index = paddle.stack([batch_ind, index], axis=-1)
-            bbox_pred = paddle.gather_nd(bbox_pred, index)
-            # Synchronize order_seq with top-k selection
-            order_seq = paddle.gather_nd(order_seq, index)
+        # Top-k filtering (focal loss path)
+        scores, index = paddle.topk(
+            scores.flatten(1), self.num_top_queries, axis=-1)
+        labels = index % self.num_classes
+        index = index // self.num_classes
+        batch_ind = paddle.arange(end=scores.shape[0]).unsqueeze(-1).tile(
+            [1, self.num_top_queries])
+        index = paddle.stack([batch_ind, index], axis=-1)
+        bbox_pred = paddle.gather_nd(bbox_pred, index)
+        order_seq = paddle.gather_nd(order_seq, index)
 
-        # Post-process masks if needed
+        # Mask post-processing
         mask_pred = None
         if self.with_mask:
             assert masks is not None
             assert masks.shape[0] == 1
             masks = paddle.gather_nd(masks, index)
-            if self.bbox_decode_type == 'pad':
-                masks = F.interpolate(
-                    masks,
-                    scale_factor=self.mask_stride,
-                    mode="bilinear",
-                    align_corners=False)
-                # TODO: Support prediction with bs>1.
-                # Remove padding from masks
-                h, w = im_shape.astype('int32')[0]
-                masks = masks[..., :h, :w]
-            # Resize masks to original resolution (controlled by resize_mask)
             img_h = img_h[0].astype('int32')
             img_w = img_w[0].astype('int32')
             if self.resize_mask:
@@ -857,16 +758,13 @@ class DocLayoutV3PostProcess(DETRPostProcess):
                     align_corners=False)
             mask_pred, scores = self._mask_postprocess(masks, scores)
 
-        # Concatenate all outputs into 7-field bbox predictions
-        # Fields: [label, score, x1, y1, x2, y2, order_seq]
-        bbox_pred = paddle.concat(
-            [
-                labels.unsqueeze(-1).astype('float32'),
-                scores.unsqueeze(-1),
-                bbox_pred,
-                order_seq.unsqueeze(-1).astype('float32'),
-            ],
-            axis=-1)
+        # Output: [label, score, x1, y1, x2, y2, order_seq]
+        bbox_pred = paddle.concat([
+            labels.unsqueeze(-1).astype('float32'),
+            scores.unsqueeze(-1),
+            bbox_pred,
+            order_seq.unsqueeze(-1).astype('float32'),
+        ], axis=-1)
         bbox_num = paddle.to_tensor(
             self.num_top_queries, dtype='int32').tile([bbox_pred.shape[0]])
         bbox_pred = bbox_pred.reshape([-1, 7])

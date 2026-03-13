@@ -21,7 +21,7 @@ import sys
 import numpy as np
 import itertools
 
-from ppdet.metrics.json_results import get_det_res, get_det_res_with_order, get_det_poly_res, get_seg_res, get_solov2_segm_res, get_keypoint_res, get_pose3d_res
+from ppdet.metrics.json_results import get_det_res, get_det_poly_res, get_seg_res, get_solov2_segm_res, get_keypoint_res, get_pose3d_res
 from ppdet.metrics.map_utils import draw_pr_curve
 
 from ppdet.utils.logger import setup_logger
@@ -30,28 +30,11 @@ logger = setup_logger(__name__)
 
 def get_infer_results(outs, catid, bias=0, save_threshold=0):
     """
-    Convert inference outputs to COCO evaluation format.
+    Get result at the stage of inference.
+    The output format is dictionary containing bbox or mask result.
 
-    This function processes detection results and converts them to COCO JSON format
-    for evaluation. It supports multiple detection formats including:
-    - Standard 6-field bbox: [class_id, score, x1, y1, x2, y2]
-    - 10-field rotated bbox: [class_id, score, x1, y1, x2, y2, x3, y3, x4, y4]
-
-    Args:
-        outs (dict): Model outputs containing detection results. Should include:
-            - bbox: Detection bounding boxes
-            - bbox_num: Number of detections per image
-            - im_id: Image IDs
-            - im_file (optional): Image file paths
-            - mask (optional): Instance segmentation masks
-            - keypoint (optional): Keypoint predictions
-        catid (dict): Mapping from class labels to category IDs.
-        bias (int): Bias to add to bbox width and height. Default: 0.
-        save_threshold (float): Score threshold to filter detections. Default: 0.
-
-    Returns:
-        dict: Dictionary containing formatted results for COCO evaluation.
-            Keys may include 'bbox', 'mask', 'keypoint', etc.
+    For example, bbox result is a list and each element contains
+    image_id, category_id, bbox and score.
     """
     if outs is None or len(outs) == 0:
         raise ValueError(
@@ -63,13 +46,10 @@ def get_infer_results(outs, catid, bias=0, save_threshold=0):
 
     infer_res = {}
     if 'bbox' in outs:
-        # Detect bbox format by number of fields and route to appropriate handler
-        if len(outs['bbox']) > 0 and len(outs['bbox'][0]) == 10:
-            # 10-field rotated bbox: [class_id, score, x1, y1, x2, y2, x3, y3, x4, y4]
+        if len(outs['bbox']) > 0 and len(outs['bbox'][0]) > 6:
             infer_res['bbox'] = get_det_poly_res(
                 outs['bbox'], outs['bbox_num'], im_id, catid, bias=bias)
         else:
-            # 6-field standard bbox: [class_id, score, x1, y1, x2, y2]
             infer_res['bbox'] = get_det_res(
                 outs['bbox'],
                 outs['bbox_num'],

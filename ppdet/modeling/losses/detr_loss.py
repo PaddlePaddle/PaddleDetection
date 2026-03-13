@@ -781,10 +781,6 @@ class MaskDINOLoss(DETRLoss):
                 axis=1)
         return sample_points
 
-# ============================================
-# PP-DocLayoutV3专用Loss类（支持阅读顺序预测）
-# ============================================
-
 class RelativeReadingOrderLoss(nn.Layer):
     """
     Relative Reading Order Loss for PP-DocLayoutV3.
@@ -995,7 +991,7 @@ class RelativeReadingOrderLoss(nn.Layer):
             base_mask = valid_pair & pair_mask  # [N, N], intersection
 
             pair_sum = paddle.sum(base_mask.astype('float32'))
-            if float(pair_sum) == 0.0:
+            if pair_sum.item() == 0:
                 # No valid pairs in this image
                 continue
 
@@ -1132,7 +1128,8 @@ class DocLayoutV3Loss(MaskDINOLoss):
                  vfl_iou_type='bbox',
                  num_sample_points=12544,
                  oversample_ratio=3.0,
-                 important_sample_ratio=0.75):
+                 important_sample_ratio=0.75,
+                 order_loss_config=None):
         super(DocLayoutV3Loss, self).__init__(
             num_classes=num_classes,
             matcher=matcher,
@@ -1145,8 +1142,9 @@ class DocLayoutV3Loss(MaskDINOLoss):
             oversample_ratio=oversample_ratio,
             important_sample_ratio=important_sample_ratio
         )
-        # Initialize reading order loss
-        self.read_order_loss = RelativeReadingOrderLoss()
+        if order_loss_config is None:
+            order_loss_config = {}
+        self.read_order_loss = RelativeReadingOrderLoss(**order_loss_config)
 
     def forward(self,
                 boxes,
@@ -1166,121 +1164,38 @@ class DocLayoutV3Loss(MaskDINOLoss):
         """
         Forward pass to compute all losses including reading order loss.
 
-        This method extends MaskDINOLoss.forward by:
-        1. Computing base losses (classification, bbox, mask) via parent class
-        2. Computing reading order loss using matched predictions
-        3. Optionally computing denoising losses if dn_meta is provided
-
         Args:
-            boxes (Tensor): Predicted bounding boxes from all decoder layers.
-                Shape: [num_layers, batch_size, num_queries, 4] in (cx, cy, w, h) format.
-            logits (Tensor): Classification logits from all decoder layers.
-                Shape: [num_layers, batch_size, num_queries, num_classes].
-            order_logits (Tensor): Pairwise reading order logits from all decoder layers.
-                Shape: [num_layers, batch_size, num_queries, num_queries].
-            gt_bbox (list[Tensor]): Ground truth bounding boxes for each image.
-                List of length batch_size, each element shape: [num_gts_i, 4].
-            gt_class (list[Tensor]): Ground truth class labels for each image.
-                List of length batch_size, each element shape: [num_gts_i].
-            gt_read_order (list[Tensor]): Ground truth reading order for each image.
-                List of length batch_size, each element shape: [num_gts_i].
-                Values < 0 indicate invalid/unknown order.
-            masks (Tensor|None): Predicted masks from all decoder layers.
-                Shape: [num_layers, batch_size, num_queries, mask_h, mask_w].
-                Default: None.
-            gt_mask (list[Tensor]|None): Ground truth masks for each image.
-                List of length batch_size, each element shape: [num_gts_i, H, W].
-                Default: None.
-            postfix (str): Suffix for loss keys in the returned dict. Default: "".
-            dn_out_bboxes (Tensor|None): Denoising bounding box predictions.
-                Shape: [num_layers, batch_size, num_dn, 4]. Default: None.
-            dn_out_logits (Tensor|None): Denoising classification logits.
-                Shape: [num_layers, batch_size, num_dn, num_classes]. Default: None.
-            dn_out_masks (Tensor|None): Denoising mask predictions.
-                Shape: [num_layers, batch_size, num_dn, mask_h, mask_w]. Default: None.
-            dn_meta (dict|None): Denoising metadata containing:
-                - dn_positive_idx: Positive denoising query indices
-                - dn_num_group: Number of denoising groups
-                Default: None (no denoising loss).
-            **kwargs: Additional arguments (not used).
+            boxes: Predicted bounding boxes [num_layers, batch_size, num_queries, 4].
+            logits: Classification logits [num_layers, batch_size, num_queries, num_classes].
+            order_logits: Pairwise order logits [num_layers, batch_size, num_queries, num_queries].
+            gt_bbox: Ground truth bboxes, list of [num_gts_i, 4].
+            gt_class: Ground truth classes, list of [num_gts_i].
+            gt_read_order: Ground truth reading order, list of [num_gts_i]. Values < 0 = invalid.
+            masks: Predicted masks [num_layers, batch_size, num_queries, H, W]. Default: None.
+            gt_mask: Ground truth masks, list of [num_gts_i, H, W]. Default: None.
+            postfix: Suffix for loss keys. Default: "".
+            dn_out_bboxes/dn_out_logits/dn_out_masks: Denoising outputs. Default: None.
+            dn_meta: Denoising metadata. Default: None.
 
         Returns:
-            dict: Dictionary of loss values with keys:
-                - 'loss_class' / 'loss_class_0' / ...: Classification losses
-                - 'loss_bbox' / 'loss_bbox_0' / ...: BBox L1 losses
-                - 'loss_giou' / 'loss_giou_0' / ...: GIoU losses
-                - 'loss_mask' / 'loss_mask_0' / ...: Mask BCE losses
-                - 'loss_dice' / 'loss_dice_0' / ...: Mask Dice losses
-                - 'order_loss': Reading order loss (only for last layer)
-                - 'loss_*_dn': Denoising losses (if dn_meta is provided)
-                The '_0', '_1', etc. suffixes correspond to auxiliary losses from
-                intermediate decoder layers (when aux_loss=True).
-
-        Note:
-            Reading order loss is computed only for the last decoder layer's output
-            (order_logits[-1]) using Hungarian-matched predictions. Auxiliary order
-            losses for intermediate layers could be added but are not currently used
-            to reduce computational cost.
+            dict: Loss values including 'order_loss' and base losses from MaskDINOLoss.
         """
-        # Compute base losses using parent class (MaskDINOLoss -> DETRLoss)
-        # This computes classification, bbox, giou, mask, and dice losses
-        num_gts = self._get_num_gts(gt_class)
+        # Call MaskDINOLoss.forward for all base losses (class/bbox/giou/mask/dice + denoising)
+        total_loss = super().forward(
+            boxes, logits, gt_bbox, gt_class,
+            masks=masks, gt_mask=gt_mask, postfix=postfix,
+            dn_out_bboxes=dn_out_bboxes, dn_out_logits=dn_out_logits,
+            dn_out_masks=dn_out_masks, dn_meta=dn_meta, **kwargs)
 
-        # Call parent's parent (DETRLoss.forward) to get base losses
-        # We skip MaskDINOLoss.forward to avoid conflicts with order_logits parameter
-        total_loss = super(MaskDINOLoss, self).forward(
-            boxes,
-            logits,
-            gt_bbox,
-            gt_class,
-            masks=masks,
-            gt_mask=gt_mask,
-            num_gts=num_gts)
-
-        # Compute reading order loss for the last decoder layer
+        # Compute reading order loss (last decoder layer only)
         if order_logits is not None and gt_read_order is not None:
-            # Run Hungarian matching to pair predictions with ground truths
-            # This ensures order loss is computed only for correctly matched pairs
             match_indices = self.matcher(
                 boxes[-1], logits[-1], gt_bbox, gt_class,
                 masks=masks[-1] if masks is not None else None,
                 gt_mask=gt_mask)
-
-            # Compute and weight the reading order loss
-            # Only use last layer's predictions (order_logits[-1]) for efficiency
-            total_loss["order_loss"] = (self.read_order_loss(
-                order_logits[-1], gt_read_order, match_indices) *
-                self.loss_coeff['order'])
-
-        # Handle denoising loss if denoising training is enabled
-        # This is the same logic as MaskDINOLoss
-        if dn_meta is not None:
-            dn_positive_idx, dn_num_group = \
-                dn_meta["dn_positive_idx"], dn_meta["dn_num_group"]
-            assert len(gt_class) == len(dn_positive_idx)
-
-            # Get pre-defined matching for denoising queries (no Hungarian matching)
-            dn_match_indices = DINOLoss.get_dn_match_indices(
-                gt_class, dn_positive_idx, dn_num_group)
-
-            # Scale num_gts by the number of denoising groups
-            num_gts *= dn_num_group
-            # Compute denoising losses with '_dn' postfix
-            dn_loss = super(MaskDINOLoss, self).forward(
-                dn_out_bboxes,
-                dn_out_logits,
-                gt_bbox,
-                gt_class,
-                masks=dn_out_masks,
-                gt_mask=gt_mask,
-                postfix="_dn",
-                dn_match_indices=dn_match_indices,
-                num_gts=num_gts)
-            total_loss.update(dn_loss)
-        else:
-            # Add zero denoising losses as placeholders when denoising is disabled
-            total_loss.update(
-                {k + '_dn': paddle.to_tensor([0.])
-                 for k in total_loss.keys() if k != 'order_loss'})
+            total_loss["order_loss"] = (
+                self.read_order_loss(order_logits[-1], gt_read_order, match_indices)
+                * self.loss_coeff['order'])
 
         return total_loss
+
