@@ -118,7 +118,7 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
     # Check if reading order information is available
     # If present, sort bboxes by reading order for visualization
     vis_order = False
-    if len(bboxes) > 0 and bboxes[0].get("read_order", None):
+    if len(bboxes) > 0 and bboxes[0].get("read_order", None) is not None:
         bboxes = sorted(bboxes, key=lambda x: x['read_order'])
         vis_order = True
 

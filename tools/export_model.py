@@ -38,6 +38,7 @@ from ppdet.slim import build_slim_model
 from ppdet.utils.logger import setup_logger
 logger = setup_logger('export_model')
 
+
 def parse_args():
     parser = ArgsParser()
     parser.add_argument(

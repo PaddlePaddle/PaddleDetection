@@ -1281,6 +1281,6 @@ class DocLayoutV3Loss(MaskDINOLoss):
             # Add zero denoising losses as placeholders when denoising is disabled
             total_loss.update(
                 {k + '_dn': paddle.to_tensor([0.])
-                 for k in total_loss.keys()})
+                 for k in total_loss.keys() if k != 'order_loss'})
 
         return total_loss

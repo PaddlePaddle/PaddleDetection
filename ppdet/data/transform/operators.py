@@ -1,3 +1,8 @@
+# Copyright (c) 2020 PaddlePaddle Authors. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
 #
@@ -1775,6 +1780,10 @@ class RandomCrop(BaseOperator):
                 if 'difficult' in sample:
                     sample['difficult'] = np.take(
                         sample['difficult'], valid_ids, axis=0)
+
+                if 'gt_read_order' in sample:
+                    sample['gt_read_order'] = np.take(
+                        sample['gt_read_order'], valid_ids, axis=0)
 
                 if 'gt_joints' in sample:
                     sample['gt_joints'] = self._crop_joints(sample['gt_joints'],
@@ -4417,6 +4426,7 @@ class RandomErasingCrop(BaseOperator):
         return sample
 
 
+@register_op
 class Poly2MaskPack(BaseOperator):
     """
     Convert polygon to packed mask annotations for better performance.
@@ -4789,7 +4799,7 @@ class UnpackMask(BaseOperator):
 
             # Filter other fields
             valid_indices = np.array(valid_indices)
-            for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas']:
+            for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas', 'gt_read_order']:
                 if key in sample:
                     sample[key] = sample[key][valid_indices]
             if 'gt_poly' in sample:
@@ -5076,7 +5086,7 @@ class UpdateBBoxFromMask(BaseOperator):
                     sample['gt_segm'] = sample['gt_segm'][valid_indices]
 
                 # Filter all annotation fields to match valid instances
-                for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas']:
+                for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas', 'gt_read_order']:
                     if key in sample and len(sample[key]) > 0:
                         sample[key] = sample[key][valid_indices]
 
@@ -5097,7 +5107,7 @@ class UpdateBBoxFromMask(BaseOperator):
             sample['gt_bbox'] = np.zeros((0, 4), dtype=np.float32)
 
             # Empty other fields while preserving dtypes
-            for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas']:
+            for key in ['gt_class', 'gt_score', 'is_crowd', 'difficult', 'gt_areas', 'gt_read_order']:
                 if key in sample and len(sample[key]) > 0:
                     dtype = sample[key].dtype
                     sample[key] = np.array([], dtype=dtype)
