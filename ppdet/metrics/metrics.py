@@ -37,7 +37,7 @@ logger = setup_logger(__name__)
 
 __all__ = [
     'Metric', 'COCOMetric', 'VOCMetric', 'WiderFaceMetric', 'get_infer_results',
-    'RBoxMetric', 'SNIPERCOCOMetric'
+    'RBoxMetric', 'SNIPERCOCOMetric', 'DocLayoutV3Metric'
 ]
 
 COCO_SIGMAS = np.array([
@@ -359,8 +359,8 @@ class WiderFaceMetric(Metric):
         box_cnt = 0
         for batch_id in range(batch_size):
             pred_bboxes_num = batch_pred_bboxes_num[batch_id]
-            pred_bboxes = batch_pred_bboxes[box_cnt: box_cnt + 
-                                            pred_bboxes_num].numpy() 
+            pred_bboxes = batch_pred_bboxes[box_cnt: box_cnt +
+                                            pred_bboxes_num].numpy()
             box_cnt += pred_bboxes_num
 
             det_conf = pred_bboxes[:, 1]
@@ -368,7 +368,7 @@ class WiderFaceMetric(Metric):
             det_ymin = pred_bboxes[:, 3]
             det_xmax = pred_bboxes[:, 4]
             det_ymax = pred_bboxes[:, 5]
-            det = np.column_stack((det_xmin, det_ymin, det_xmax, 
+            det = np.column_stack((det_xmin, det_ymin, det_xmax,
                                    det_ymax, det_conf))
             self.pred_boxes_list.append(det) # xyxy conf
             self.gt_boxes_list.append(data['gt_ori_bbox'][batch_id].numpy()) # xywh
@@ -378,12 +378,12 @@ class WiderFaceMetric(Metric):
                 data['gt_medium_ignore'][batch_id].numpy())
             self.easy_ignore_list.append(
                 data['gt_easy_ignore'][batch_id].numpy())
-    
+
     def accumulate(self):
         total_num = len(self.gt_boxes_list)
         settings = ['easy', 'medium', 'hard']
-        setting_ingores = [self.easy_ignore_list, 
-                           self.medium_ignore_list, 
+        setting_ingores = [self.easy_ignore_list,
+                           self.medium_ignore_list,
                            self.hard_ignore_list]
         thresh_num = 1000
         aps = []
@@ -399,7 +399,7 @@ class WiderFaceMetric(Metric):
 
                 if len(gt_boxes) == 0 or len(pred_boxes) == 0:
                     continue
-                pred_recall, proposal_list = image_eval(pred_boxes, gt_boxes, 
+                pred_recall, proposal_list = image_eval(pred_boxes, gt_boxes,
                                                         ignore, self.iou_thresh)
                 _img_pr_info = img_pr_info(thresh_num, pred_boxes,
                                            proposal_list, pred_recall)
@@ -412,14 +412,14 @@ class WiderFaceMetric(Metric):
             ap = voc_ap(recall, propose)
             aps.append(ap)
         self.aps = aps
-    
+
     def log(self):
         logger.info("==================== Results ====================")
         logger.info("Easy   Val AP: {}".format(self.aps[0]))
         logger.info("Medium Val AP: {}".format(self.aps[1]))
         logger.info("Hard   Val AP: {}".format(self.aps[2]))
         logger.info("=================================================")
-    
+
     def get_results(self):
         return {
             'easy_ap': self.aps[0],
@@ -582,3 +582,112 @@ class SNIPERCOCOMetric(COCOMetric):
                 'bbox'] if 'bbox' in infer_results else []
 
         super(SNIPERCOCOMetric, self).accumulate()
+
+
+class DocLayoutV3Metric(COCOMetric):
+    """
+    Metric for PP-DocLayoutV3 model evaluation.
+
+    Extends COCOMetric to support reading order prediction evaluation
+    in addition to standard COCO bbox/mask metrics.
+
+    Args:
+        anno_file (str): Path to COCO format annotation file.
+        **kwargs: Additional arguments passed to COCOMetric.
+
+    Examples:
+        >>> metric = DocLayoutV3Metric(
+        ...     anno_file='annotations.json',
+        ...     classwise=True
+        ... )
+    """
+
+    def __init__(self, anno_file, **kwargs):
+        self.eval_mask = kwargs.pop('eval_mask', False)
+        super(DocLayoutV3Metric, self).__init__(anno_file, **kwargs)
+
+    def update(self, inputs, outputs):
+        """
+        Update metric with batch predictions.
+
+        Override COCOMetric.update() to handle 7-field bbox format with reading order.
+
+        Args:
+            inputs (dict|list): Input batch containing image info.
+            outputs (dict): Model predictions including bbox with reading order.
+        """
+        outs = {}
+        # Convert Tensor to numpy
+        for k, v in outputs.items():
+            outs[k] = v.numpy() if isinstance(v, paddle.Tensor) else v
+
+        # Extract image IDs
+        if isinstance(inputs, typing.Sequence):
+            im_id = inputs[0]['im_id']
+        else:
+            im_id = inputs['im_id']
+        outs['im_id'] = im_id.numpy() if isinstance(im_id,
+                                                    paddle.Tensor) else im_id
+
+        if 'im_file' in inputs:
+            outs['im_file'] = inputs['im_file']
+
+        # Get inference results with reading order support
+        infer_results = self._get_doclayoutv3_infer_results(
+            outs,
+            self.clsid2catid,
+            bias=self.bias,
+            save_threshold=self.save_threshold)
+
+        # Accumulate results
+        self.results['bbox'] += infer_results.get('bbox', [])
+        if self.eval_mask:
+            self.results['mask'] += infer_results.get('mask', [])
+
+    def _get_doclayoutv3_infer_results(self, outs, catid, bias=0,
+                                       save_threshold=0):
+        """
+        Convert DocLayoutV3 model outputs to evaluation format.
+
+        Handles 7-field bbox format: [class_id, score, x1, y1, x2, y2, order]
+
+        Args:
+            outs (dict): Model outputs with keys:
+                - bbox: Detection results (N, 7) with reading order
+                - bbox_num: Number of detections per image
+                - im_id: Image IDs
+                - im_file (optional): Image file paths
+            catid (dict): Mapping from class labels to category IDs.
+            bias (int): Bias to add to bbox width and height. Default: 0.
+            save_threshold (float): Score threshold to filter detections. Default: 0.
+
+        Returns:
+            dict: Formatted results for evaluation with keys 'bbox', 'mask'.
+        """
+        if outs is None or len(outs) == 0:
+            raise ValueError(
+                'The number of valid detection result is zero. '
+                'Please use reasonable model and check input data.')
+
+        im_id = outs['im_id']
+        im_file = outs.get('im_file', None)
+
+        infer_res = {}
+        if 'bbox' in outs and len(outs['bbox']) > 0:
+            # DocLayoutV3 outputs 7-field bbox with reading order
+            from ppdet.metrics.json_results import get_det_res_with_order
+            infer_res['bbox'] = get_det_res_with_order(
+                outs['bbox'],
+                outs['bbox_num'],
+                im_id,
+                catid,
+                bias=bias,
+                im_file=im_file,
+                save_threshold=save_threshold)
+
+        if 'mask' in outs:
+            from ppdet.metrics.json_results import get_seg_res
+            infer_res['mask'] = get_seg_res(outs['mask'], outs['bbox'],
+                                            outs['bbox_num'], im_id, catid)
+
+        return infer_res

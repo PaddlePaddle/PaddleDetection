@@ -24,7 +24,8 @@ import pycocotools.mask as mask_util
 from ..initializer import linear_init_, constant_
 from ..transformers.utils import inverse_sigmoid
 
-__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead', 'RTDETRv3Head']
+__all__ = ['DETRHead', 'DeformableDETRHead', 'DINOHead', 'MaskDINOHead', 'RTDETRv3Head',
+           'DocLayoutV3Head']
 
 
 def get_activation(name="LeakyReLU"):
@@ -656,3 +657,200 @@ class RTDETRv3Head(nn.Layer):
         else:
             return (dec_out_bboxes[self.eval_idx],
                     dec_out_logits[self.eval_idx], None)
+
+
+@register
+class DocLayoutV3Head(MaskDINOHead):
+    """
+    PP-DocLayoutV3 Detection Head with reading order prediction support.
+
+    This head extends MaskDINOHead to handle reading order predictions from
+    DocLayoutV3Transformer. It processes 8-element transformer outputs (adding
+    order-related elements) and returns 4-element predictions during inference.
+
+    Key enhancements over MaskDINOHead:
+        1. Accepts 8-element transformer output (vs 6 for MaskDINOHead):
+           - Adds dec_out_order_logits: decoder-level order predictions
+           - Adds enc_topk_order_logits: encoder-level order predictions (optional)
+        2. Returns 4-element tuple during inference (vs 3 for MaskDINOHead):
+           - Adds order_logits for reading order post-processing
+        3. Requires 'gt_read_order' field in training inputs
+        4. Passes order_logits to DocLayoutV3Loss for training
+
+    Transformer output format (8 elements):
+        (dec_out_logits, dec_out_bboxes, dec_out_masks, dec_out_order_logits,
+         enc_out, init_out, enc_topk_order_logits, dn_meta)
+
+    Inference output format (4 elements):
+        (bboxes, logits, order_logits, masks)
+
+    Args:
+        Same as MaskDINOHead. All parameters are inherited without modification.
+
+    Inheritance:
+        Inherits from MaskDINOHead and reuses most logic including:
+        - Loss computation (delegates to DocLayoutV3Loss)
+        - Denoising query handling
+        - Auxiliary loss computation
+
+    Examples:
+        .. code-block:: python
+
+            head = DocLayoutV3Head(
+                num_classes=25,
+                loss='DocLayoutV3Loss'
+            )
+            # Training
+            out_transformer = model.transformer(feats, gt_meta=gt_meta)
+            loss_dict = head(out_transformer, body_feats, inputs)
+            # Inference
+            out_transformer = model.transformer(feats)
+            bboxes, logits, order_logits, masks = head(out_transformer, body_feats)
+    """
+
+    def forward(self, out_transformer, body_feats, inputs=None):
+        """
+        Forward pass with reading order handling.
+
+        This method extends MaskDINOHead.forward to:
+        1. Unpack 8-element transformer output (vs 6)
+        2. Process order_logits alongside bbox/class/mask predictions
+        3. Return 4-element output during inference (vs 3)
+
+        Args:
+            out_transformer (tuple): Transformer output, 8-element tuple:
+                - dec_out_logits (Tensor): Decoder classification logits.
+                    Shape: [num_layers, batch_size, num_queries, num_classes]
+                - dec_out_bboxes (Tensor): Decoder bounding boxes.
+                    Shape: [num_layers, batch_size, num_queries, 4]
+                - dec_out_masks (Tensor): Decoder instance masks.
+                    Shape: [num_layers, batch_size, num_queries, mask_h, mask_w]
+                - dec_out_order_logits (Tensor): Decoder reading order logits.
+                    Shape: [num_layers, batch_size, num_queries, num_queries]
+                - enc_out (tuple): Encoder predictions (logits, bboxes, masks).
+                - init_out (tuple|None): Initial predictions before refinement.
+                - enc_topk_order_logits (Tensor|None): Encoder order predictions.
+                    Currently always None (reserved for future use).
+                - dn_meta (dict|None): Denoising metadata.
+            body_feats (list[Tensor]): Backbone feature pyramid (not used in this head).
+            inputs (dict|None): Training inputs containing:
+                - gt_bbox (list[Tensor]): Ground truth bounding boxes.
+                - gt_class (list[Tensor]): Ground truth class labels.
+                - gt_segm (list[Tensor]): Ground truth segmentation masks.
+                - gt_read_order (list[Tensor]): Ground truth reading order. **Required**.
+                Default: None (inference mode).
+
+        Returns:
+            Training mode (inputs is not None):
+                dict: Loss dictionary from DocLayoutV3Loss, containing:
+                    - loss_class, loss_bbox, loss_giou: Detection losses
+                    - loss_mask, loss_dice: Segmentation losses
+                    - order_loss: Reading order loss **NEW**
+                    - Auxiliary losses for intermediate layers (if enabled)
+
+            Inference mode (inputs is None):
+                tuple: 4-element tuple for post-processing:
+                    - bboxes (Tensor): Predicted bounding boxes from last decoder layer.
+                        Shape: [batch_size, num_queries, 4]
+                    - logits (Tensor): Classification logits from last decoder layer.
+                        Shape: [batch_size, num_queries, num_classes]
+                    - order_logits (Tensor): Reading order logits from last decoder layer.
+                        Shape: [batch_size, num_queries, num_queries]
+                    - masks (Tensor): Instance masks from last decoder layer.
+                        Shape: [batch_size, num_queries, mask_h, mask_w]
+
+        Note:
+            During training, the head requires 'gt_read_order' in inputs. This is
+            enforced with an assertion to catch configuration errors early.
+        """
+        # Unpack 8-element transformer output (2 more than MaskDINOHead)
+        (dec_out_logits, dec_out_bboxes, dec_out_masks, dec_out_order_logits,
+         enc_out, init_out, enc_topk_order_logits, dn_meta) = out_transformer
+
+        if self.training:
+            assert inputs is not None
+            assert 'gt_bbox' in inputs and 'gt_class' in inputs
+            assert 'gt_segm' in inputs
+            # PP-DocLayoutV3 requires reading order ground truth
+            assert 'gt_read_order' in inputs, \
+                "gt_read_order is required for DocLayoutV3Head training"
+
+            # Handle denoising queries if present
+            if dn_meta is not None:
+                # Split denoising and matching queries
+                dn_out_logits, dec_out_logits = paddle.split(
+                    dec_out_logits, dn_meta['dn_num_split'], axis=2)
+                dn_out_bboxes, dec_out_bboxes = paddle.split(
+                    dec_out_bboxes, dn_meta['dn_num_split'], axis=2)
+                dn_out_masks, dec_out_masks = paddle.split(
+                    dec_out_masks, dn_meta['dn_num_split'], axis=2)
+
+                # Handle initial predictions if present
+                if init_out is not None:
+                    init_out_logits, init_out_bboxes, init_out_masks = init_out
+                    init_out_logits_dn, init_out_logits = paddle.split(
+                        init_out_logits, dn_meta['dn_num_split'], axis=1)
+                    init_out_bboxes_dn, init_out_bboxes = paddle.split(
+                        init_out_bboxes, dn_meta['dn_num_split'], axis=1)
+                    init_out_masks_dn, init_out_masks = paddle.split(
+                        init_out_masks, dn_meta['dn_num_split'], axis=1)
+
+                    # Concatenate init predictions with decoder predictions
+                    dec_out_logits = paddle.concat(
+                        [init_out_logits.unsqueeze(0), dec_out_logits])
+                    dec_out_bboxes = paddle.concat(
+                        [init_out_bboxes.unsqueeze(0), dec_out_bboxes])
+                    dec_out_masks = paddle.concat(
+                        [init_out_masks.unsqueeze(0), dec_out_masks])
+
+                    dn_out_logits = paddle.concat(
+                        [init_out_logits_dn.unsqueeze(0), dn_out_logits])
+                    dn_out_bboxes = paddle.concat(
+                        [init_out_bboxes_dn.unsqueeze(0), dn_out_bboxes])
+                    dn_out_masks = paddle.concat(
+                        [init_out_masks_dn.unsqueeze(0), dn_out_masks])
+            else:
+                dn_out_bboxes, dn_out_logits = None, None
+                dn_out_masks = None
+
+            # Concatenate encoder and decoder predictions for auxiliary loss
+            enc_out_logits, enc_out_bboxes, enc_out_masks = enc_out
+            out_logits = paddle.concat(
+                [enc_out_logits.unsqueeze(0), dec_out_logits])
+            out_bboxes = paddle.concat(
+                [enc_out_bboxes.unsqueeze(0), dec_out_bboxes])
+            out_masks = paddle.concat(
+                [enc_out_masks.unsqueeze(0), dec_out_masks])
+
+            # Concatenate encoder and decoder order logits if encoder predictions exist
+            # Currently enc_topk_order_logits is always None, so this uses decoder only
+            if enc_topk_order_logits is not None:
+                out_order_logits = paddle.concat(
+                    [enc_topk_order_logits.unsqueeze(0), dec_out_order_logits])
+            else:
+                out_order_logits = dec_out_order_logits
+
+            # Ensure gt_segm has correct dtype for loss computation
+            inputs['gt_segm'] = [gt_segm.astype(out_masks.dtype)
+                                 for gt_segm in inputs['gt_segm']]
+
+            # Compute loss including reading order loss
+            return self.loss(
+                out_bboxes,
+                out_logits,
+                out_order_logits,  # Pass order logits to DocLayoutV3Loss
+                inputs['gt_bbox'],
+                inputs['gt_class'],
+                inputs['gt_read_order'],  # Pass ground truth reading order
+                masks=out_masks,
+                gt_mask=inputs['gt_segm'],
+                dn_out_logits=dn_out_logits,
+                dn_out_bboxes=dn_out_bboxes,
+                dn_out_masks=dn_out_masks,
+                dn_meta=dn_meta)
+        else:
+            # Inference mode: return 4-element tuple (bboxes, logits, order_logits, masks)
+            return (dec_out_bboxes[-1],
+                    dec_out_logits[-1],
+                    dec_out_order_logits[-1],
+                    dec_out_masks[-1])

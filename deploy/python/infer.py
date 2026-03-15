@@ -83,7 +83,7 @@ class Detector(object):
         enable_mkldnn_bfloat16 (bool): whether to turn on mkldnn bfloat16
         output_dir (str): The path of output
         threshold (float): The threshold of score for visualization
-        delete_shuffle_pass (bool): whether to remove shuffle_channel_detect_pass in TensorRT. 
+        delete_shuffle_pass (bool): whether to remove shuffle_channel_detect_pass in TensorRT.
                                     Used by action model.
     """
 
@@ -203,7 +203,7 @@ class Detector(object):
                     paddle.device.cuda.synchronize()
                 else:
                     paddle.device.synchronize(device=self.device.lower())
-                
+
             result = dict(
                 boxes=np_boxes, masks=np_masks, boxes_num=np_boxes_num)
             return result
@@ -214,7 +214,7 @@ class Detector(object):
             boxes_tensor = self.predictor.get_output_handle(output_names[0])
             np_boxes = boxes_tensor.copy_to_cpu()
             if len(output_names) == 1:
-                # some exported model can not get tensor 'bbox_num' 
+                # some exported model can not get tensor 'bbox_num'
                 np_boxes_num = np.array([len(np_boxes)])
             else:
                 boxes_num = self.predictor.get_output_handle(output_names[1])
@@ -563,11 +563,11 @@ class DetectorSOLOv2(Detector):
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
         cpu_threads (int): cpu threads
-        enable_mkldnn (bool): whether to open MKLDNN 
+        enable_mkldnn (bool): whether to open MKLDNN
         enable_mkldnn_bfloat16 (bool): Whether to turn on mkldnn bfloat16
         output_dir (str): The path of output
         threshold (float): The threshold of score for visualization
-       
+
     """
 
     def __init__(self,
@@ -939,7 +939,7 @@ class PredictConfig():
     def check_model(self, yml_conf):
         """
         Raises:
-            ValueError: loaded model not in supported model type 
+            ValueError: loaded model not in supported model type
         """
         for support_model in SUPPORT_MODELS:
             if support_model in yml_conf['arch']:
@@ -982,7 +982,7 @@ def load_predictor(model_dir,
         trt_opt_shape (int): opt shape for dynamic shape in trt
         trt_calib_mode (bool): If the model is produced by TRT offline quantitative
             calibration, trt_calib_mode need to set True
-        delete_shuffle_pass (bool): whether to remove shuffle_channel_detect_pass in TensorRT. 
+        delete_shuffle_pass (bool): whether to remove shuffle_channel_detect_pass in TensorRT.
                                     Used by action model.
     Returns:
         predictor (PaddlePredictor): AnalysisPredictor
@@ -1008,7 +1008,7 @@ def load_predictor(model_dir,
                 raise ValueError(
                     "Cannot find any inference model in dir: {}.".format(model_dir))
         config = Config(model_path, model_prefix)
-        
+
     else:
         infer_model = os.path.join(model_dir, 'model.pdmodel')
         infer_params = os.path.join(model_dir, 'model.pdiparams')
@@ -1019,7 +1019,7 @@ def load_predictor(model_dir,
                 raise ValueError(
                     "Cannot find any inference model in dir: {},".format(model_dir))
         config = Config(infer_model, infer_params)
- 
+
     if device == 'GPU':
         # initial GPU memory(M), device ID
         config.enable_use_gpu(200, 0)

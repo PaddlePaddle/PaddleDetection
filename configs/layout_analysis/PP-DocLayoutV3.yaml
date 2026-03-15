@@ -1,0 +1,184 @@
+# Runtime
+epoch: 200
+log_iter: 10
+find_unused_parameters: true
+use_gpu: true
+use_xpu: false
+use_mlu: false
+use_npu: false
+use_ema: True
+ema_decay: 0.9999
+ema_decay_type: "exponential"
+ema_filter_no_grad: True
+save_dir: output
+snapshot_epoch: 10
+target_metrics: mask
+print_flops: false
+print_params: false
+eval_size: [800, 800]
+export_with_pir: True
+
+# Dataset
+metric: DocLayoutV3Metric
+DocLayoutV3Metric:
+  eval_mask: False  # True: compute mask AP during training eval (requires resize_mask: True in DocLayoutV3PostProcess)
+num_classes: 25
+
+worker_num: 24
+
+TrainDataset:
+  name: COCOInstSegDataset
+  image_dir: images
+  anno_path: annotations/instance_train.json
+  dataset_dir: dataset/doclayoutv3/
+  data_fields: ['image', 'gt_bbox', 'gt_class', 'gt_poly', 'is_crowd', 'gt_read_order']
+
+EvalDataset:
+  name: COCOInstSegDataset
+  image_dir: images
+  anno_path: annotations/instance_val.json
+  dataset_dir: dataset/doclayoutv3
+
+TestDataset:
+  name: ImageFolder
+  anno_path: annotations/instance_val.json
+  dataset_dir: dataset/doclayoutv3
+
+TrainReader:
+  sample_transforms:
+    - Decode: {}
+    - Poly2MaskPack: {del_poly: True}
+    - RandomDistort: {prob: 0.8}
+    - UpdateBBoxFromMask: {}
+    - RandomExpand: {prob: 0.5, ratio: 1.5, fill_value: [123.675, 116.28, 103.53]}
+    - RandomCrop: {prob: 0.8, use_box_candidates: true}
+  batch_transforms:
+    - BatchRandomResize: {target_size: [672, 704, 736, 768, 800, 800, 800, 800, 832, 864, 896, 928], random_size: True, random_interp: True, keep_ratio: False}
+    - UnpackMask: {}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - NormalizeBox: {}
+    - BboxXYXY2XYWH: {}
+    - Permute: {}
+  batch_size: 2
+  shuffle: true
+  drop_last: true
+  collate_batch: false
+  use_shared_memory: true
+
+EvalReader:
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [800, 800], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 1 # mask be 1
+  shuffle: false
+  drop_last: false
+
+TestReader:
+  inputs_def:
+    image_shape: [3, 800, 800]
+  sample_transforms:
+    - Decode: {}
+    - Resize: {target_size: [800, 800], keep_ratio: False, interp: 2}
+    - NormalizeImage: {mean: [0., 0., 0.], std: [1., 1., 1.], norm_type: none}
+    - Permute: {}
+  batch_size: 1
+  shuffle: false
+  drop_last: false
+
+# Model
+architecture: DETR
+with_mask: True
+pretrain_weights: https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/PP-DocLayout_plus-L_pretrained.pdparams
+norm_type: sync_bn
+hidden_dim: 256
+use_focal_loss: True
+num_prototypes: 32
+
+DETR:
+  backbone: PPHGNetV2
+  neck: MaskHybridEncoder
+  transformer: DocLayoutV3Transformer
+  detr_head: DocLayoutV3Head
+  post_process: DocLayoutV3PostProcess
+
+PPHGNetV2:
+  arch: 'L'
+  return_idx: [0, 1, 2, 3]
+  freeze_stem_only: True
+  freeze_at: 0
+  freeze_norm: True
+  lr_mult_list: [0., 0.05, 0.05, 0.05, 0.05]
+
+MaskHybridEncoder:
+  hidden_dim: 256
+  use_encoder_idx: [3]
+  num_encoder_layers: 1
+  encoder_layer:
+    name: TransformerLayer
+    d_model: 256
+    nhead: 8
+    dim_feedforward: 1024
+    dropout: 0.
+    activation: 'gelu'
+  expansion: 1.0
+  mask_feat_channels: [64, 64]
+
+DocLayoutV3Transformer:
+  num_queries: 300
+  position_embed_type: sine
+  feat_strides: [8, 16, 32]
+  num_levels: 3
+  nhead: 8
+  dim_feedforward: 1024
+  dropout: 0.0
+  activation: relu
+  num_denoising: 0
+  label_noise_ratio: 0.5
+  box_noise_scale: 1.0
+  learnt_init_query: False
+  mask_enhanced: True
+
+DocLayoutV3Head:
+  loss:
+    name: DocLayoutV3Loss
+    use_focal_loss: True
+    loss_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5, order: 50}
+    aux_loss: True
+    use_vfl: True
+    vfl_iou_type: 'mask'
+    matcher:
+      name: HungarianMatcher
+      matcher_coeff: {class: 4, bbox: 5, giou: 2, mask: 5, dice: 5}
+
+DocLayoutV3PostProcess:
+  num_top_queries: 300
+  mask_stride: 4
+  resize_mask: False  # True: resize mask to original resolution (needed for correct mask AP)
+
+# Optimizer
+LearningRate:
+  base_lr: 0.0002
+  schedulers:
+  - !PiecewiseDecay
+    gamma: 1.0
+    milestones: [100]
+    use_warmup: true
+  - !LinearWarmup
+    start_factor: 0.001
+    steps: 100
+
+OptimizerBuilder:
+  clip_grad_by_norm: 0.1
+  regularizer: false
+  optimizer:
+    type: AdamW
+    weight_decay: 0.0001
+
+# Exporting the model
+export:
+  post_process: True
+  nms: True
+  benchmark: False
+  fuse_conv_bn: False

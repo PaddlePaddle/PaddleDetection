@@ -24,7 +24,8 @@ from .iou_loss import GIoULoss
 from ..transformers import bbox_cxcywh_to_xyxy, sigmoid_focal_loss, varifocal_loss_with_logits, mal_loss_with_logits
 from ..bbox_utils import bbox_iou
 
-__all__ = ['DETRLoss', 'DINOLoss', 'RTDETRv3Loss']
+__all__ = ['DETRLoss', 'DINOLoss', 'RTDETRv3Loss', 'MaskDINOLoss',
+           'DocLayoutV3Loss']
 
 
 @register
@@ -779,3 +780,422 @@ class MaskDINOLoss(DETRLoss):
                 ],
                 axis=1)
         return sample_points
+
+class RelativeReadingOrderLoss(nn.Layer):
+    """
+    Relative Reading Order Loss for PP-DocLayoutV3.
+
+    This loss models pairwise relative reading order relationships between document
+    elements using a global pointer mechanism. It supervises the model to predict
+    whether element i comes before element j in the reading order.
+
+    Key features:
+        1. Pairwise modeling: Predicts relative order for all element pairs (i, j).
+        2. Locality-aware: Emphasizes correct ordering of neighboring elements.
+        3. Robust training: Uses GCE loss to handle annotation noise.
+        4. Antisymmetric constraint: Leverages logits[i,j] = -logits[j,i] property.
+
+    The loss function computes:
+        Loss = (1/|P|) * Σ_{(i,j)∈P} w_{ij} * L(logits[i,j], target[i,j])
+    where P is the set of valid element pairs, w_{ij} is the pair weight (higher
+    for neighbors), and L is the per-pair loss (GCE or BCE).
+
+    Args:
+        use_upper_only (bool): If True, only supervise the upper triangle of the
+            order matrix to avoid redundancy (since logits are antisymmetric).
+            Default: True.
+        k_local (int): Fixed local neighbor window size. Elements within distance
+            k_local in the ground truth order are considered neighbors.
+            Default: 5.
+        locality (bool): If True, apply higher weights to neighboring element pairs
+            to emphasize local ordering correctness. Default: True.
+        k_local_ratio (float): Dynamic neighbor window as a ratio of total elements.
+            The actual window is max(k_local, k_local_ratio * N). This helps adapt
+            to varying numbers of elements. Default: 0.3.
+        w_gt (float): Weight multiplier for neighboring pairs (within k_local).
+            Neighboring pairs have weight w_gt, while distant pairs have weight 1.0.
+            Default: 2.0.
+        label_smooth (float): Label smoothing epsilon. Smooths binary targets:
+            target = target * (1 - eps) + 0.5 * eps. Helps prevent overconfidence.
+            Default: 0.01.
+        robust (str): Robust loss type to handle annotation noise.
+            - 'gce': Generalized Cross Entropy, more robust to label noise.
+            - 'bce': Standard Binary Cross Entropy.
+            Default: 'gce'.
+        q (float): GCE loss parameter q in range [0, 1]. Lower q = more robust
+            to noise. Formula: (1 - (p_correct)^q) / q. Default: 0.7.
+
+    Note:
+        Elements with order < 0 are treated as invalid and excluded from supervision.
+        This allows marking elements whose order is unknown or ambiguous.
+
+    Examples:
+        .. code-block:: python
+
+            loss_fn = RelativeReadingOrderLoss(
+                use_upper_only=True,
+                k_local=5,
+                locality=True,
+                w_gt=2.0
+            )
+            # order_logits: [B, N, N] pairwise order predictions
+            # gt_order: list of [N_i] ground truth orders
+            loss = loss_fn(order_logits, gt_order, match_indices)
+    """
+
+    def __init__(self,
+                 use_upper_only=True,
+                 k_local=5,
+                 locality=True,
+                 k_local_ratio=0.3,
+                 w_gt=2.0,
+                 label_smooth=0.01,
+                 robust='gce',
+                 q=0.7):
+        super().__init__()
+        self.use_upper_only = use_upper_only
+        self.k_local = k_local
+        self.locality = locality
+        self.k_local_ratio = k_local_ratio
+        self.w_gt = w_gt
+        self.label_smooth = label_smooth
+        self.robust = robust
+        self.q = q
+
+    @staticmethod
+    def _pair_mask(N: int, use_upper_only: bool = False):
+        """
+        Generate supervision pair mask to determine which pairs to supervise.
+
+        Args:
+            N (int): Number of elements.
+            use_upper_only (bool): If True, only include upper triangle pairs (i < j).
+                This avoids redundancy when logits have antisymmetric property.
+                Default: False.
+
+        Returns:
+            Tensor: Boolean mask of shape [N, N]. True for pairs to supervise.
+                If use_upper_only=True: returns upper triangle (excluding diagonal).
+                If use_upper_only=False: returns all non-diagonal pairs.
+        """
+        if use_upper_only:
+            # Upper triangle only: logits[i,j] for i < j
+            return paddle.triu(paddle.ones([N, N], dtype='bool'), 1)
+        else:
+            # All pairs except diagonal
+            eye = paddle.eye(N)
+            return ~eye.astype('bool')
+
+    @staticmethod
+    def _valid_pair_mask(order):
+        """
+        Generate valid pair mask by filtering out elements with invalid order.
+
+        Elements with order < 0 are considered invalid (e.g., no ground truth
+        order annotation). Pairs involving invalid elements are excluded.
+
+        Args:
+            order (Tensor): Ground truth reading order sequence.
+                Shape: [N] where N is the number of elements.
+                Values: order[i] >= 0 for valid elements, < 0 for invalid.
+
+        Returns:
+            Tensor: Boolean mask of shape [N, N]. True for pairs where both
+                elements have valid order (order >= 0).
+        """
+        # v[i] = True if element i has valid order (order[i] >= 0)
+        v = (order >= 0).astype('bool')
+        # Outer product: valid_pair[i,j] = v[i] AND v[j]
+        return v.unsqueeze(0) & v.unsqueeze(1)
+
+    def _gce_loss(self, logits, target, q):
+        """
+        Compute Generalized Cross Entropy (GCE) loss for robust training.
+
+        GCE is more robust to label noise than standard BCE. The formula is:
+            GCE = (1 - (p_correct)^q) / q
+        where p_correct = p if target=1, else (1-p).
+
+        Lower q values make the loss more robust but slower to converge.
+        q=1 reduces to standard cross entropy, q→0 approaches MAE.
+
+        Args:
+            logits (Tensor): Predicted logits. Shape: [num_pairs]
+            target (Tensor): Binary targets (0 or 1). Shape: [num_pairs]
+            q (float): GCE parameter in (0, 1]. Lower q = more robust.
+
+        Returns:
+            Tensor: Per-sample GCE loss. Shape: [num_pairs]
+        """
+        p = F.sigmoid(logits)
+        # Probability of the correct class
+        p_y = p * target + (1 - p) * (1 - target)
+        # GCE formula: (1 - p_y^q) / q
+        return (1.0 - paddle.pow(paddle.clip(p_y, 1e-6, 1.0), q)) / q
+
+    def forward(self, relative_logits, gt_read_order, match_indices, gt_bboxes=None):
+        """
+        Compute relative reading order loss over all images in a batch.
+
+        This method:
+        1. Extracts matched predictions and ground truths using match_indices
+        2. Builds target matrix where target[i,j]=1 if order[i] < order[j]
+        3. Applies locality-aware weighting to emphasize neighbor pairs
+        4. Computes weighted loss using GCE or BCE
+
+        Args:
+            relative_logits (Tensor): Pairwise reading order logits from model.
+                Shape: [batch_size, num_queries, num_queries]
+                where logits[b, i, j] > 0 indicates query i comes before query j.
+            gt_read_order (list[Tensor]): Ground truth reading order for each image.
+                List of length batch_size, each element is Tensor of shape [N_i]
+                containing integer order values. Elements with order < 0 are invalid.
+            match_indices (list[tuple]): Matching between predictions and ground truths.
+                List of length batch_size, each element is (pred_idx, gt_idx) where:
+                - pred_idx (Tensor): Indices of matched predictions. Shape: [M_i]
+                - gt_idx (Tensor): Indices of matched ground truths. Shape: [M_i]
+                Computed by Hungarian matcher.
+            gt_bboxes (list[Tensor]|None): Ground truth bounding boxes (optional, not used).
+                Reserved for potential spatial distance-based weighting. Default: None.
+
+        Returns:
+            Tensor: Scalar loss value averaged over all valid pairs in the batch.
+                If no valid pairs exist, returns 0.
+
+        Note:
+            The loss is computed only for matched queries to ensure alignment between
+            predictions and ground truths. Unmatched predictions are not supervised.
+        """
+        total_loss_num = paddle.to_tensor(0.0, dtype='float32')
+        total_pairs = paddle.to_tensor(0.0, dtype='float32')
+
+        B = len(gt_read_order)
+        for i in range(B):
+            # Get matched prediction and ground truth indices for this image
+            pred_idx, gt_idx = match_indices[i]
+            if pred_idx.numel() == 0 or gt_idx.numel() == 0:
+                continue
+            N = pred_idx.shape[0]
+            if N <= 1:
+                # Skip images with 0 or 1 element (no pairs to supervise)
+                continue
+
+            # Extract order logits for matched predictions: [N, N] submatrix
+            logits = relative_logits[i][pred_idx][:, pred_idx]
+            # Extract ground truth order for matched elements: [N]
+            order = gt_read_order[i][gt_idx]
+
+            # Generate masks for valid and supervised pairs
+            valid_pair = self._valid_pair_mask(order)  # [N, N], filter order<0
+            pair_mask = self._pair_mask(N, self.use_upper_only)  # [N, N], upper triangle
+            base_mask = valid_pair & pair_mask  # [N, N], intersection
+
+            pair_sum = paddle.sum(base_mask.astype('float32'))
+            if pair_sum.item() == 0:
+                # No valid pairs in this image
+                continue
+
+            # Build target matrix: target[i,j] = 1 if order[i] < order[j]
+            o1, o2 = order.unsqueeze(1), order.unsqueeze(0)  # [N, 1] and [1, N]
+            target_full = (o1 < o2).astype('float32')  # [N, N]
+
+            # Compute pairwise distance in reading order
+            order_dist = paddle.abs(o1 - o2)  # [N, N]
+            # Dynamic local window: max of fixed k_local and ratio-based window
+            k_local_i = min(max(self.k_local, int(N * self.k_local_ratio)), N - 1)
+
+            # Build weight matrix W: higher weight for neighboring pairs
+            W = paddle.ones([N, N], dtype='float32')
+            if self.locality:
+                # gt_local[i,j] = True if elements i and j are neighbors
+                # (0 < |order[i] - order[j]| <= k_local_i)
+                gt_local = (order_dist > 0) & (order_dist <= k_local_i)
+                # Increase weight for neighboring pairs by factor (w_gt - 1.0)
+                W = W + (self.w_gt - 1.0) * gt_local.astype('float32')
+
+            # Extract supervised pairs using base_mask
+            z = logits[base_mask]  # [num_pairs] predicted logits
+            t = target_full[base_mask]  # [num_pairs] binary targets
+            Wm = W[base_mask]  # [num_pairs] weights
+
+            # Normalize weights to have mean 1.0 for stable gradient scaling
+            Wm = Wm / (paddle.mean(Wm) + 1e-6)
+
+            # Apply label smoothing: target = target * (1-eps) + 0.5 * eps
+            # This softens hard 0/1 labels to prevent overconfidence
+            if self.label_smooth > 0:
+                eps = self.label_smooth
+                t = t * (1 - eps) + 0.5 * eps
+
+            # Compute per-pair loss using robust loss function
+            if self.robust == 'gce':
+                per_pair_loss = self._gce_loss(z, t, self.q)
+            else:
+                per_pair_loss = F.binary_cross_entropy_with_logits(z, t, reduction='none')
+
+            # Weighted mean loss for this image
+            loss_main = (per_pair_loss * Wm).mean()
+            # Accumulate weighted loss across images
+            total_loss_num = total_loss_num + loss_main * pair_sum
+            total_pairs = total_pairs + pair_sum
+
+        # Return average loss over all pairs in the batch
+        return total_loss_num / (total_pairs + 1e-12)
+
+
+@register
+class DocLayoutV3Loss(MaskDINOLoss):
+    """
+    PP-DocLayoutV3 Loss Function with reading order prediction support.
+
+    This loss extends MaskDINOLoss by adding relative reading order loss computation
+    for document layout analysis. It computes a weighted combination of:
+        1. Classification loss (focal loss or cross entropy)
+        2. Bounding box regression loss (L1 + GIoU)
+        3. Mask segmentation loss (BCE + Dice)
+        4. Reading order loss (pairwise GCE) - NEW
+
+    The total loss is:
+        L_total = λ_cls*L_cls + λ_bbox*L_bbox + λ_giou*L_giou +
+                  λ_mask*L_mask + λ_dice*L_dice + λ_order*L_order
+
+    Key enhancements over MaskDINOLoss:
+        - Adds RelativeReadingOrderLoss module for pairwise order supervision
+        - Includes 'order' coefficient in loss_coeff (default: 50)
+        - Handles order_logits in forward pass
+        - Maintains full backward compatibility with MaskDINOLoss
+
+    Args:
+        num_classes (int): Number of object categories. Default: 80.
+        matcher (str): Hungarian matcher for prediction-GT matching. Default: 'HungarianMatcher'.
+        loss_coeff (dict): Loss weight coefficients for each loss term.
+            Default: {
+                'class': 4,   # Classification loss weight
+                'bbox': 5,    # BBox L1 loss weight
+                'giou': 2,    # GIoU loss weight
+                'mask': 5,    # Mask BCE loss weight
+                'dice': 5,    # Mask Dice loss weight
+                'order': 50   # Reading order loss weight (NEW)
+            }
+            The 'order' coefficient is set to 50 to balance with other losses,
+            as order loss operates on O(N²) pairs while others operate on O(N) objects.
+        aux_loss (bool): Whether to compute auxiliary losses for intermediate decoder layers.
+            Enables deep supervision for better training. Default: True.
+        use_focal_loss (bool): Whether to use focal loss for classification. Default: False.
+        use_vfl (bool): Whether to use varifocal loss. Default: False.
+        vfl_iou_type (str): IoU type for VFL ('bbox' or 'mask'). Default: 'bbox'.
+        num_sample_points (int): Number of points sampled for mask loss computation. Default: 12544.
+        oversample_ratio (float): Oversampling ratio for hard negative mining. Default: 3.0.
+        important_sample_ratio (float): Ratio of important points to sample. Default: 0.75.
+
+    Inheritance:
+        Inherits from MaskDINOLoss, which provides classification, bbox, and mask losses.
+        Only extends the forward method to add reading order loss computation.
+
+    Examples:
+        .. code-block:: python
+
+            loss_fn = DocLayoutV3Loss(
+                num_classes=25,
+                loss_coeff={'class': 4, 'bbox': 5, 'giou': 2,
+                           'mask': 5, 'dice': 5, 'order': 50}
+            )
+            # Model outputs
+            boxes, logits, masks, order_logits = model_outputs
+            # Compute loss
+            loss_dict = loss_fn(boxes, logits, order_logits,
+                               gt_bbox, gt_class, gt_read_order,
+                               masks=masks, gt_mask=gt_mask)
+    """
+
+    __shared__ = ['num_classes', 'use_focal_loss', 'num_sample_points']
+    __inject__ = ['matcher']
+
+    def __init__(self,
+                 num_classes=80,
+                 matcher='HungarianMatcher',
+                 loss_coeff={
+                     'class': 4,
+                     'bbox': 5,
+                     'giou': 2,
+                     'mask': 5,
+                     'dice': 5,
+                     'order': 50
+                 },
+                 aux_loss=True,
+                 use_focal_loss=False,
+                 use_vfl=False,
+                 vfl_iou_type='bbox',
+                 num_sample_points=12544,
+                 oversample_ratio=3.0,
+                 important_sample_ratio=0.75,
+                 order_loss_config=None):
+        super(DocLayoutV3Loss, self).__init__(
+            num_classes=num_classes,
+            matcher=matcher,
+            loss_coeff=loss_coeff,
+            aux_loss=aux_loss,
+            use_focal_loss=use_focal_loss,
+            use_vfl=use_vfl,
+            vfl_iou_type=vfl_iou_type,
+            num_sample_points=num_sample_points,
+            oversample_ratio=oversample_ratio,
+            important_sample_ratio=important_sample_ratio
+        )
+        if order_loss_config is None:
+            order_loss_config = {}
+        self.read_order_loss = RelativeReadingOrderLoss(**order_loss_config)
+
+    def forward(self,
+                boxes,
+                logits,
+                order_logits,
+                gt_bbox,
+                gt_class,
+                gt_read_order,
+                masks=None,
+                gt_mask=None,
+                postfix="",
+                dn_out_bboxes=None,
+                dn_out_logits=None,
+                dn_out_masks=None,
+                dn_meta=None,
+                **kwargs):
+        """
+        Forward pass to compute all losses including reading order loss.
+
+        Args:
+            boxes: Predicted bounding boxes [num_layers, batch_size, num_queries, 4].
+            logits: Classification logits [num_layers, batch_size, num_queries, num_classes].
+            order_logits: Pairwise order logits [num_layers, batch_size, num_queries, num_queries].
+            gt_bbox: Ground truth bboxes, list of [num_gts_i, 4].
+            gt_class: Ground truth classes, list of [num_gts_i].
+            gt_read_order: Ground truth reading order, list of [num_gts_i]. Values < 0 = invalid.
+            masks: Predicted masks [num_layers, batch_size, num_queries, H, W]. Default: None.
+            gt_mask: Ground truth masks, list of [num_gts_i, H, W]. Default: None.
+            postfix: Suffix for loss keys. Default: "".
+            dn_out_bboxes/dn_out_logits/dn_out_masks: Denoising outputs. Default: None.
+            dn_meta: Denoising metadata. Default: None.
+
+        Returns:
+            dict: Loss values including 'order_loss' and base losses from MaskDINOLoss.
+        """
+        # Call MaskDINOLoss.forward for all base losses (class/bbox/giou/mask/dice + denoising)
+        total_loss = super().forward(
+            boxes, logits, gt_bbox, gt_class,
+            masks=masks, gt_mask=gt_mask, postfix=postfix,
+            dn_out_bboxes=dn_out_bboxes, dn_out_logits=dn_out_logits,
+            dn_out_masks=dn_out_masks, dn_meta=dn_meta, **kwargs)
+
+        # Compute reading order loss (last decoder layer only)
+        if order_logits is not None and gt_read_order is not None:
+            match_indices = self.matcher(
+                boxes[-1], logits[-1], gt_bbox, gt_class,
+                masks=masks[-1] if masks is not None else None,
+                gt_mask=gt_mask)
+            total_loss["order_loss"] = (
+                self.read_order_loss(order_logits[-1], gt_read_order, match_indices)
+                * self.loss_coeff['order'])
+
+        return total_loss
+

@@ -46,8 +46,7 @@ def get_categories(metric_type, anno_file=None, arch=None):
             "otherwise the default categories will be used by metric_type.".
             format(anno_file))
 
-    if metric_type.lower() == 'coco' or metric_type.lower(
-    ) == 'rbox' or metric_type.lower() == 'snipercoco':
+    if metric_type.lower() in ('coco', 'rbox', 'snipercoco', 'doclayoutv3metric'):
         if anno_file and os.path.isfile(anno_file):
             if anno_file.endswith('json'):
                 # lazy import pycocotools here

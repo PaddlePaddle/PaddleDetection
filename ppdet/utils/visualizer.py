@@ -86,7 +86,27 @@ def draw_mask(image, im_id, segms, threshold, alpha=0.7):
 
 def draw_bbox(image, im_id, catid2name, bboxes, threshold):
     """
-    Draw bbox on image
+    Draw bounding boxes on image with optional reading order visualization.
+
+    This function draws detection results on the input image. If the detections
+    include reading order information (e.g., from PP-DocLayoutV3), it will:
+    1. Sort bboxes by reading order
+    2. Draw connecting lines between bbox centers to visualize the reading sequence
+
+    Args:
+        image (PIL.Image): Input image to draw on.
+        im_id (int): Image ID to filter relevant detections.
+        catid2name (dict): Mapping from category ID to category name.
+        bboxes (list[dict]): List of detection results. Each dict should contain:
+            - image_id: Image ID
+            - category_id: Category ID
+            - bbox: Bounding box in [x, y, w, h] or [x1, y1, x2, y2, x3, y3, x4, y4] format
+            - score: Confidence score
+            - read_order (optional): Reading order index for visualization
+        threshold (float): Score threshold to filter detections.
+
+    Returns:
+        PIL.Image: Image with drawn bounding boxes and optional reading order lines.
     """
     font_url = "https://paddledet.bj.bcebos.com/simfang.ttf"
     font_path, _ = get_path(font_url, "~/.cache/paddle/")
@@ -95,6 +115,14 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
 
     draw = ImageDraw.Draw(image)
 
+    # Check if reading order information is available
+    # If present, sort bboxes by reading order for visualization
+    vis_order = False
+    if len(bboxes) > 0 and bboxes[0].get("read_order", None) is not None:
+        bboxes = sorted(bboxes, key=lambda x: x['read_order'])
+        vis_order = True
+
+    centers = []
     catid2color = {}
     color_list = colormap(rgb=True)[:40]
     for dt in np.array(bboxes):
@@ -120,6 +148,8 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
                  (xmin, ymin)],
                 width=2,
                 fill=color)
+            cx, cy = int(xmin + w/2), int(ymin + h/2)
+            centers.append((cx, cy))
         elif len(bbox) == 8:
             x1, y1, x2, y2, x3, y3, x4, y4 = bbox
             draw.line(
@@ -137,6 +167,12 @@ def draw_bbox(image, im_id, catid2name, bboxes, threshold):
         draw.rectangle(
             [(xmin + 1, ymin - th), (xmin + tw + 1, ymin)], fill=color)
         draw.text((xmin + 1, ymin - th), text, fill=(255, 255, 255), font=font)
+
+    # Draw reading order connections if available
+    # Connect bbox centers in reading order sequence with red lines
+    if vis_order:
+        for i in range(len(centers)-1):
+            draw.line([centers[i], centers[i+1]], fill=(255, 0, 0), width=2)
 
     return image
 

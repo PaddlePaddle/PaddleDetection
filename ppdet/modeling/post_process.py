@@ -27,7 +27,7 @@ except Exception:
 __all__ = [
     'BBoxPostProcess', 'MaskPostProcess', 'JDEBBoxPostProcess',
     'CenterNetPostProcess', 'DETRPostProcess', 'SparsePostProcess',
-    'DETRBBoxSemiPostProcess'
+    'DETRBBoxSemiPostProcess', 'DocLayoutV3PostProcess'
 ]
 
 
@@ -76,7 +76,7 @@ class BBoxPostProcess(object):
                                               scale_factor)
 
         if self.export_onnx:
-            # add fake box after postprocess when exporting onnx 
+            # add fake box after postprocess when exporting onnx
             fake_bboxes = paddle.to_tensor(
                 np.array(
                     [[0., 0.0, 0.0, 0.0, 1.0, 1.0]], dtype='float32'))
@@ -91,8 +91,8 @@ class BBoxPostProcess(object):
 
     def get_pred(self, bboxes, bbox_num, im_shape, scale_factor):
         """
-        Rescale, clip and filter the bbox from the output of NMS to 
-        get final prediction. 
+        Rescale, clip and filter the bbox from the output of NMS to
+        get final prediction.
 
         Notes:
         Currently only support bs = 1.
@@ -144,7 +144,7 @@ class BBoxPostProcess(object):
             # scale_factor: scale_y, scale_x
             for i in range(bbox_num.shape[0]):
                 expand_shape = paddle.expand(origin_shape[i:i + 1, :],
-                                             [bbox_num[i:i + 1], 2])                          
+                                             [bbox_num[i:i + 1], 2])
                 scale_y, scale_x = scale_factor[i, 0], scale_factor[i, 1]
                 # TODO(PIR): something wrong with slice op, remove unsqueeze in the future.
                 scale_y = paddle.unsqueeze(scale_y, 0)
@@ -295,18 +295,18 @@ class JDEBBoxPostProcess(nn.Layer):
 
     def forward(self, head_out, anchors):
         """
-        Decode the bbox and do NMS for JDE model. 
+        Decode the bbox and do NMS for JDE model.
 
         Args:
             head_out (list): Bbox_pred and cls_prob of bbox_head output.
             anchors (list): Anchors of JDE model.
 
         Returns:
-            boxes_idx (Tensor): The index of kept bboxes after decode 'JDEBox'. 
+            boxes_idx (Tensor): The index of kept bboxes after decode 'JDEBox'.
             bbox_pred (Tensor): The output is the prediction with shape [N, 6]
                 including labels, scores and bboxes.
             bbox_num (Tensor): The number of prediction of each batch with shape [N].
-            nms_keep_idx (Tensor): The index of kept bboxes after NMS. 
+            nms_keep_idx (Tensor): The index of kept bboxes after NMS.
         """
         boxes_idx, yolo_boxes_scores = self.decode(head_out, anchors)
 
@@ -446,6 +446,67 @@ class CenterNetPostProcess(object):
         results = paddle.concat([clses, scores, bboxes], axis=1)
         return results, paddle.shape(results)[0:1], inds, topk_clses, ys, xs
 
+def get_order(order_logits):
+    """
+    Decode reading order sequence from pairwise order logits matrix.
+
+    This function implements a voting-based decoding algorithm to convert pairwise
+    order relationships into a sequential reading order. The algorithm:
+    1. Converts logits to probabilities using sigmoid
+    2. Counts votes: for each element i, count how many elements come before it
+    3. Sorts elements by vote count (fewer votes = earlier in sequence)
+
+    The voting mechanism works as follows:
+        - order_votes[i] = Σ_j sigmoid(logits[j,i])
+        - Intuitively: "how many elements are predicted to come before element i"
+        - Elements with lower vote counts should appear earlier in reading order
+
+    Args:
+        order_logits (Tensor): Complete pairwise order relationship matrix.
+            Shape: [batch_size, num_elements, num_elements]
+            where logits[b, i, j] > 0 indicates element i comes before element j.
+
+    Returns:
+        tuple: (order_seq, order_votes)
+            - order_seq (Tensor): Reading order position for each element.
+                Shape: [batch_size, num_elements]
+                order_seq[b, i] is the position (0-indexed) of element i in the
+                final reading order for batch b.
+            - order_votes (Tensor): Vote scores used for sorting.
+                Shape: [batch_size, num_elements]
+                Lower score = earlier position in reading order.
+
+    Example:
+        >>> order_logits = paddle.randn([2, 5, 5])  # 2 images, 5 elements each
+        >>> order_seq, order_votes = get_order(order_logits)
+        >>> # order_seq[0] might be [2, 0, 4, 1, 3], meaning:
+        >>> #   - Element 0 is at position 1 (2nd in order)
+        >>> #   - Element 1 is at position 3 (4th in order)
+        >>> #   - Element 2 is at position 0 (1st in order), etc.
+    """
+    B, N, _ = order_logits.shape
+
+    # Apply sigmoid to convert logits to probabilities [0, 1]
+    order_scores = paddle.nn.functional.sigmoid(order_logits)  # [B, N, N]
+
+    # Zero out diagonal (an element cannot come before itself)
+    eye = paddle.eye(N, dtype=order_scores.dtype).unsqueeze(0)  # [1, N, N]
+    order_scores = order_scores * (1.0 - eye)
+
+    # Sum over columns to get vote counts for each element
+    # order_votes[i] = number of elements predicted to come before element i
+    order_votes = paddle.sum(order_scores, axis=1)  # [B, N]
+
+    # Sort elements by vote count (ascending): fewer votes = earlier position
+    order_pointers = paddle.argsort(order_votes, axis=1, descending=False)
+
+    # Convert sorted indices to position assignments
+    # order_seq[i] = position of element i in the final reading order
+    order_seq = paddle.full(order_pointers.shape, -1, dtype=order_pointers.dtype)
+    batch_indices = paddle.arange(B).reshape([-1, 1]).expand([B, N])
+    order_seq[batch_indices, order_pointers] = paddle.arange(N).expand([B, N])
+
+    return order_seq, order_votes
 
 @register
 class DETRPostProcess(object):
@@ -483,6 +544,7 @@ class DETRPostProcess(object):
         if self.use_avg_mask_score:
             avg_mask_score = (mask_pred * mask_score).sum([-2, -1]) / (
                 mask_pred.sum([-2, -1]) + 1e-6)
+            # TODO(gaotingquan): raise error when don't resize on exporting
             score_pred *= avg_mask_score
 
         return mask_pred.flatten(0, 1).astype('int32'), score_pred
@@ -582,6 +644,130 @@ class DETRPostProcess(object):
         bbox_num = paddle.to_tensor(
             self.num_top_queries, dtype='int32').tile([bbox_pred.shape[0]])
         bbox_pred = bbox_pred.reshape([-1, 6])
+        return bbox_pred, bbox_num, mask_pred
+
+
+@register
+class DocLayoutV3PostProcess(DETRPostProcess):
+    """
+    PP-DocLayoutV3 Post-Processing with reading order decoding.
+
+    This post-processor extends DETRPostProcess to handle reading order predictions
+    for document layout analysis. It decodes pairwise order logits into sequential
+    reading order and includes it in the final output.
+
+    Key enhancements over DETRPostProcess:
+        1. Accepts 4-element head_out tuple (adds order_logits)
+        2. Decodes reading order using voting-based algorithm (get_order function)
+        3. Returns 7-field bbox predictions: [label, score, x1, y1, x2, y2, order]
+        4. Synchronizes order predictions with top-k filtering
+
+    Output format:
+        bbox_pred: [N, 7] tensor with fields:
+            - bbox_pred[:, 0]: class label (int)
+            - bbox_pred[:, 1]: confidence score (float)
+            - bbox_pred[:, 2:6]: bounding box [x1, y1, x2, y2] (float)
+            - bbox_pred[:, 6]: reading order position (int, 0-indexed)
+
+    Inheritance:
+        Inherits from DETRPostProcess, which provides bbox decoding, score computation,
+        and mask post-processing. Only extends the __call__ method to add order handling.
+
+    Examples:
+        .. code-block:: python
+
+            post_processor = DocLayoutV3PostProcess(
+                num_classes=25,
+                num_top_queries=300,
+                use_focal_loss=True,
+                with_mask=True
+            )
+            # Model outputs
+            bboxes, logits, order_logits, masks = model(images)
+            # Post-process
+            bbox_pred, bbox_num, mask_pred = post_processor(
+                (bboxes, logits, order_logits, masks),
+                im_shape, scale_factor, pad_shape
+            )
+            # bbox_pred now includes reading order in last column
+    """
+    __shared__ = ['num_classes', 'use_focal_loss', 'with_mask']
+    __inject__ = []
+
+    def __init__(self, num_classes=80, use_focal_loss=False, with_mask=False,
+                 resize_mask=False, **kwargs):
+        super(DocLayoutV3PostProcess, self).__init__(
+            num_classes=num_classes, use_focal_loss=use_focal_loss,
+            with_mask=with_mask, **kwargs)
+        self.resize_mask = resize_mask
+
+    def __call__(self, head_out, im_shape, scale_factor, pad_shape):
+        """
+        Decode bounding boxes, masks, and reading order from model predictions.
+
+        Args:
+            head_out (tuple): (bboxes, logits, order_logits, masks)
+            im_shape (Tensor): Image shape [batch_size, 2] (height, width).
+            scale_factor (Tensor): Scale factor [batch_size, 2].
+            pad_shape (Tensor): Padded image shape [batch_size, 2].
+
+        Returns:
+            tuple: (bbox_pred [N, 7], bbox_num [batch_size], mask_pred or None)
+        """
+        bboxes, logits, order_logits, masks = head_out
+
+        # Decode bbox from (cx, cy, w, h) to (x1, y1, x2, y2)
+        bbox_pred = bbox_cxcywh_to_xyxy(bboxes)
+
+        # Scale to original image shape
+        origin_shape = paddle.floor(im_shape / scale_factor + 0.5)
+        img_h, img_w = paddle.split(origin_shape, 2, axis=-1)
+        out_shape = origin_shape.flip(1).tile([1, 2]).unsqueeze(1)
+        bbox_pred *= out_shape
+
+        # Compute scores (focal loss path)
+        scores = F.sigmoid(logits)
+
+        # Decode reading order
+        order_seq, order_votes = get_order(order_logits)
+
+        # Top-k filtering (focal loss path)
+        scores, index = paddle.topk(
+            scores.flatten(1), self.num_top_queries, axis=-1)
+        labels = index % self.num_classes
+        index = index // self.num_classes
+        batch_ind = paddle.arange(end=scores.shape[0]).unsqueeze(-1).tile(
+            [1, self.num_top_queries])
+        index = paddle.stack([batch_ind, index], axis=-1)
+        bbox_pred = paddle.gather_nd(bbox_pred, index)
+        order_seq = paddle.gather_nd(order_seq, index)
+
+        # Mask post-processing
+        mask_pred = None
+        if self.with_mask:
+            assert masks is not None
+            assert masks.shape[0] == 1
+            masks = paddle.gather_nd(masks, index)
+            img_h = img_h[0].astype('int32')
+            img_w = img_w[0].astype('int32')
+            if self.resize_mask:
+                masks = F.interpolate(
+                    masks,
+                    size=[img_h, img_w],
+                    mode="bilinear",
+                    align_corners=False)
+            mask_pred, scores = self._mask_postprocess(masks, scores)
+
+        # Output: [label, score, x1, y1, x2, y2, order_seq]
+        bbox_pred = paddle.concat([
+            labels.unsqueeze(-1).astype('float32'),
+            scores.unsqueeze(-1),
+            bbox_pred,
+            order_seq.unsqueeze(-1).astype('float32'),
+        ], axis=-1)
+        bbox_num = paddle.to_tensor(
+            self.num_top_queries, dtype='int32').tile([bbox_pred.shape[0]])
+        bbox_pred = bbox_pred.reshape([-1, 7])
         return bbox_pred, bbox_num, mask_pred
 
 

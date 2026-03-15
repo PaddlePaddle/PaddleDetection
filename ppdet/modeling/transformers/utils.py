@@ -33,7 +33,7 @@ __all__ = [
     '_get_clones', 'bbox_overlaps', 'bbox_cxcywh_to_xyxy',
     'bbox_xyxy_to_cxcywh', 'sigmoid_focal_loss', 'inverse_sigmoid',
     'deformable_attention_core_func', 'varifocal_loss_with_logits',
-    'mal_loss_with_logits'
+    'mal_loss_with_logits', 'AntisymmetricPairwiseScorer'
 ]
 
 
@@ -523,3 +523,116 @@ def mal_loss_with_logits(pred_logits,
                                               weight=weight,
                                               reduction='none')
     return loss.mean(1).sum() / normalizer
+
+
+class AntisymmetricPairwiseScorer(nn.Layer):
+    """
+    Antisymmetric pairwise scoring module for modeling ordered relationships.
+
+    This module is used in PP-DocLayoutV3 to predict reading order relationships between
+    document elements. It models pairwise relationships through query-key interactions
+    and enforces antisymmetric property to ensure consistency.
+
+    The core mechanism:
+        1. Project input features to query and key representations
+        2. Compute pairwise scores via dot product: score[i,j] = query[i] · key[j]
+        3. Enforce antisymmetry: logits[i,j] = score[i,j] - score[j,i]
+
+    Antisymmetric property guarantees:
+        - logits[i,j] = -logits[j,i] (skew-symmetry)
+        - logits[i,i] = 0 (diagonal is zero)
+        - If logits[i,j] > 0, then logits[j,i] < 0 (consistent ordering)
+
+    This property is crucial for reading order prediction as it ensures that if
+    element i comes before j, then j cannot come before i.
+
+    Args:
+        hidden_size (int): Input feature dimension (e.g., 256).
+        head_size (int): Dimension per head for query/key projections.
+            Smaller values reduce parameters but may limit expressiveness.
+            Default: 64.
+
+    Shape:
+        - Input: [batch_size, num_elements, hidden_size]
+        - Output: [batch_size, num_elements, num_elements]
+            where output[b, i, j] represents the relationship score from i to j.
+
+    Examples:
+        .. code-block:: python
+
+            global_pointer = AntisymmetricPairwiseScorer(hidden_size=256, head_size=64)
+            features = paddle.randn([2, 100, 256])  # 2 images, 100 elements each
+            logits = global_pointer(features)  # [2, 100, 100]
+            # logits[0, i, j] > 0 means element i likely comes before j
+            # Verify antisymmetry: logits[0, i, j] == -logits[0, j, i]
+
+    Note:
+        The temperature scaling (division by sqrt(head_size)) helps stabilize training
+        by preventing very large logits, similar to scaled dot-product attention.
+
+    References:
+        Based on the Global Pointer mechanism from entity relation extraction,
+        adapted for reading order prediction in document understanding.
+    """
+
+    def __init__(self, hidden_size, head_size=64):
+        super().__init__()
+        self.head_size = head_size
+        # Project to query and key jointly (more parameter efficient)
+        self.dense = nn.Linear(hidden_size, 2 * head_size)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, inputs):
+        """
+        Forward pass to compute pairwise relationship logits.
+
+        The computation follows these steps:
+        1. Linear projection: inputs -> [query, key] representations
+        2. Separate query and key: split along the last dimension
+        3. Compute raw scores: query[i] · key[j] for all pairs (i, j)
+        4. Apply antisymmetric constraint: logits[i,j] = raw[i,j] - raw[j,i]
+        5. Temperature scaling: divide by sqrt(head_size) for stability
+
+        The antisymmetric constraint is the key operation:
+            logits = raw_logits - raw_logits^T
+        This ensures that:
+            - If raw[i,j] > raw[j,i], then logits[i,j] > 0 (i before j)
+            - If raw[i,j] < raw[j,i], then logits[i,j] < 0 (j before i)
+            - Always: logits[i,j] = -logits[j,i] (perfect antisymmetry)
+
+        Args:
+            inputs (Tensor): Input feature tensor.
+                Shape: [batch_size, num_elements, hidden_size]
+
+        Returns:
+            Tensor: Pairwise relationship logits with antisymmetric property.
+                Shape: [batch_size, num_elements, num_elements]
+                logits[b, i, j] > 0 indicates element i likely precedes element j.
+                logits[b, i, j] = -logits[b, j, i] (antisymmetric).
+                logits[b, i, i] = 0 (diagonal is zero).
+
+        Note:
+            The output logits should be used with BCE loss or sigmoid activation
+            for training and inference. The antisymmetric property means only the
+            upper or lower triangle needs to be supervised (the other is redundant).
+        """
+        B, N, _ = inputs.shape
+
+        # Project inputs to query and key representations
+        # proj shape: [B, N, 2, head_size]
+        proj = self.dense(inputs).reshape([B, N, 2, self.head_size])
+        proj = self.dropout(proj)
+
+        # Split into query and key
+        qw, kw = proj[:, :, 0, :], proj[:, :, 1, :]  # Each: [B, N, head_size]
+
+        # Compute raw pairwise scores: query[i] · key[j] for all pairs
+        # Using Einstein summation for efficient batch matrix multiplication
+        # 'bmd,bnd->bmn' means: for each batch b, compute qw[m] · kw[n]
+        raw_logits = paddle.einsum('bmd,bnd->bmn', qw, kw) / (self.head_size ** 0.5)
+
+        # Enforce antisymmetric constraint: logits[i,j] = raw[i,j] - raw[j,i]
+        # This guarantees logits[i,j] = -logits[j,i]
+        logits = raw_logits - raw_logits.transpose([0, 2, 1])
+
+        return logits  # [B, N, N]

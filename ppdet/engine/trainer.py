@@ -298,7 +298,7 @@ class Trainer(object):
             self._metrics = []
             return
         classwise = self.cfg['classwise'] if 'classwise' in self.cfg else False
-        if self.cfg.metric == 'COCO' or self.cfg.metric == "SNIPERCOCO":
+        if self.cfg.metric == 'COCO' or self.cfg.metric == "SNIPERCOCO" or self.cfg.metric == "DocLayoutV3Metric":
             # TODO: bias should be unified
             bias = 1 if self.cfg.get('bias', False) else 0
             output_eval = self.cfg['output_eval'] \
@@ -335,6 +335,29 @@ class Trainer(object):
                         IouType=IouType,
                         save_prediction_only=save_prediction_only,
                         save_threshold=save_threshold)
+                ]
+            elif self.cfg.metric == "DocLayoutV3Metric":
+                from ppdet.metrics import DocLayoutV3Metric
+                eval_mask = self.cfg.get('DocLayoutV3Metric',
+                                         {}).get('eval_mask', False)
+                resize_mask = self.cfg.get('DocLayoutV3PostProcess',
+                                           {}).get('resize_mask', False)
+                if eval_mask and not resize_mask:
+                    logger.warning(
+                        "eval_mask=True requires resize_mask=True in "
+                        "DocLayoutV3PostProcess. Forcing eval_mask=False.")
+                    eval_mask = False
+                self._metrics = [
+                    DocLayoutV3Metric(
+                        anno_file=anno_file,
+                        clsid2catid=clsid2catid,
+                        classwise=classwise,
+                        output_eval=output_eval,
+                        bias=bias,
+                        IouType=IouType,
+                        save_prediction_only=save_prediction_only,
+                        save_threshold=save_threshold,
+                        eval_mask=eval_mask)
                 ]
             elif self.cfg.metric == "SNIPERCOCO":  # sniper
                 self._metrics = [
@@ -787,7 +810,7 @@ class Trainer(object):
 
             self._eval_mot_dataset.set_images(self.parse_mot_images(infer_dir))
             dataloader = create('EvalMOTReader')(
-                self._eval_mot_dataset, 0, 
+                self._eval_mot_dataset, 0,
                 paddle.io.BatchSampler(
                     self._eval_mot_dataset, batch_size=self.cfg.EvalReader['batch_size']
                 )
@@ -847,9 +870,9 @@ class Trainer(object):
         timer_calls = np.asarray(timer_calls)
         all_time = np.dot(timer_avgs, timer_calls)
         avg_time = all_time / np.sum(timer_calls)
-        
+
         self.status['sample_num'] = num_samples
-        self.status['cost_time'] = all_time 
+        self.status['cost_time'] = all_time
 
         # accumulate metric to log out
         for metric in self._metrics:
@@ -1161,7 +1184,7 @@ class Trainer(object):
             self.mode = mode
             self.cfg.pop('save_prediction_only')
             if save_prediction_only is not None:
-                self.cfg['save_prediction_only'] = save_prediction_only            
+                self.cfg['save_prediction_only'] = save_prediction_only
 
             self.cfg.pop('output_eval')
             if output_eval is not None:
@@ -1278,7 +1301,7 @@ class Trainer(object):
         else:
             static_model = None
             pruned_input_spec = input_spec
-        
+
         return static_model, pruned_input_spec
 
     def _get_infer_cfg_and_input_spec(self,
@@ -1379,7 +1402,7 @@ class Trainer(object):
                     "image": InputSpec(
                         shape=image_shape, name='image')
                 }]
-        
+
         # Save infer cfg
         _dump_infer_config(self.cfg,
                            os.path.join(save_dir, yaml_name), image_shape,

@@ -8,10 +8,11 @@ shapely
 scipy
 terminaltables
 Cython
-pycocotools
+pycocotools==2.0.8
 setuptools
 Pillow
 packaging
+scikit-learn
 
 # for MOT evaluation and inference
 lapx
