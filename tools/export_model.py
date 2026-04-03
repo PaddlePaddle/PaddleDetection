@@ -57,6 +57,12 @@ def parse_args():
         type=str,
         help="Configuration file of slim method.")
     parser.add_argument("--for_fd", action='store_true')
+    parser.add_argument(
+        "--export_safetensors",
+        action='store_true',
+        help="Also export model in HuggingFace safetensors format "
+             "(model.safetensors, config.json, preprocessor_config.json, "
+             "inference.yml).")
     args = parser.parse_args()
     return args
 
@@ -77,7 +83,8 @@ def run(FLAGS, cfg):
             trainer.load_weights(cfg.weights)
 
     # export model
-    trainer.export(FLAGS.output_dir, for_fd=FLAGS.for_fd)
+    trainer.export(FLAGS.output_dir, for_fd=FLAGS.for_fd,
+                   export_safetensors=FLAGS.export_safetensors)
 
     if FLAGS.export_serving_model:
         assert not FLAGS.for_fd

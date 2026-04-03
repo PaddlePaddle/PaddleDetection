@@ -1410,7 +1410,8 @@ class Trainer(object):
 
         return static_model, pruned_input_spec, input_spec
 
-    def export(self, output_dir='output_inference', for_fd=False):
+    def export(self, output_dir='output_inference', for_fd=False,
+               export_safetensors=False):
         if hasattr(self.model, 'aux_neck'):
             self.model.__delattr__('aux_neck')
         if hasattr(self.model, 'aux_head'):
@@ -1437,6 +1438,19 @@ class Trainer(object):
 
         if not os.path.exists(save_dir):
             os.makedirs(save_dir)
+
+        # Export safetensors (before jit.to_static which destroys dygraph state)
+        if export_safetensors:
+            from ppdet.utils.safetensors_export import export_safetensors as _export_st
+            safetensors_dir = os.path.join(save_dir, 'safetensors')
+            _export_st(model, self.cfg, safetensors_dir)
+            # Generate inference.yml into safetensors dir
+            infer_yaml_name = yaml_name or 'inference.yml'
+            self._dump_safetensors_infer_config(
+                model, safetensors_dir, infer_yaml_name)
+            logger.info(
+                "Safetensors export saved in {}".format(safetensors_dir))
+
         static_model, pruned_input_spec, input_spec = self._get_infer_cfg_and_input_spec(
             save_dir, yaml_name=yaml_name, model=model)
 
@@ -1466,6 +1480,26 @@ class Trainer(object):
                 os.path.join(save_dir, save_name),
                 input_spec=pruned_input_spec)
         logger.info("Export model and saved in {}".format(save_dir))
+
+    def _dump_safetensors_infer_config(self, model, save_dir, yaml_name):
+        """Generate inference.yml for safetensors export directory."""
+        from ppdet.engine.export_utils import _dump_infer_config
+        reader_cfg = self.cfg.get('TestReader', {})
+        image_shape = reader_cfg.get('inputs_def', {}).get(
+            'image_shape', [3, 640, 640])
+        image_shape = [None] + image_shape
+        # Build minimal input_spec for _dump_infer_config
+        input_spec = [{
+            'image': InputSpec(
+                shape=image_shape, name='image'),
+            'im_shape': InputSpec(
+                shape=[None, 2], dtype='float32', name='im_shape'),
+            'scale_factor': InputSpec(
+                shape=[None, 2], dtype='float32', name='scale_factor'),
+        }]
+        _dump_infer_config(
+            self.cfg, os.path.join(save_dir, yaml_name),
+            image_shape, model, input_spec)
 
     def post_quant(self, output_dir='output_inference'):
         model_name = os.path.splitext(os.path.split(self.cfg.filename)[-1])[0]
