@@ -127,7 +127,7 @@ export CUDA_VISIBLE_DEVICES=0
 python tools/eval.py \
     -c configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.yml \
     --json_eval \
-    -output_eval evaluation/
+    --output_eval evaluation/
 ```
 
 El archivo JSON debe llamarse `bbox.json` o `mask.json` y estar en el directorio `evaluation/`.

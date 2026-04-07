@@ -44,7 +44,7 @@ Antes de comenzar, verifica que tu computadora cumpla con los requisitos mínimo
 1. Ve a [https://www.python.org/downloads/windows/](https://www.python.org/downloads/windows/)
 2. Descarga **Python 3.8.x** o **Python 3.9.x** (versión de 64 bits — busca el instalador que diga "Windows installer (64-bit)")
 
-   > ⚠️ **Importante**: NO uses Python 3.10 o superior (puede haber incompatibilidades). Se recomienda Python 3.8 o 3.9.
+   > ⚠️ **Importante**: Se recomienda Python 3.8 o 3.9 para mayor estabilidad. Python 3.10 también es compatible según la documentación oficial, pero se han reportado problemas con algunas dependencias en Windows.
 
 ### Paso 2.2 — Instalar Python
 
@@ -440,7 +440,7 @@ python tools/infer.py -c configs/ppyolo/ppyolo_r50vd_dcn_1x_coco.yml -o use_gpu=
 |---------|-------------|
 | [GETTING_STARTED_es.md](GETTING_STARTED_es.md) | Guía completa de entrenamiento, evaluación e inferencia |
 | [QUICK_STARTED_es.md](QUICK_STARTED_es.md) | Tutorial de 10 minutos con dataset real |
-| [Zoo de Modelos](../../docs/MODEL_ZOO_en.md) | Todos los modelos disponibles con sus métricas |
+| [Zoo de Modelos](../../docs/MODEL_ZOO_en.md) (en inglés) | Todos los modelos disponibles con sus métricas |
 | [Preparación de Datos](./data/PrepareDetDataSet_en.md) | Cómo preparar tu propio dataset |
 | [README_es.md](../../README_es.md) | README principal en español |
 
