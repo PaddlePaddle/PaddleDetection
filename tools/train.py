@@ -177,7 +177,11 @@ def main():
 
     if 'use_gpu' not in cfg:
         cfg.use_gpu = False
-
+        
+    # disable metax_gpu in config by default    
+    if 'use_metax_gpu' not in cfg:
+        cfg.use_metax_gpu = False
+         
     # disable mlu in config by default
     if 'use_mlu' not in cfg:
         cfg.use_mlu = False
@@ -188,6 +192,8 @@ def main():
 
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
+    elif cfg.use_metax_gpu:
+        place = paddle.set_device('metax_gpu')
     elif cfg.use_npu:
         place = paddle.set_device('npu')
     elif cfg.use_xpu:
@@ -206,6 +212,7 @@ def main():
     merge_config(FLAGS.opt)
     check.check_config(cfg)
     check.check_gpu(cfg.use_gpu)
+    check.check_metax_gpu(cfg.use_metax_gpu)
     check.check_npu(cfg.use_npu)
     check.check_xpu(cfg.use_xpu)
     check.check_mlu(cfg.use_mlu)
