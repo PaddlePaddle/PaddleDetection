@@ -32,7 +32,7 @@ import ast
 import paddle
 from ppdet.core.workspace import create, load_config, merge_config
 from ppdet.engine import Trainer, Trainer_ARSL
-from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_gcu, check_iluvatar_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_metax_gpu, check_npu, check_xpu, check_mlu, check_gcu, check_iluvatar_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.slim import build_slim_model
 
@@ -241,7 +241,10 @@ def main():
 
     if 'use_gpu' not in cfg:
         cfg.use_gpu = False
-
+        
+    if 'use_metax_gpu' not in cfg:
+        cfg.use__metax_gpu = False
+        
     # disable mlu in config by default
     if 'use_mlu' not in cfg:
         cfg.use_mlu = False
@@ -256,6 +259,8 @@ def main():
 
     if cfg.use_gpu:
         place = paddle.set_device('gpu')
+    elif cfg.use_metax_gpu:
+        place = paddle.set_device('metax_gpu')
     elif cfg.use_npu:
         place = paddle.set_device('npu')
     elif cfg.use_xpu:
@@ -274,6 +279,7 @@ def main():
 
     check_config(cfg)
     check_gpu(cfg.use_gpu)
+    check_metax_gpu(cfg.use_metax_gpu)
     check_npu(cfg.use_npu)
     check_xpu(cfg.use_xpu)
     check_mlu(cfg.use_mlu)
