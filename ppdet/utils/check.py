@@ -26,7 +26,7 @@ from .logger import setup_logger
 logger = setup_logger(__name__)
 
 __all__ = [
-    'check_gpu', 'check_npu', 'check_xpu', 'check_mlu', 'check_gcu', 'check_iluvatar_gpu'
+    'check_gpu', 'check_npu', 'check_xpu', 'check_mlu', 'check_gcu', 'check_iluvatar_gpu','check_metax_gpu',
     'check_version', 'check_config'
 ]
 
@@ -43,6 +43,23 @@ def check_iluvatar_gpu(use_iluvatar_gpu):
 
     try:
         if use_iluvatar_gpu and not 'iluvatar_gpu' in paddle.device.get_all_custom_device_type():
+            logger.error(err)
+            sys.exit(1)
+    except Exception as e:
+        pass
+def check_metax_gpu(use_metax_gpu):
+    """
+    Log error and exit when set use_metax_gpu=true in paddlepaddle
+    cpu/gpu/xpu/npu version.
+    """
+    err = "Config use_iluvatar_gpu cannot be set as true while you are " \
+          "using paddlepaddle cpu/gpu/xpu/npu/mlu version ! \nPlease try: \n" \
+          "\t1. Install paddlepaddle-iluvatar-gpu to run model on metax_GPU \n" \
+          "\t2. Set use_metax_gpu as false in config file to run " \
+          "model on CPU/GPU/XPU/NPU/MLU"
+
+    try:
+        if use_metax_gpu and not 'metax_gpu' in paddle.device.get_all_custom_device_type():
             logger.error(err)
             sys.exit(1)
     except Exception as e:

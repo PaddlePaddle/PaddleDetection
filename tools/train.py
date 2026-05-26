@@ -181,6 +181,9 @@ def main():
     # disable mlu in config by default
     if 'use_mlu' not in cfg:
         cfg.use_mlu = False
+    # disable metax_gpu in config by default
+    if 'use_metax_gpu' not in cfg:
+        cfg.use_metax_gpu = False
 
     # disable iluvatar_gpu in config by default
     if 'use_iluvatar_gpu' not in cfg:
@@ -192,6 +195,8 @@ def main():
         place = paddle.set_device('npu')
     elif cfg.use_xpu:
         place = paddle.set_device('xpu')
+    elif cfg.use_metax_gpu:
+        place = paddle.set_device('metax_gpu')
     elif cfg.use_mlu:
         place = paddle.set_device('mlu')
     elif cfg.use_iluvatar_gpu:
@@ -209,6 +214,7 @@ def main():
     check.check_npu(cfg.use_npu)
     check.check_xpu(cfg.use_xpu)
     check.check_mlu(cfg.use_mlu)
+    check.check_metax_gpu(cfg.use_metax_gpu)
     check.check_iluvatar_gpu(cfg.use_iluvatar_gpu)
     check.check_version()
 
