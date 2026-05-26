@@ -52,7 +52,7 @@ def check_metax_gpu(use_metax_gpu):
     Log error and exit when set use_metax_gpu=true in paddlepaddle
     cpu/gpu/xpu/npu version.
     """
-    err = "Config use_iluvatar_gpu cannot be set as true while you are " \
+    err = "Config use_metax_gpu cannot be set as true while you are " \
           "using paddlepaddle cpu/gpu/xpu/npu/mlu version ! \nPlease try: \n" \
           "\t1. Install paddlepaddle-iluvatar-gpu to run model on metax_GPU \n" \
           "\t2. Set use_metax_gpu as false in config file to run " \
