@@ -32,7 +32,7 @@ import ast
 import paddle
 from ppdet.core.workspace import create, load_config, merge_config
 from ppdet.engine import Trainer, Trainer_ARSL
-from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_gcu, check_iluvatar_gpu, check_version, check_config
+from ppdet.utils.check import check_gpu, check_npu, check_xpu, check_mlu, check_gcu, check_iluvatar_gpu, check_metax_gpu, check_version, check_config
 from ppdet.utils.cli import ArgsParser, merge_args
 from ppdet.slim import build_slim_model
 
@@ -249,7 +249,9 @@ def main():
     # disable gcu in config by default
     if 'use_gcu' not in cfg:
         cfg.use_gcu = False
-
+    # disable metax_gpu in config by default
+    if 'use_metax_gpu' not in cfg:
+        cfg.use_metax_gpu = False
     # disable iluvatar gpu in config by default
     if 'use_iluvatar_gpu' not in cfg:
         cfg.use_iluvatar_gpu = False
@@ -264,6 +266,8 @@ def main():
         place = paddle.set_device('mlu')
     elif cfg.use_gcu:
         place = paddle.set_device('gcu')
+    elif cfg.use_metax_gpu:
+        place = paddle.set_device('metax_gpu')
     elif cfg.use_iluvatar_gpu:
         place = paddle.set_device('iluvatar_gpu')
     else:
@@ -278,6 +282,7 @@ def main():
     check_xpu(cfg.use_xpu)
     check_mlu(cfg.use_mlu)
     check_gcu(cfg.use_gcu)
+    check_metax_gpu(cfg.use_metax_gpu)
     check_iluvatar_gpu(cfg.use_iluvatar_gpu)
     check_version()
     run(FLAGS, cfg)
