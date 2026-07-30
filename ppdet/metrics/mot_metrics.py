@@ -31,11 +31,10 @@ from .munkres import Munkres
 try:
     import motmetrics as mm
     mm.lap.default_solver = 'lap'
-except:
+except ImportError:
     print(
         'Warning: Unable to use MOT metric, please install motmetrics, for example: `pip install motmetrics`, see https://github.com/longcw/py-motmetrics'
     )
-    pass
 
 from ppdet.utils.logger import setup_logger
 logger = setup_logger(__name__)

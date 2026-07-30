@@ -19,13 +19,13 @@ from paddle import ParamAttr
 from paddle.regularizer import L2Decay
 try:
     import paddle._legacy_C_ops as C_ops
-except:
+except ImportError:
     import paddle._C_ops as C_ops
 
 try:
     from paddle.framework import in_dynamic_or_pir_mode
     HAVE_PIR = True
-except:
+except ImportError:
     HAVE_PIR = False
 
 from paddle import in_dynamic_mode
