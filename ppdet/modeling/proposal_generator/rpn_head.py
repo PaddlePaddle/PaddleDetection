@@ -242,7 +242,7 @@ class RPNHead(nn.Layer):
 
         if self.export_onnx:
             output_rois = [onnx_topk_rois]
-            output_rois_num = paddle.shape(onnx_topk_rois)[0]
+            output_rois_num = paddle.shape(onnx_topk_rois)[0:1]
         else:
             output_rois = bs_rois_collect
             output_rois_num = bs_rois_num_collect
