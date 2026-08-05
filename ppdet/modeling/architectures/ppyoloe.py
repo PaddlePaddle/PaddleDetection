@@ -237,7 +237,7 @@ class PPYOLOEWithAuxHead(BaseArch):
                     yolo_head_outs, self.yolo_head.mask_anchors,
                     self.inputs['im_shape'], self.inputs['scale_factor'])
             else:
-                bbox, bbox_num = self.yolo_head.post_process(
+                bbox, bbox_num, _ = self.yolo_head.post_process(
                     yolo_head_outs, self.inputs['scale_factor'])
             output = {'bbox': bbox, 'bbox_num': bbox_num}
 
