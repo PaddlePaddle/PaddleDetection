@@ -160,6 +160,9 @@ class BBoxPostProcess(object):
         else:
             # simplify the computation for bs=1 when exporting onnx
             scale_y, scale_x = scale_factor[0][0], scale_factor[0][1]
+            # TODO(PIR): indexing yields 0-d tensors which concat rejects.
+            scale_y = paddle.unsqueeze(scale_y, 0)
+            scale_x = paddle.unsqueeze(scale_x, 0)
             scale = paddle.concat(
                 [scale_x, scale_y, scale_x, scale_y]).unsqueeze(0)
             self.origin_shape_list = paddle.expand(origin_shape,
