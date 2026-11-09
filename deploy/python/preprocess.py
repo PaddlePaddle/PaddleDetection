@@ -14,7 +14,6 @@
 
 import cv2
 import numpy as np
-import imgaug.augmenters as iaa
 from keypoint_preprocess import get_affine_transform
 from PIL import Image
 
@@ -520,14 +519,10 @@ class CULaneResize(object):
 
     def __call__(self, im, im_info):
         # cut
-        im = im[self.cut_height:, :, :]
-        # resize
-        transform = iaa.Sometimes(self.prob,
-                                  iaa.Resize({
-                                      "height": self.img_h,
-                                      "width": self.img_w
-                                  }))
-        im = transform(image=im.copy().astype(np.uint8))
+        im = im[self.cut_height:, :, :].astype(np.uint8)
+        if np.random.random() < self.prob:
+            im = cv2.resize(im, (self.img_w, self.img_h),
+                            interpolation=cv2.INTER_CUBIC)
 
         im = im.astype(np.float32) / 255.
         # check transpose is need whether the func decode_image is equal to CULaneDataSet cv.imread
