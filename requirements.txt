@@ -2,6 +2,9 @@ numpy < 2.0
 tqdm
 typeguard
 visualdl>=2.2.0
+six
+matplotlib
+requests
 opencv-python <= 4.6.0
 PyYAML
 shapely

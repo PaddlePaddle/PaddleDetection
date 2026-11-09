@@ -168,7 +168,6 @@ class CULaneDataSet(DetDataset):
         img = img[self.cut_height:, :, :]
         sample = data_info.copy()
         sample.update({'image': img})
-        img_org = sample['image']
 
         if self.training:
             label = cv2.imread(sample['mask_path'], cv2.IMREAD_UNCHANGED)
@@ -195,6 +194,4 @@ class CULaneDataSet(DetDataset):
             np.array(lane, dtype=np.float32).reshape(-1, 2)
             for lane in sample['lanes']
         ]
-        sample['seg'] = np.zeros(img_org.shape)
-
         return sample

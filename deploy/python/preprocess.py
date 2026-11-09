@@ -21,7 +21,7 @@ from PIL import Image
 def decode_image(im_file, im_info):
     """read rgb image
     Args:
-        im_file (str|np.ndarray): input can be image path or np.ndarray
+        im_file (str|np.ndarray): image path or RGB array
         im_info (dict): info of image
     Returns:
         im (np.ndarray):  processed image (np.ndarray)
@@ -510,23 +510,20 @@ class WarpAffine(object):
 
 
 class CULaneResize(object):
-    def __init__(self, img_h, img_w, cut_height, prob=0.5):
+    def __init__(self, img_h, img_w, cut_height, prob=1.0):
+        # Accept prob from existing infer_cfg.yml files and always resize.
         super(CULaneResize, self).__init__()
         self.img_h = img_h
         self.img_w = img_w
         self.cut_height = cut_height
-        self.prob = prob
 
     def __call__(self, im, im_info):
-        # cut
+        # Deployment decodes to RGB. The CLRNet reader uses OpenCV's BGR order.
         im = im[self.cut_height:, :, :].astype(np.uint8)
-        if np.random.random() < self.prob:
-            im = cv2.resize(im, (self.img_w, self.img_h),
-                            interpolation=cv2.INTER_CUBIC)
-
-        im = im.astype(np.float32) / 255.
-        # check transpose is need whether the func decode_image is equal to CULaneDataSet cv.imread
-        im = im.transpose(2, 0, 1)
+        im = cv2.cvtColor(im, cv2.COLOR_RGB2BGR)
+        im = cv2.resize(im, (self.img_w, self.img_h),
+                        interpolation=cv2.INTER_CUBIC)
+        im = im.transpose(2, 0, 1).astype(np.float32) / 255.
 
         return im, im_info
 

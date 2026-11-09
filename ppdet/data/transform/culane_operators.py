@@ -13,7 +13,8 @@ __all__ = [
     "MultiplyAndAddToBrightness", "AddToHueAndSaturation"
 ]
 
-# Preserve the brightness channels and RGB conversion used by CLRNet.
+# The original CLRNet augmentations treated BGR input as RGB for color
+# conversions. Keep that behavior for brightness and hue/saturation.
 _BRIGHTNESS_COLORSPACES = (
     (cv2.COLOR_RGB2YCrCb, cv2.COLOR_YCrCb2RGB, 0),
     (cv2.COLOR_RGB2HSV, cv2.COLOR_HSV2RGB, 2),
@@ -61,24 +62,21 @@ class CULaneDataProcess(BaseOperator):
     def apply(self, sample, context=None):
         data = {}
         height, width = sample['image'].shape[:2]
-        new_anno = {'lanes': clip_lanes(sample['lanes'], height, width)}
-
-        for i in range(30):
-            try:
-                annos = transform_annotation(
-                    self.img_w, self.img_h, self.max_lanes, self.n_offsets,
-                    self.offsets_ys, self.n_strips, self.strip_size, new_anno)
-                label = annos['label']
-                break
-            except:
-                if (i + 1) == 30:
-                    logger.critical('Transform annotation failed 30 times :(')
-                    exit()
+        try:
+            new_anno = {'lanes': clip_lanes(sample['lanes'], height, width)}
+            annos = transform_annotation(
+                self.img_w, self.img_h, self.max_lanes, self.n_offsets,
+                self.offsets_ys, self.n_strips, self.strip_size, new_anno)
+        except Exception:
+            logger.error('Failed to transform CULane annotations for %s',
+                         sample.get('full_img_path', '<unknown>'))
+            raise
 
         sample['image'] = sample['image'].astype(np.float32) / 255.
         data['image'] = sample['image'].transpose(2, 0, 1)
-        data['lane_line'] = label
-        data['seg'] = sample.get('mask', sample['seg'])
+        data['lane_line'] = annos['label']
+        if 'mask' in sample:
+            data['seg'] = sample['mask']
         data['full_img_path'] = sample['full_img_path']
         data['img_name'] = sample['img_name']
         data['im_id'] = sample['im_id']
