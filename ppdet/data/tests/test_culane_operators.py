@@ -40,7 +40,8 @@ class TestCULaneGeometry(unittest.TestCase):
         }
 
     def test_resize_then_flip(self):
-        resized = CULaneResize(img_h=4, img_w=16, prob=1).apply(self.sample)
+        with patch.object(np.random, 'random', return_value=0.75):
+            resized = CULaneResize(img_h=4, img_w=16).apply(self.sample)
         np.testing.assert_array_equal(resized['lanes'][0], [[2, 1], [2, 2.5]])
         expected_mask = np.zeros((4, 16), dtype=np.uint8)
         expected_mask[1:3, 2:4] = 3
@@ -174,7 +175,7 @@ class TestCULaneDeploy(unittest.TestCase):
     def test_deploy_matches_reader_for_path_and_rgb_array(self):
         deploy_dir = Path(__file__).resolve().parents[3] / 'deploy' / 'python'
         with patch.object(sys, 'path', [str(deploy_dir), *sys.path]):
-            from deploy.python import preprocess as deploy_preprocess
+            import preprocess as deploy_preprocess
 
         bgr = np.random.default_rng(12).integers(
             0, 256, size=(12, 16, 3), dtype=np.uint8)

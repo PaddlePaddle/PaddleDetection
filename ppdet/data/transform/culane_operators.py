@@ -87,7 +87,7 @@ class CULaneDataProcess(BaseOperator):
 
 @register_op
 class CULaneResize(BaseOperator):
-    def __init__(self, img_h, img_w, prob=0.5):
+    def __init__(self, img_h, img_w, prob=1.0):
         super(CULaneResize, self).__init__()
         self.img_h = img_h
         self.img_w = img_w
