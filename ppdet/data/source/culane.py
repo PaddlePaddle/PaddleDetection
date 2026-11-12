@@ -4,10 +4,6 @@ import os
 import tarfile
 import numpy as np
 import os.path as osp
-from ppdet.data.source.dataset import DetDataset
-from imgaug.augmentables.lines import LineStringsOnImage
-from imgaug.augmentables.segmaps import SegmentationMapsOnImage
-from ppdet.data.culane_utils import lane_to_linestrings
 import pickle as pkl
 from ppdet.utils.logger import setup_logger
 try:
@@ -172,7 +168,6 @@ class CULaneDataSet(DetDataset):
         img = img[self.cut_height:, :, :]
         sample = data_info.copy()
         sample.update({'image': img})
-        img_org = sample['image']
 
         if self.training:
             label = cv2.imread(sample['mask_path'], cv2.IMREAD_UNCHANGED)
@@ -190,17 +185,13 @@ class CULaneDataSet(DetDataset):
                     new_lanes.append(lanes)
                 sample.update({'lanes': new_lanes})
 
-            sample['mask'] = SegmentationMapsOnImage(
-                sample['mask'], shape=img_org.shape)
-
         sample['full_img_path'] = data_info['img_path']
         sample['img_name'] = data_info['img_name']
         sample['im_id'] = np.array([idx])
 
         sample['image'] = sample['image'].copy().astype(np.uint8)
-        sample['lanes'] = lane_to_linestrings(sample['lanes'])
-        sample['lanes'] = LineStringsOnImage(
-            sample['lanes'], shape=img_org.shape)
-        sample['seg'] = np.zeros(img_org.shape)
-
+        sample['lanes'] = [
+            np.array(lane, dtype=np.float32).reshape(-1, 2)
+            for lane in sample['lanes']
+        ]
         return sample

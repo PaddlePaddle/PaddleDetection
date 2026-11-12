@@ -1,23 +1,25 @@
 import math
 import numpy as np
-from imgaug.augmentables.lines import LineString
 from scipy.interpolate import InterpolatedUnivariateSpline
+from shapely.geometry import LineString, box
 
 
-def lane_to_linestrings(lanes):
-    lines = []
+def clip_lanes(lanes, height, width):
+    """Keep each visible segment, including intersections with image edges."""
+    # Coordinates at the right or bottom edge are outside the image.
+    bounds = box(0, 0, np.float32(width - 1e-3), np.float32(height - 1e-3))
+    visible = []
     for lane in lanes:
-        lines.append(LineString(lane))
-
-    return lines
-
-
-def linestrings_to_lanes(lines):
-    lanes = []
-    for line in lines:
-        lanes.append(line.coords)
-
-    return lanes
+        if len(lane) < 2:
+            continue
+        if np.all((lane >= 0) & (lane < (width, height))):
+            visible.append(lane)
+            continue
+        clipped = LineString(lane).intersection(bounds)
+        for segment in getattr(clipped, 'geoms', (clipped, )):
+            if isinstance(segment, LineString) and not segment.is_empty:
+                visible.append(np.asarray(segment.coords, dtype=np.float32))
+    return visible
 
 
 def sample_lane(points, sample_ys, img_w):
