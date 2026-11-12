@@ -15,6 +15,7 @@
 import sys
 import tempfile
 import unittest
+import warnings
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -220,14 +221,22 @@ class TestCULaneDeploy(unittest.TestCase):
                 type='CULaneResize', img_h=8, img_w=10, cut_height=2)])
             self.assertEqual(reader['prob'], 1.0)
 
-            legacy_info = dict(preprocess_infos[0], prob=0)
-            for op_info in (preprocess_infos[0], legacy_info):
+            expected = np.stack((processed['image'], processed['image']))
+            for fields, should_warn in (({}, False), ({'prob': 1.0}, False),
+                                        ({'prob': 0.5}, True), ({'prob': 0}, True)):
+                op_info = dict(preprocess_infos[0], **fields)
                 detector.pred_config = SimpleNamespace(preprocess_infos=[op_info])
-                for image in (image_path, rgb):
-                    with patch.object(np.random, 'random',
-                                      side_effect=AssertionError('random resize')):
-                        actual = detector.preprocess([image])['image'][0]
-                    np.testing.assert_array_equal(actual, processed['image'])
+                with self.subTest(**fields):
+                    with warnings.catch_warnings(record=True) as emitted, \
+                            patch.object(np.random, 'random',
+                                         side_effect=AssertionError('random resize')):
+                        warnings.simplefilter('always')
+                        actual = detector.preprocess([image_path, rgb])['image']
+                    self.assertEqual(len(emitted), int(should_warn))
+                    if should_warn:
+                        self.assertIn(f"prob={fields['prob']!r}",
+                                      str(emitted[0].message))
+                    np.testing.assert_array_equal(actual, expected)
 
 
 if __name__ == '__main__':
