@@ -136,6 +136,9 @@ class Detector(object):
         for op_info in self.pred_config.preprocess_infos:
             new_op_info = op_info.copy()
             op_type = new_op_info.pop('type')
+            if op_type == 'CULaneResize':
+                # Older exports copied the reader's prob into infer_cfg.yml.
+                new_op_info.pop('prob', None)
             preprocess_ops.append(eval(op_type)(**new_op_info))
 
         input_im_lst = []

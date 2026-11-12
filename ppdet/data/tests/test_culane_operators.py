@@ -16,7 +16,8 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 import cv2
 import numpy as np
@@ -27,6 +28,7 @@ from ppdet.data.transform import culane_operators
 from ppdet.data.transform.culane_operators import (
     AddToHueAndSaturation, ChannelShuffle, CULaneAffine, CULaneDataProcess,
     CULaneResize, HorizontalFlip, MultiplyAndAddToBrightness, OneOfBlur)
+from ppdet.engine.export_utils import _parse_reader
 
 
 class TestCULaneGeometry(unittest.TestCase):
@@ -74,13 +76,21 @@ class TestCULaneGeometry(unittest.TestCase):
         np.testing.assert_allclose(second, [[7.999, 6.00025], [4, 7]])
 
     def test_data_process_keeps_training_mask(self):
-        self.sample.update(full_img_path='lane.png', img_name='lane.png', im_id=0)
         mask = self.sample['mask']
-        process = CULaneDataProcess(img_w=8, img_h=8, num_points=5, max_lanes=1)
-        result = process.apply(self.sample.copy())
-        np.testing.assert_array_equal(result['seg'], mask)
-        self.sample.pop('mask')
-        self.assertNotIn('seg', process.apply(self.sample))
+        with tempfile.TemporaryDirectory() as directory:
+            image_path = str(Path(directory) / 'lane.png')
+            mask_path = str(Path(directory) / 'mask.png')
+            self.assertTrue(cv2.imwrite(image_path, self.sample['image']))
+            self.assertTrue(cv2.imwrite(mask_path, mask))
+            dataset = CULaneDataSet(dataset_dir=directory, cut_height=2,
+                                   list_path='unused.txt', split='train')
+            dataset.data_infos = [dict(img_path=image_path, img_name='lane.png',
+                                       mask_path=mask_path, lanes=[])]
+            sample = dataset[0]
+        np.testing.assert_array_equal(sample['mask'], mask[2:])
+        self.assertNotIn('seg', sample)
+        process = CULaneDataProcess(img_w=8, img_h=6, num_points=5, max_lanes=1)
+        np.testing.assert_array_equal(process.apply(sample)['seg'], mask[2:])
 
     def test_annotation_error_propagates_once(self):
         self.sample['full_img_path'] = 'broken-lane.png'
@@ -175,7 +185,11 @@ class TestCULaneDeploy(unittest.TestCase):
     def test_deploy_matches_reader_for_path_and_rgb_array(self):
         deploy_dir = Path(__file__).resolve().parents[3] / 'deploy' / 'python'
         with patch.object(sys, 'path', [str(deploy_dir), *sys.path]):
-            import preprocess as deploy_preprocess
+            from infer import DetectorCLRNet
+
+        detector = DetectorCLRNet.__new__(DetectorCLRNet)
+        detector.predictor = Mock()
+        detector.predictor.get_input_names.return_value = ['image']
 
         bgr = np.random.default_rng(12).integers(
             0, 256, size=(12, 16, 3), dtype=np.uint8)
@@ -187,19 +201,33 @@ class TestCULaneDeploy(unittest.TestCase):
             dataset.data_infos = [dict(img_path=image_path, img_name='lane.png',
                                        lanes=[])]
             sample = dataset[0]
+            self.assertNotIn('mask', sample)
             self.assertNotIn('seg', sample)
             sample = CULaneResize(img_h=8, img_w=10, prob=1).apply(sample)
-            expected = CULaneDataProcess(
-                img_w=10, img_h=8, num_points=5, max_lanes=1).apply(sample)['image']
+            processed = CULaneDataProcess(
+                img_w=10, img_h=8, num_points=5, max_lanes=1).apply(sample)
+            self.assertNotIn('seg', processed)
 
             rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
-            for op in [deploy_preprocess.CULaneResize(8, 10, 2),
-                       deploy_preprocess.CULaneResize(8, 10, 2, prob=0)]:
+            reader = {'img_h': 8, 'img_w': 10, 'prob': 1.0}
+            reader_cfg = {
+                'sample_transforms': [],
+                'batch_transforms': [{'CULaneResize': reader}],
+            }
+            preprocess_infos, _ = _parse_reader(
+                reader_cfg, dataset, 'CULaneMetric', 'lane_arch', (3, 8, 10))
+            self.assertEqual(preprocess_infos, [dict(
+                type='CULaneResize', img_h=8, img_w=10, cut_height=2)])
+            self.assertEqual(reader['prob'], 1.0)
+
+            legacy_info = dict(preprocess_infos[0], prob=0)
+            for op_info in (preprocess_infos[0], legacy_info):
+                detector.pred_config = SimpleNamespace(preprocess_infos=[op_info])
                 for image in (image_path, rgb):
                     with patch.object(np.random, 'random',
                                       side_effect=AssertionError('random resize')):
-                        actual, _ = deploy_preprocess.preprocess(image, [op])
-                    np.testing.assert_array_equal(actual, expected)
+                        actual = detector.preprocess([image])['image'][0]
+                    np.testing.assert_array_equal(actual, processed['image'])
 
 
 if __name__ == '__main__':

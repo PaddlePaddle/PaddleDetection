@@ -510,8 +510,7 @@ class WarpAffine(object):
 
 
 class CULaneResize(object):
-    def __init__(self, img_h, img_w, cut_height, prob=1.0):
-        # Accept prob from existing infer_cfg.yml files and always resize.
+    def __init__(self, img_h, img_w, cut_height):
         super(CULaneResize, self).__init__()
         self.img_h = img_h
         self.img_w = img_w

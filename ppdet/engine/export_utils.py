@@ -271,6 +271,7 @@ def _parse_reader(reader_cfg, dataset_cfg, metric, arch, image_shape):
                     # cut and resize
                     p = {'type': key}
                     p.update(value)
+                    p.pop('prob', None)
                     p.update({"cut_height": dataset_cfg.cut_height})
                     preprocess_list.append(p)
                     break
