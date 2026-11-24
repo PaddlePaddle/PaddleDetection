@@ -35,6 +35,7 @@ class ModelEMA(object):
             Ema's parameter are updated with the formula:
            `ema_param = decay * ema_param + (1 - decay) * cur_param`.
             Defaults is 0.9998.
+            Eligible FP32 CPU/CUDA updates reuse the existing EMA buffers.
         gamma (int): Use a smaller decay early in training and gradually
             annealing to a smaller value to update the ema model smoothly.
             Defaults to 2000.
@@ -96,9 +97,11 @@ class ModelEMA(object):
         for k, v in state_dict.items():
             if k in self.state_dict:
                 if self.state_dict[k].dtype == v.dtype:
-                    self.state_dict[k] = v
+                    # Keep EMA storage separate from the caller's checkpoint.
+                    self.state_dict[k] = (v if k in self.ema_black_list else
+                                          v.detach().clone())
                 else:
-                    self.state_dict[k] = v.astype(self.state_dict[k].dtype)
+                    self.state_dict[k] = v.detach().astype(self.state_dict[k].dtype)
         self.step = step
 
     def update(self, model=None):
@@ -117,11 +120,26 @@ class ModelEMA(object):
             assert all(
                 [v is not None for _, v in model_dict.items()]), 'python gc.'
 
-        for k, v in self.state_dict.items():
-            if k not in self.ema_black_list:
-                v = decay * v + (1 - decay) * model_dict[k].astype('float32')
-                v.stop_gradient = True
-                self.state_dict[k] = v
+        lerp = getattr(paddle.tensor, 'lerp_', None)
+        weight = None
+        with paddle.no_grad():
+            for k, v in self.state_dict.items():
+                if k in self.ema_black_list:
+                    continue
+                param = model_dict[k]
+                if param.dtype != paddle.float32:
+                    param = param.astype('float32')
+                # For small decays, rounding 1 - decay can erase the EMA term.
+                place = v.place
+                if (lerp is not None and 0.5 <= decay < 1.0
+                        and v.dtype == paddle.float32
+                        and (place.is_cpu_place() or place.is_gpu_place())):
+                    if weight is None or weight.place != place:
+                        weight = paddle.to_tensor(
+                            1.0 - decay, dtype='float32', place=place)
+                    lerp(v, param, weight)
+                else:
+                    self.state_dict[k] = decay * v + (1 - decay) * param
         self.step += 1
 
     def apply(self):
@@ -137,6 +155,9 @@ class ModelEMA(object):
                 if self.ema_decay_type != 'exponential':
                     v = v / (1 - self._decay**self.step)
                     v = v.astype(model_dict[k].dtype)
+                else:
+                    # Applying EMA returns a snapshot, not a live buffer.
+                    v = v.clone()
                 v.stop_gradient = True
                 state_dict[k] = v
         self.epoch += 1
